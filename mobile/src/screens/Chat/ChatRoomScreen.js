@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, STORAGE_KEYS } from "../../config/constants";
@@ -27,6 +28,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [loadingRoom, setLoadingRoom] = useState(!roomParam); // If no room, need to load
   const [selectedContextType, setSelectedContextType] = useState('GENERAL'); // Default: GENERAL (chat chung)
   const [selectedContextId, setSelectedContextId] = useState(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // IMPORTANT: Use roomIdParam directly if available to prevent re-subscription
   // when room state changes after fetching room data
@@ -90,6 +92,27 @@ const ChatRoomScreen = ({ route, navigation }) => {
     fetchRoomData();
   }, [roomIdParam, room, navigation]);
 
+  // Handle keyboard show/hide
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener?.remove();
+      keyboardWillHideListener?.remove();
+    };
+  }, []);
+
   // Load messages với filter ngay từ đầu
   useEffect(() => {
     if (roomId && !loadingRoom) {
@@ -104,9 +127,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   ]);
 
   useEffect(() => {
-    // Set header title - only update if room is available
-    if (!room) return;
-
+    // Set header - only back button, room info is displayed outside header
     navigation.setOptions({
       headerLeft: () => (
         <TouchableOpacity
@@ -116,33 +137,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
       ),
-      headerTitle: () => (
-        <TouchableOpacity style={styles.headerTitle}>
-          <View style={styles.headerIconContainer}>
-            <Ionicons name="chatbubbles" size={24} color={COLORS.primary} />
-            {connected && <View style={styles.connectedDot} />}
-          </View>
-          <View>
-            <Text style={styles.headerName}>{room?.roomName || 'Chat Room'}</Text>
-            <Text style={styles.headerStatus}>
-              {connected ? 'Connected' : 'Connecting...'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ),
-      // headerRight: () => (
-      //   <View style={styles.headerRight}>
-      //     <TouchableOpacity style={styles.headerButton}>
-      //       <Ionicons
-      //         name="information-circle-outline"
-      //         size={24}
-      //         color={COLORS.primary}
-      //       />
-      //     </TouchableOpacity>
-      //   </View>
-      // ),
+      headerTitle: '', // Empty title to avoid conflicts
     });
-  }, [room, connected, navigation]);
+  }, [navigation]);
 
   // Auto scroll to bottom when messages change
   useEffect(() => {
@@ -321,6 +318,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      enabled={Platform.OS === "ios"}
     >
       {/* Connection Status Banner */}
       {!connected && (
@@ -329,6 +327,48 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <Text style={styles.connectionBannerText}>
             Connecting...
           </Text>
+        </View>
+      )}
+
+      {/* Room Info Header - Displayed outside navigation header */}
+      {room && (
+        <View style={styles.roomInfoHeader}>
+          <View style={styles.roomInfoIconContainer}>
+            <Ionicons name="chatbubbles" size={24} color={COLORS.primary} />
+            {connected && room?.isActive !== false && (
+              <View style={styles.connectedDot} />
+            )}
+          </View>
+          <View style={styles.roomInfoTextContainer}>
+            <View style={styles.roomInfoNameContainer}>
+              <Text style={styles.roomInfoName} numberOfLines={2}>
+                {room?.roomName || 'Chat Room'}
+              </Text>
+              {room?.isActive === false && (
+                <View style={styles.closedTag}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={12}
+                    color={COLORS.textSecondary}
+                  />
+                  <Text style={styles.closedTagText}>Closed</Text>
+                </View>
+              )}
+            </View>
+            <Text
+              style={[
+                styles.roomInfoStatus,
+                room?.isActive === false && styles.roomInfoStatusClosed,
+              ]}
+              numberOfLines={1}
+            >
+              {room?.isActive === false
+                ? 'Closed'
+                : connected
+                ? 'Connected'
+                : 'Connecting...'}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -396,7 +436,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
           return item.messageId;
         }}
         renderItem={renderMessage}
-        contentContainerStyle={styles.messagesList}
+        contentContainerStyle={[
+          styles.messagesList,
+          Platform.OS === 'android' && { 
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 90 : 90
+          }
+        ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
@@ -430,13 +475,20 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
 
-  headerTitle: {
+  // Room Info Header (displayed outside navigation header)
+  roomInfoHeader: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  headerIconContainer: {
+  roomInfoIconContainer: {
     position: "relative",
     marginRight: SPACING.sm,
+    flexShrink: 0, // Icon container should not shrink
   },
   connectedDot: {
     position: "absolute",
@@ -449,15 +501,46 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.white,
   },
-  headerName: {
+  roomInfoTextContainer: {
+    flex: 1,
+    minWidth: 0, // Important: allows flex shrinking and text wrapping
+  },
+  roomInfoNameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+    flexWrap: "wrap",
+  },
+  roomInfoName: {
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
+    flex: 1,
+    minWidth: 0,
   },
-  headerStatus: {
+  closedTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.gray[200],
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: 4,
+    flexShrink: 0,
+  },
+  closedTagText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+  roomInfoStatus: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  roomInfoStatusClosed: {
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
   },
   headerRight: {
     flexDirection: "row",

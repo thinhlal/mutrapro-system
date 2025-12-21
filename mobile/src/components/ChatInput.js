@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
@@ -16,6 +17,30 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants"
 const ChatInput = ({ onSendMessage, onFileUpload, roomId, sending = false, disabled = false }) => {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Handle keyboard show/hide for Android
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const showListener = Keyboard.addListener(
+        'keyboardDidShow',
+        (e) => {
+          setKeyboardHeight(e.endCoordinates.height);
+        }
+      );
+      const hideListener = Keyboard.addListener(
+        'keyboardDidHide',
+        () => {
+          setKeyboardHeight(0);
+        }
+      );
+
+      return () => {
+        showListener?.remove();
+        hideListener?.remove();
+      };
+    }
+  }, []);
 
   const handleSend = () => {
     if (message.trim() && !sending && !disabled) {
@@ -160,7 +185,18 @@ const ChatInput = ({ onSendMessage, onFileUpload, roomId, sending = false, disab
   };
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={[
+        styles.container,
+        Platform.OS === 'android' && {
+          position: 'absolute',
+          bottom: keyboardHeight,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+        }
+      ]}
+    >
       <View style={styles.inputContainer}>
         {/* Attach Button */}
         <TouchableOpacity
