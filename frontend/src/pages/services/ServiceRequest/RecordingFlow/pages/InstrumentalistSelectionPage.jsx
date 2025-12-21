@@ -33,7 +33,9 @@ export default function InstrumentalistSelectionPage() {
     selectedInstrumentalistId,
   } = location.state || {};
 
-  const [selectedId, setSelectedId] = useState(selectedInstrumentalistId || null);
+  const [selectedId, setSelectedId] = useState(
+    selectedInstrumentalistId || null
+  );
   const [instrumentalists, setInstrumentalists] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -154,7 +156,9 @@ export default function InstrumentalistSelectionPage() {
       navigate('/recording-flow', { state: { step: 3 } });
     } catch (error) {
       console.error('Error saving instrumentalist selection:', error);
-      message.error('Failed to save instrumentalist selection. Please try again.');
+      message.error(
+        'Failed to save instrumentalist selection. Please try again.'
+      );
     }
   };
 
@@ -302,7 +306,10 @@ export default function InstrumentalistSelectionPage() {
                     isSelected={isSelected(instrumentalist.specialistId)}
                     selectedId={selectedId}
                     onSelect={handleSelect}
-                    disabled={!instrumentalist.isAvailable && !isSelected(instrumentalist.specialistId)}
+                    disabled={
+                      !instrumentalist.isAvailable &&
+                      !isSelected(instrumentalist.specialistId)
+                    }
                   />
                 ))
               )}

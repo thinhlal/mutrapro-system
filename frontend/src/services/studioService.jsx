@@ -23,7 +23,9 @@ export const getActiveStudioAdmin = async () => {
     const response = await axiosInstance.get(API_ENDPOINTS.STUDIOS.GET_ACTIVE);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin studio active' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin studio active' }
+    );
   }
 };
 
@@ -33,7 +35,9 @@ export const getActiveStudioAdmin = async () => {
  */
 export const getActiveStudio = async () => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.STUDIOS.GET_ACTIVE_PUBLIC);
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIOS.GET_ACTIVE_PUBLIC
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy thông tin studio' };
@@ -55,4 +59,3 @@ export const updateStudio = async (studioId, data) => {
     throw error.response?.data || { message: 'Lỗi khi cập nhật studio' };
   }
 };
-

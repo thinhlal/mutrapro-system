@@ -87,9 +87,7 @@ const StudioManagement = () => {
       fetchStudios();
     } catch (error) {
       const errorMessage =
-        error.message ||
-        error.response?.data?.message ||
-        'An error occurred';
+        error.message || error.response?.data?.message || 'An error occurred';
       message.error(errorMessage);
     }
   };
@@ -140,9 +138,7 @@ const StudioManagement = () => {
       dataIndex: 'extraGuestFeePerPerson',
       key: 'extraGuestFeePerPerson',
       width: 150,
-      render: fee => (
-        <Text>{fee ? formatPrice(fee, 'VND') : '-'}/khách</Text>
-      ),
+      render: fee => <Text>{fee ? formatPrice(fee, 'VND') : '-'}/khách</Text>,
     },
     {
       title: 'Status',
@@ -229,11 +225,7 @@ const StudioManagement = () => {
         width={600}
         destroyOnClose
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             label="Studio Name"
             name="studioName"
@@ -318,11 +310,7 @@ const StudioManagement = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            label="Active"
-            name="isActive"
-            valuePropName="checked"
-          >
+          <Form.Item label="Active" name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>
@@ -332,4 +320,3 @@ const StudioManagement = () => {
 };
 
 export default StudioManagement;
-

@@ -160,7 +160,9 @@
   position: absolute;
   width: 0;
   height: 0;
-  transition: width 0.2s ease, height 0.2s ease;
+  transition:
+    width 0.2s ease,
+    height 0.2s ease;
 }
 
 .slotButton.ant-btn-primary {

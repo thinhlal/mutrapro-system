@@ -74,9 +74,7 @@ const PricingMatrixManagement = () => {
         setPricingList(filtered);
       }
     } catch (error) {
-      message.error(
-        error.message || 'Unable to load pricing matrix list'
-      );
+      message.error(error.message || 'Unable to load pricing matrix list');
     } finally {
       setLoading(false);
     }
@@ -161,9 +159,7 @@ const PricingMatrixManagement = () => {
       fetchPricingMatrix();
     } catch (error) {
       const errorMessage =
-        error.message ||
-        error.response?.data?.message ||
-        'An error occurred';
+        error.message || error.response?.data?.message || 'An error occurred';
       message.error(errorMessage);
     }
   };
@@ -223,9 +219,7 @@ const PricingMatrixManagement = () => {
       dataIndex: 'unitType',
       key: 'unitType',
       width: 150,
-      render: unitType => (
-        <Tag color="green">{getUnitTypeName(unitType)}</Tag>
-      ),
+      render: unitType => <Tag color="green">{getUnitTypeName(unitType)}</Tag>,
     },
     {
       title: 'Base Price',
@@ -323,7 +317,6 @@ const PricingMatrixManagement = () => {
           </Space>
         }
       >
-
         <Table
           columns={columns}
           dataSource={pricingList}
@@ -359,84 +352,88 @@ const PricingMatrixManagement = () => {
             isActive: true,
           }}
         >
-           {!editMode && (
-             <Form.Item
-               label="Service Type"
-               name="serviceType"
-               rules={[{ required: true, message: 'Please select service type' }]}
-             >
-               <Select
-                 placeholder="Select service type"
+          {!editMode && (
+            <Form.Item
+              label="Service Type"
+              name="serviceType"
+              rules={[
+                { required: true, message: 'Please select service type' },
+              ]}
+            >
+              <Select
+                placeholder="Select service type"
                 onChange={value => {
                   // Auto-set unit type based on service type
                   const allowedUnitTypes = getAllowedUnitTypes(value);
                   if (allowedUnitTypes.length === 1) {
-                    form.setFieldsValue({ unitType: allowedUnitTypes[0].value });
+                    form.setFieldsValue({
+                      unitType: allowedUnitTypes[0].value,
+                    });
                   } else {
                     form.setFieldsValue({ unitType: undefined });
                   }
                 }}
               >
-                 {SERVICE_TYPE_OPTIONS.map(opt => (
-                   <Option key={opt.value} value={opt.value}>
-                     {opt.label}
-                   </Option>
-                 ))}
-               </Select>
-             </Form.Item>
-           )}
+                {SERVICE_TYPE_OPTIONS.map(opt => (
+                  <Option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
 
-           {editMode && (
-             <Form.Item label="Service Type">
-               <Tag color="blue">
-                 {getServiceTypeName(selectedPricing?.serviceType)}
-               </Tag>
-               <Text type="secondary" style={{ marginLeft: 8 }}>
-                 (Cannot be changed)
-               </Text>
-             </Form.Item>
-           )}
+          {editMode && (
+            <Form.Item label="Service Type">
+              <Tag color="blue">
+                {getServiceTypeName(selectedPricing?.serviceType)}
+              </Tag>
+              <Text type="secondary" style={{ marginLeft: 8 }}>
+                (Cannot be changed)
+              </Text>
+            </Form.Item>
+          )}
 
-           <Form.Item
-             label="Unit Type"
-             name="unitType"
-             dependencies={!editMode ? ['serviceType'] : []}
-             rules={[
-               { required: true, message: 'Please select unit type' },
-               ({ getFieldValue }) => ({
-                 validator(_, value) {
-                   if (editMode) {
-                     return Promise.resolve();
-                   }
-                   const serviceType = getFieldValue('serviceType');
-                   if (!serviceType || !value) {
-                     return Promise.resolve();
-                   }
-                   const allowedUnitTypes = getAllowedUnitTypes(serviceType);
-                   if (allowedUnitTypes.some(opt => opt.value === value)) {
-                     return Promise.resolve();
-                   }
-                   return Promise.reject(
-                     new Error(
-                       `Unit type must be ${allowedUnitTypes[0].label} for ${getServiceTypeName(serviceType)}`
-                     )
-                   );
-                 },
-               }),
-             ]}
-           >
-             <Select
-               placeholder="Select unit type"
-               disabled={editMode}
-               options={
-                 editMode
-                   ? getAllowedUnitTypes(selectedPricing?.serviceType)
-                   : form.getFieldValue('serviceType')
-                   ? getAllowedUnitTypes(form.getFieldValue('serviceType'))
-                   : ALL_UNIT_TYPE_OPTIONS
-               }
-             />
-           </Form.Item>
+          <Form.Item
+            label="Unit Type"
+            name="unitType"
+            dependencies={!editMode ? ['serviceType'] : []}
+            rules={[
+              { required: true, message: 'Please select unit type' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (editMode) {
+                    return Promise.resolve();
+                  }
+                  const serviceType = getFieldValue('serviceType');
+                  if (!serviceType || !value) {
+                    return Promise.resolve();
+                  }
+                  const allowedUnitTypes = getAllowedUnitTypes(serviceType);
+                  if (allowedUnitTypes.some(opt => opt.value === value)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      `Unit type must be ${allowedUnitTypes[0].label} for ${getServiceTypeName(serviceType)}`
+                    )
+                  );
+                },
+              }),
+            ]}
+          >
+            <Select
+              placeholder="Select unit type"
+              disabled={editMode}
+              options={
+                editMode
+                  ? getAllowedUnitTypes(selectedPricing?.serviceType)
+                  : form.getFieldValue('serviceType')
+                    ? getAllowedUnitTypes(form.getFieldValue('serviceType'))
+                    : ALL_UNIT_TYPE_OPTIONS
+              }
+            />
+          </Form.Item>
 
           <Form.Item
             label="Base Price"
@@ -485,11 +482,7 @@ const PricingMatrixManagement = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            label="Active"
-            name="isActive"
-            valuePropName="checked"
-          >
+          <Form.Item label="Active" name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>
@@ -499,4 +492,3 @@ const PricingMatrixManagement = () => {
 };
 
 export default PricingMatrixManagement;
-

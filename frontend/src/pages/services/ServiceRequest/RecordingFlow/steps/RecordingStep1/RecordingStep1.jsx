@@ -50,7 +50,7 @@ export default function RecordingStep1({ data, onComplete }) {
           // Map backend slots to frontend format
           const slots = response.data.map(slot => {
             // Normalize time format: remove seconds if present (08:00:00 -> 08:00)
-            const normalizeTime = (time) => {
+            const normalizeTime = time => {
               if (!time) return time;
               // If format is HH:mm:ss, extract only HH:mm
               if (time.includes(':') && time.split(':').length === 3) {
@@ -58,7 +58,7 @@ export default function RecordingStep1({ data, onComplete }) {
               }
               return time;
             };
-            
+
             return {
               start: normalizeTime(slot.startTime || slot.start_time),
               end: normalizeTime(slot.endTime || slot.end_time),
@@ -144,7 +144,7 @@ export default function RecordingStep1({ data, onComplete }) {
 
     const startTime = dayjs(start, 'HH:mm');
     const endTime = dayjs(end, 'HH:mm');
-    
+
     setSelectedTimeRange([startTime, endTime]);
   };
 
@@ -158,7 +158,9 @@ export default function RecordingStep1({ data, onComplete }) {
     const today = dayjs().startOf('day');
     const selectedDay = selectedDate.startOf('day');
     if (selectedDay.isBefore(today) || selectedDay.isSame(today)) {
-      message.error('Cannot book for today or past dates. Please select a future date.');
+      message.error(
+        'Cannot book for today or past dates. Please select a future date.'
+      );
       return;
     }
 
@@ -195,7 +197,7 @@ export default function RecordingStep1({ data, onComplete }) {
     if (isPast) {
       return <div className={styles.pastDate}>Past</div>;
     }
-    
+
     if (isToday) {
       return <div className={styles.todayDate}>Today</div>;
     }
@@ -232,127 +234,143 @@ export default function RecordingStep1({ data, onComplete }) {
 
         {selectedDate ? (
           <div className={styles.timeSelectionSection}>
-          <div className={styles.sectionHeader}>
-            <Title level={4}>Select Time Slot</Title>
-            <Text type="secondary">
-              Selected Date: {selectedDate.format('dddd, MMMM DD, YYYY')}
-            </Text>
-          </div>
-
-          {loadingSlots && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <Spin tip="Loading available slots..." />
-            </div>
-          )}
-
-          {!loadingSlots && availableSlots.length > 0 && availableSlots.some(slot => !slot.available) && (
-            <Alert
-              message="Booked Slots"
-              description={
-                <div>
-                  {availableSlots
-                    .filter(slot => !slot.available)
-                    .map((slot, idx) => (
-                      <Tag
-                        key={idx}
-                        color={slot.status === 'tentative' ? 'orange' : 'red'}
-                        style={{ marginTop: 4 }}
-                      >
-                        {slot.start} - {slot.end} ({slot.status})
-                      </Tag>
-                    ))}
-                </div>
-              }
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          )}
-
-          {!loadingSlots && availableTimeSlots.length > 0 && (
-            <div className={styles.quickSlots}>
-              <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                Available Time Slots:
+            <div className={styles.sectionHeader}>
+              <Title level={4}>Select Time Slot</Title>
+              <Text type="secondary">
+                Selected Date: {selectedDate.format('dddd, MMMM DD, YYYY')}
               </Text>
-              <Space wrap>
-                {availableTimeSlots.map((slot, idx) => {
-                  // Normalize slot times to ensure format consistency (HH:mm)
-                  const normalizeTime = (time) => {
-                    if (!time) return time;
-                    // If format is HH:mm:ss, extract only HH:mm
-                    if (time.includes(':') && time.split(':').length === 3) {
-                      return time.substring(0, 5); // Take first 5 chars (HH:mm)
-                    }
-                    // If format is just number, convert to HH:00
-                    if (!time.includes(':')) {
-                      return `${String(time).padStart(2, '0')}:00`;
-                    }
-                    return time;
-                  };
-                  
-                  const slotStart = normalizeTime(slot.start);
-                  const slotEnd = normalizeTime(slot.end);
-                  
-                  // Check if this slot is selected
-                  const selectedStart = selectedTimeRange?.[0]?.format('HH:mm');
-                  const selectedEnd = selectedTimeRange?.[1]?.format('HH:mm');
-                  const isSelected = selectedTimeRange && 
-                    selectedStart === slotStart &&
-                    selectedEnd === slotEnd;
-                  
-                  return (
-                    <Button
-                      key={idx}
-                      type={isSelected ? 'primary' : 'default'}
-                      disabled={!slot.available}
-                      onClick={() => {
-                        if (slot.available) {
-                          handleSlotSelect(slotStart, slotEnd);
-                        }
-                      }}
-                      className={styles.slotButton}
-                    >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        {slotStart} - {slotEnd}
-                        {!slot.available && (
-                          <Tag color="red" style={{ margin: 0 }}>
-                            Booked
-                          </Tag>
-                        )}
-                        {isSelected && slot.available && (
-                          <CheckCircleOutlined style={{ fontSize: '14px' }} />
-                        )}
-                        {!isSelected && slot.available && (
-                          <span style={{ width: '14px', display: 'inline-block' }} />
-                        )}
-                      </span>
-                    </Button>
-                  );
-                })}
-              </Space>
             </div>
-          )}
 
-          {selectedTimeRange && (
-            <div className={styles.selectedInfo}>
-              <Space>
-                <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                <Text strong>
-                  Selected: {selectedTimeRange[0].format('HH:mm')} -{' '}
-                  {selectedTimeRange[1].format('HH:mm')}
+            {loadingSlots && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <Spin tip="Loading available slots..." />
+              </div>
+            )}
+
+            {!loadingSlots &&
+              availableSlots.length > 0 &&
+              availableSlots.some(slot => !slot.available) && (
+                <Alert
+                  message="Booked Slots"
+                  description={
+                    <div>
+                      {availableSlots
+                        .filter(slot => !slot.available)
+                        .map((slot, idx) => (
+                          <Tag
+                            key={idx}
+                            color={
+                              slot.status === 'tentative' ? 'orange' : 'red'
+                            }
+                            style={{ marginTop: 4 }}
+                          >
+                            {slot.start} - {slot.end} ({slot.status})
+                          </Tag>
+                        ))}
+                    </div>
+                  }
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+
+            {!loadingSlots && availableTimeSlots.length > 0 && (
+              <div className={styles.quickSlots}>
+                <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                  Available Time Slots:
                 </Text>
-                <Tag color="green">
-                  Duration:{' '}
-                  {selectedTimeRange[1].diff(selectedTimeRange[0], 'hour')}{' '}
-                  hours
-                </Tag>
-              </Space>
-            </div>
-          )}
+                <Space wrap>
+                  {availableTimeSlots.map((slot, idx) => {
+                    // Normalize slot times to ensure format consistency (HH:mm)
+                    const normalizeTime = time => {
+                      if (!time) return time;
+                      // If format is HH:mm:ss, extract only HH:mm
+                      if (time.includes(':') && time.split(':').length === 3) {
+                        return time.substring(0, 5); // Take first 5 chars (HH:mm)
+                      }
+                      // If format is just number, convert to HH:00
+                      if (!time.includes(':')) {
+                        return `${String(time).padStart(2, '0')}:00`;
+                      }
+                      return time;
+                    };
+
+                    const slotStart = normalizeTime(slot.start);
+                    const slotEnd = normalizeTime(slot.end);
+
+                    // Check if this slot is selected
+                    const selectedStart =
+                      selectedTimeRange?.[0]?.format('HH:mm');
+                    const selectedEnd = selectedTimeRange?.[1]?.format('HH:mm');
+                    const isSelected =
+                      selectedTimeRange &&
+                      selectedStart === slotStart &&
+                      selectedEnd === slotEnd;
+
+                    return (
+                      <Button
+                        key={idx}
+                        type={isSelected ? 'primary' : 'default'}
+                        disabled={!slot.available}
+                        onClick={() => {
+                          if (slot.available) {
+                            handleSlotSelect(slotStart, slotEnd);
+                          }
+                        }}
+                        className={styles.slotButton}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          {slotStart} - {slotEnd}
+                          {!slot.available && (
+                            <Tag color="red" style={{ margin: 0 }}>
+                              Booked
+                            </Tag>
+                          )}
+                          {isSelected && slot.available && (
+                            <CheckCircleOutlined style={{ fontSize: '14px' }} />
+                          )}
+                          {!isSelected && slot.available && (
+                            <span
+                              style={{ width: '14px', display: 'inline-block' }}
+                            />
+                          )}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </Space>
+              </div>
+            )}
+
+            {selectedTimeRange && (
+              <div className={styles.selectedInfo}>
+                <Space>
+                  <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  <Text strong>
+                    Selected: {selectedTimeRange[0].format('HH:mm')} -{' '}
+                    {selectedTimeRange[1].format('HH:mm')}
+                  </Text>
+                  <Tag color="green">
+                    Duration:{' '}
+                    {selectedTimeRange[1].diff(selectedTimeRange[0], 'hour')}{' '}
+                    hours
+                  </Tag>
+                </Space>
+              </div>
+            )}
           </div>
         ) : (
           <div className={styles.timeSelectionSection}>
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+            <div
+              style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}
+            >
               <Text>Please select a date to view available time slots</Text>
             </div>
           </div>

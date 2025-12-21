@@ -240,9 +240,7 @@ const FileList = ({
             icon={<DownloadOutlined />}
             loading={
               previewFile &&
-              downloadingFileIds.has(
-                previewFile.fileId || previewFile.id
-              )
+              downloadingFileIds.has(previewFile.fileId || previewFile.id)
             }
             onClick={async () => {
               if (previewFile) {
@@ -289,7 +287,8 @@ const FileList = ({
                       setPreviewLoading(false);
                       setViewingFileIds(prev => {
                         const newSet = new Set(prev);
-                        if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                        if (previewFile?.fileId)
+                          newSet.delete(previewFile.fileId);
                         if (previewFile?.id) newSet.delete(previewFile.id);
                         return newSet;
                       });
@@ -299,7 +298,8 @@ const FileList = ({
                       message.error('Lỗi khi load file audio');
                       setViewingFileIds(prev => {
                         const newSet = new Set(prev);
-                        if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                        if (previewFile?.fileId)
+                          newSet.delete(previewFile.fileId);
                         if (previewFile?.id) newSet.delete(previewFile.id);
                         return newSet;
                       });
@@ -322,7 +322,8 @@ const FileList = ({
                     setPreviewLoading(false);
                     setViewingFileIds(prev => {
                       const newSet = new Set(prev);
-                      if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                      if (previewFile?.fileId)
+                        newSet.delete(previewFile.fileId);
                       if (previewFile?.id) newSet.delete(previewFile.id);
                       return newSet;
                     });
@@ -332,7 +333,8 @@ const FileList = ({
                     message.error('Lỗi khi load file video');
                     setViewingFileIds(prev => {
                       const newSet = new Set(prev);
-                      if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                      if (previewFile?.fileId)
+                        newSet.delete(previewFile.fileId);
                       if (previewFile?.id) newSet.delete(previewFile.id);
                       return newSet;
                     });

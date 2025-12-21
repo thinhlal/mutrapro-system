@@ -586,7 +586,9 @@ export const getSlotsByDateRange = async (startDate, endDate) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy slots theo khoảng thời gian' }
+      error.response?.data || {
+        message: 'Lỗi khi lấy slots theo khoảng thời gian',
+      }
     );
   }
 };
@@ -651,7 +653,11 @@ export const bulkUpdateSlotsForDateRange = async bulkData => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi bulk update slots cho nhiều ngày' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi bulk update slots cho nhiều ngày',
+      }
+    );
   }
 };
 

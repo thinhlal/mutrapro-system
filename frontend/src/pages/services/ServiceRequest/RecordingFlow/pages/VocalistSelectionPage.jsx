@@ -37,8 +37,7 @@ export default function VocalistSelectionPage() {
   // - Arrangement with recording: max 2 preferred vocalists
   // - Recording flow: max 10 (or unlimited)
   const effectiveMaxSelections = allowMultiple
-    ? maxSelections ||
-      (fromArrangement ? 2 : 10) // Default: 2 for arrangement, 10 for recording flow
+    ? maxSelections || (fromArrangement ? 2 : 10) // Default: 2 for arrangement, 10 for recording flow
     : 1;
 
   const [selectedId, setSelectedId] = useState(selectedVocalist || null);
@@ -48,9 +47,7 @@ export default function VocalistSelectionPage() {
         ? selectedVocalists
         : [selectedVocalists];
       // Extract specialistId if it's an object
-      return ids.map(v =>
-        typeof v === 'object' ? v.specialistId || v.id : v
-      );
+      return ids.map(v => (typeof v === 'object' ? v.specialistId || v.id : v));
     }
     return [];
   });
@@ -195,14 +192,14 @@ export default function VocalistSelectionPage() {
         }
 
         sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
-        
+
         // Try to remove callback if exists
         try {
           sessionStorage.removeItem('recordingFlowVocalistCallback');
         } catch (e) {
           // Ignore if doesn't exist
         }
-        
+
         message.success(
           `Selected ${allowMultiple ? selectedIds.length : 1} vocalist${allowMultiple && selectedIds.length > 1 ? 's' : ''} successfully`
         );
@@ -216,7 +213,10 @@ export default function VocalistSelectionPage() {
 
   const handleBack = () => {
     // Save current selections before going back (if any)
-    if ((allowMultiple && selectedIds.length > 0) || (!allowMultiple && selectedId)) {
+    if (
+      (allowMultiple && selectedIds.length > 0) ||
+      (!allowMultiple && selectedId)
+    ) {
       try {
         if (fromArrangement && allowMultiple) {
           // For arrangement - save selections
@@ -248,7 +248,8 @@ export default function VocalistSelectionPage() {
               return vocalist
                 ? {
                     specialistId: vocalist.specialistId,
-                    name: vocalist.name || vocalist.fullName || `Vocalist ${id}`,
+                    name:
+                      vocalist.name || vocalist.fullName || `Vocalist ${id}`,
                     hourlyRate: vocalist.hourlyRate || 0,
                     avatarUrl: vocalist.avatarUrl,
                     rating: vocalist.rating,

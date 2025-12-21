@@ -79,9 +79,7 @@ const MySlotsPage = () => {
         setDaySlots(slots);
       }
     } catch (error) {
-      message.error(
-        error.message || 'Lỗi khi tải slots. Vui lòng thử lại.'
-      );
+      message.error(error.message || 'Lỗi khi tải slots. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -122,7 +120,7 @@ const MySlotsPage = () => {
   };
 
   // Load slots when calendar month changes
-  const onCalendarPanelChange = (date) => {
+  const onCalendarPanelChange = date => {
     const startOfMonth = date.startOf('month');
     const endOfMonth = date.endOf('month');
     loadMonthSlots(startOfMonth, endOfMonth);
@@ -228,9 +226,7 @@ const MySlotsPage = () => {
       setLoading(true);
       try {
         await updateSlotStatus(slot.slotId, newStatus);
-        message.success(
-          `Đã ${newStatus === 'AVAILABLE' ? 'mở' : 'đóng'} slot`
-        );
+        message.success(`Đã ${newStatus === 'AVAILABLE' ? 'mở' : 'đóng'} slot`);
         await loadDaySlots(selectedDate);
         // Reload month slots to update calendar display
         const startOfMonth = selectedDate.startOf('month');
@@ -316,7 +312,7 @@ const MySlotsPage = () => {
   const dateCellRender = date => {
     const dateKey = date.format('YYYY-MM-DD');
     const availableCount = monthSlots[dateKey] || 0;
-    
+
     if (availableCount > 0) {
       return (
         <div className={styles.dateSlotInfo}>
@@ -326,7 +322,7 @@ const MySlotsPage = () => {
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -369,9 +365,7 @@ const MySlotsPage = () => {
         className={styles.slotsCard}
         title={
           <Space>
-            <Text strong>
-              Slots ngày {selectedDate.format('DD/MM/YYYY')}
-            </Text>
+            <Text strong>Slots ngày {selectedDate.format('DD/MM/YYYY')}</Text>
             <Button
               icon={<ReloadOutlined />}
               onClick={() => loadDaySlots(selectedDate)}
@@ -385,9 +379,7 @@ const MySlotsPage = () => {
         extra={
           selectedSlots.length > 0 && (
             <Space>
-              <Text type="secondary">
-                Đã chọn: {selectedSlots.length} slot
-              </Text>
+              <Text type="secondary">Đã chọn: {selectedSlots.length} slot</Text>
               <Button size="small" onClick={clearSelection}>
                 Bỏ chọn
               </Button>
@@ -400,7 +392,8 @@ const MySlotsPage = () => {
             {SLOT_TIMES.map(({ start, end }) => {
               const slot = getSlotByStartTime(start);
               // Handle both camelCase and snake_case field names
-              const status = slot?.slotStatus || slot?.slot_status || 'UNAVAILABLE';
+              const status =
+                slot?.slotStatus || slot?.slot_status || 'UNAVAILABLE';
               const isSelected = isSlotSelected(start);
               const isBooked = status === 'BOOKED';
               const isHold = status === 'HOLD';
@@ -424,10 +417,10 @@ const MySlotsPage = () => {
                         isBooked
                           ? 'Slot đã được book'
                           : isHold
-                          ? 'Slot đang được giữ'
-                          : slot?.slotId
-                          ? 'Click để toggle AVAILABLE/UNAVAILABLE'
-                          : 'Click để mở slot'
+                            ? 'Slot đang được giữ'
+                            : slot?.slotId
+                              ? 'Click để toggle AVAILABLE/UNAVAILABLE'
+                              : 'Click để mở slot'
                       }
                     >
                       <Button
@@ -525,7 +518,10 @@ const MySlotsPage = () => {
       >
         <Spin spinning={loading} tip="Đang mở slots cho 7 ngày...">
           <div className={styles.slotsSelection}>
-            <Text type="secondary" style={{ marginBottom: 16, display: 'block' }}>
+            <Text
+              type="secondary"
+              style={{ marginBottom: 16, display: 'block' }}
+            >
               Chọn các slots bạn muốn mở từ ngày{' '}
               {selectedDate.format('DD/MM/YYYY')} đến{' '}
               {selectedDate.clone().add(6, 'day').format('DD/MM/YYYY')}:
@@ -576,4 +572,3 @@ const MySlotsPage = () => {
 };
 
 export default MySlotsPage;
-

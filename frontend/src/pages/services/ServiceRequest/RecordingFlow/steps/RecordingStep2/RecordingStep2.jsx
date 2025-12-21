@@ -54,7 +54,6 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
     }
   }, [data?.selectedVocalists, data?.vocalChoice]);
 
-
   const handleVocalChoiceChange = e => {
     const newChoice = e.target.value;
     setVocalChoice(newChoice);
@@ -275,7 +274,10 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
           {/* Only show selected vocalists summary */}
           {selectedVocalists.length > 0 ? (
             <div className={styles.selectedSummary} style={{ marginTop: 16 }}>
-              <Text strong style={{ fontSize: 16, display: 'block', marginBottom: 12 }}>
+              <Text
+                strong
+                style={{ fontSize: 16, display: 'block', marginBottom: 12 }}
+              >
                 Selected Vocalist{selectedVocalists.length > 1 ? 's' : ''} (
                 {selectedVocalists.length})
               </Text>
@@ -309,7 +311,9 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
                           <Text strong>{vocalist.name}</Text>
                           {vocalist.rating && (
                             <Space size={4}>
-                              <StarOutlined style={{ color: '#faad14', fontSize: 12 }} />
+                              <StarOutlined
+                                style={{ color: '#faad14', fontSize: 12 }}
+                              />
                               <Text type="secondary" style={{ fontSize: 12 }}>
                                 {vocalist.rating.toFixed(1)}
                               </Text>
@@ -362,9 +366,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
           size="large"
           icon={<CheckCircleOutlined />}
           onClick={handleContinue}
-          disabled={
-            needsVocalistSelection && selectedVocalists.length === 0
-          }
+          disabled={needsVocalistSelection && selectedVocalists.length === 0}
           className={styles.continueButton}
         >
           Continue to Instrument Setup

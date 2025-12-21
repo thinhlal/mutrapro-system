@@ -148,7 +148,10 @@ export const calculatePrice = async (serviceType, durationMinutes) => {
  */
 export const createPricingMatrix = async data => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.PRICING.CREATE, data);
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.PRICING.CREATE,
+      data
+    );
     return response.data;
   } catch (error) {
     throw (

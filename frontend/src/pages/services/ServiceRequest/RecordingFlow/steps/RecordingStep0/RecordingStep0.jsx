@@ -93,7 +93,8 @@ export default function RecordingStep0({ data, onComplete }) {
             Information of Studio
           </Title>
           <Text type="secondary" style={{ fontSize: '14px' }}>
-            View the information of studio and the booking price before selecting the time
+            View the information of studio and the booking price before
+            selecting the time
           </Text>
         </div>
 
@@ -114,18 +115,26 @@ export default function RecordingStep0({ data, onComplete }) {
 
               <Descriptions column={1} bordered size="small">
                 <Descriptions.Item label="Booking price per hour">
-                  <Text strong style={{ color: '#52c41a', fontSize: '18px', fontWeight: 'bold' }}>
+                  <Text
+                    strong
+                    style={{
+                      color: '#52c41a',
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                    }}
+                  >
                     {formatPrice(studio.hourlyRate, 'VND')}/hour
                   </Text>
-                  <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: '12px' }}>
+                  <Text
+                    type="secondary"
+                    style={{ display: 'block', marginTop: 4, fontSize: '12px' }}
+                  >
                     (Price calculated based on the studio usage time)
                   </Text>
                 </Descriptions.Item>
                 {studio.freeExternalGuestsLimit !== undefined && (
                   <Descriptions.Item label="Free guest limit">
-                    <Text>
-                      {studio.freeExternalGuestsLimit} guests (free)
-                    </Text>
+                    <Text>{studio.freeExternalGuestsLimit} guests (free)</Text>
                   </Descriptions.Item>
                 )}
                 {studio.extraGuestFeePerPerson && (
@@ -174,4 +183,3 @@ export default function RecordingStep0({ data, onComplete }) {
     </div>
   );
 }
-

@@ -56,10 +56,12 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
     data?.instruments || []
   );
   const [loadingSkills, setLoadingSkills] = useState(false);
-  const [showCustomInstrumentInput, setShowCustomInstrumentInput] = useState(false);
+  const [showCustomInstrumentInput, setShowCustomInstrumentInput] =
+    useState(false);
   const [customInstrumentName, setCustomInstrumentName] = useState('');
 
-  const { bookingDate, bookingStartTime, bookingEndTime, vocalChoice } = data || {};
+  const { bookingDate, bookingStartTime, bookingEndTime, vocalChoice } =
+    data || {};
 
   // Sync selectedInstruments from data (when returning from InstrumentalistSelectionPage)
   useEffect(() => {
@@ -80,9 +82,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         }
         return inst;
       });
-      
+
       setSelectedInstruments(normalizedInstruments);
-      
+
       // Check if there are custom instruments
       const customInstruments = normalizedInstruments.filter(
         inst => inst.isCustomInstrument
@@ -216,11 +218,16 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
     // Validate each instrument
     for (const inst of selectedInstruments) {
       // Custom instruments should always be CUSTOMER_SELF
-      if (inst.isCustomInstrument && inst.performerSource !== PERFORMER_SOURCE.CUSTOMER_SELF) {
-        message.error(`Custom instruments can only be played by yourself: ${inst.skillName}`);
+      if (
+        inst.isCustomInstrument &&
+        inst.performerSource !== PERFORMER_SOURCE.CUSTOMER_SELF
+      ) {
+        message.error(
+          `Custom instruments can only be played by yourself: ${inst.skillName}`
+        );
         return;
       }
-      
+
       if (
         inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
         !inst.specialistId
@@ -230,11 +237,16 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       }
 
       // Custom instruments should always be CUSTOMER_SIDE
-      if (inst.isCustomInstrument && inst.instrumentSource !== INSTRUMENT_SOURCE.CUSTOMER_SIDE) {
-        message.error(`Custom instruments must be brought by yourself: ${inst.skillName}`);
+      if (
+        inst.isCustomInstrument &&
+        inst.instrumentSource !== INSTRUMENT_SOURCE.CUSTOMER_SIDE
+      ) {
+        message.error(
+          `Custom instruments must be brought by yourself: ${inst.skillName}`
+        );
         return;
       }
-      
+
       if (
         inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
         !inst.equipmentId
@@ -384,7 +396,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
               <div style={{ marginTop: 16 }}>
                 <Space direction="vertical" style={{ width: '100%' }} size={8}>
                   <Text strong>Custom Instruments:</Text>
-                  
+
                   {/* List of added custom instruments */}
                   {selectedInstruments
                     .filter(inst => inst.isCustomInstrument)
@@ -432,9 +444,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             const exists = selectedInstruments.some(
                               inst =>
                                 inst.isCustomInstrument &&
-                                inst.skillName.toLowerCase() === name.toLowerCase()
+                                inst.skillName.toLowerCase() ===
+                                  name.toLowerCase()
                             );
-                            
+
                             if (exists) {
                               message.warning(
                                 `"${name}" is already added as a custom instrument`
@@ -462,7 +475,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             ]);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
-                            message.success(`Added "${name}" as custom instrument`);
+                            message.success(
+                              `Added "${name}" as custom instrument`
+                            );
                           }
                         }}
                         style={{ flex: 1 }}
@@ -477,9 +492,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             const exists = selectedInstruments.some(
                               inst =>
                                 inst.isCustomInstrument &&
-                                inst.skillName.toLowerCase() === name.toLowerCase()
+                                inst.skillName.toLowerCase() ===
+                                  name.toLowerCase()
                             );
-                            
+
                             if (exists) {
                               message.warning(
                                 `"${name}" is already added as a custom instrument`
@@ -507,7 +523,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             ]);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
-                            message.success(`Added "${name}" as custom instrument`);
+                            message.success(
+                              `Added "${name}" as custom instrument`
+                            );
                           } else {
                             message.warning('Please enter an instrument name');
                           }
@@ -534,9 +552,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                       Add Custom Instrument
                     </Button>
                   )}
-                  
+
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    If your instrument is not in the list above, you can add it here
+                    If your instrument is not in the list above, you can add it
+                    here
                   </Text>
                 </Space>
               </div>
@@ -717,7 +736,7 @@ function InstrumentConfig({
               );
               return;
             }
-            
+
             const newSource = e.target.value;
             onUpdate({
               performerSource: newSource,
@@ -753,74 +772,74 @@ function InstrumentConfig({
         {/* Instrumentalist Selection */}
         {instrument.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
           !instrument.isCustomInstrument && (
-          <div style={{ marginTop: 12, marginLeft: 24 }}>
-            {instrument.specialistId ? (
-              <div style={{ marginBottom: 8 }}>
-                <Space>
-                  <Avatar
-                    size={32}
-                    src={instrument.avatarUrl}
-                    icon={<UserOutlined />}
-                  />
-                  <Text strong>{instrument.specialistName}</Text>
-                  {instrument.hourlyRate && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND',
-                      }).format(instrument.hourlyRate)}
-                      /hour
-                    </Text>
-                  )}
-                </Space>
-              </div>
-            ) : (
-              <Alert
-                message="No instrumentalist selected"
-                description="Click 'Browse All Instrumentalists' to select an instrumentalist"
-                type="info"
-                showIcon
-                style={{ marginBottom: 8 }}
-              />
-            )}
-            <Button
-              type="default"
-              icon={<SearchOutlined />}
-              onClick={() => {
-                // Save callback data to sessionStorage
-                const callbackData = {
-                  skillId: instrument.skillId,
-                  skillName: instrument.skillName,
-                  selectedInstrumentalistId: instrument.specialistId,
-                  bookingDate,
-                  bookingStartTime,
-                  bookingEndTime,
-                };
-                sessionStorage.setItem(
-                  'recordingFlowInstrumentalistCallback',
-                  JSON.stringify(callbackData)
-                );
-
-                // Navigate to instrumentalist selection page
-                navigate('/recording-flow/instrumentalist-selection', {
-                  state: {
-                    fromFlow: true,
+            <div style={{ marginTop: 12, marginLeft: 24 }}>
+              {instrument.specialistId ? (
+                <div style={{ marginBottom: 8 }}>
+                  <Space>
+                    <Avatar
+                      size={32}
+                      src={instrument.avatarUrl}
+                      icon={<UserOutlined />}
+                    />
+                    <Text strong>{instrument.specialistName}</Text>
+                    {instrument.hourlyRate && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {new Intl.NumberFormat('vi-VN', {
+                          style: 'currency',
+                          currency: 'VND',
+                        }).format(instrument.hourlyRate)}
+                        /hour
+                      </Text>
+                    )}
+                  </Space>
+                </div>
+              ) : (
+                <Alert
+                  message="No instrumentalist selected"
+                  description="Click 'Browse All Instrumentalists' to select an instrumentalist"
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                />
+              )}
+              <Button
+                type="default"
+                icon={<SearchOutlined />}
+                onClick={() => {
+                  // Save callback data to sessionStorage
+                  const callbackData = {
                     skillId: instrument.skillId,
                     skillName: instrument.skillName,
+                    selectedInstrumentalistId: instrument.specialistId,
                     bookingDate,
                     bookingStartTime,
                     bookingEndTime,
-                    selectedInstrumentalistId: instrument.specialistId,
-                  },
-                });
-              }}
-            >
-              {instrument.specialistId
-                ? 'Change Instrumentalist'
-                : 'Browse All Instrumentalists'}
-            </Button>
-          </div>
-        )}
+                  };
+                  sessionStorage.setItem(
+                    'recordingFlowInstrumentalistCallback',
+                    JSON.stringify(callbackData)
+                  );
+
+                  // Navigate to instrumentalist selection page
+                  navigate('/recording-flow/instrumentalist-selection', {
+                    state: {
+                      fromFlow: true,
+                      skillId: instrument.skillId,
+                      skillName: instrument.skillName,
+                      bookingDate,
+                      bookingStartTime,
+                      bookingEndTime,
+                      selectedInstrumentalistId: instrument.specialistId,
+                    },
+                  });
+                }}
+              >
+                {instrument.specialistId
+                  ? 'Change Instrumentalist'
+                  : 'Browse All Instrumentalists'}
+              </Button>
+            </div>
+          )}
       </div>
 
       {/* Instrument Source */}
@@ -840,7 +859,7 @@ function InstrumentConfig({
               );
               return;
             }
-            
+
             const newSource = e.target.value;
             onUpdate({
               instrumentSource: newSource,
@@ -875,49 +894,50 @@ function InstrumentConfig({
         {/* Equipment Selection */}
         {instrument.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
           !instrument.isCustomInstrument && (
-          <div style={{ marginTop: 12, marginLeft: 24 }}>
-            {loadingEquipment ? (
-              <Spin size="small" />
-            ) : availableEquipment.length === 0 ? (
-              <Text type="secondary">No equipment available</Text>
-            ) : (
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Select
-                  style={{ width: '100%' }}
-                  placeholder="Select equipment"
-                  value={instrument.equipmentId}
-                  onChange={(value, option) => {
-                    const selectedEq = availableEquipment.find(
-                      eq => eq.equipmentId === value
-                    );
-                    onUpdate({
-                      equipmentId: value,
-                      equipmentName: option.label,
-                      rentalFee: selectedEq?.rentalFee || 0,
-                    });
-                  }}
-                  options={availableEquipment.map(eq => ({
-                    value: eq.equipmentId,
-                    label: `${eq.brand} ${eq.model} - ${eq.equipmentName}`,
-                  }))}
-                />
-                {instrument.equipmentId && (
-                  <Space>
-                    <Text>Quantity:</Text>
-                    <InputNumber
-                      min={1}
-                      value={instrument.quantity}
-                      onChange={value => onUpdate({ quantity: value })}
-                    />
-                    <Text type="secondary">
-                      • Fee: {instrument.rentalFee?.toLocaleString('vi-VN')} VND
-                    </Text>
-                  </Space>
-                )}
-              </Space>
-            )}
-          </div>
-        )}
+            <div style={{ marginTop: 12, marginLeft: 24 }}>
+              {loadingEquipment ? (
+                <Spin size="small" />
+              ) : availableEquipment.length === 0 ? (
+                <Text type="secondary">No equipment available</Text>
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Select equipment"
+                    value={instrument.equipmentId}
+                    onChange={(value, option) => {
+                      const selectedEq = availableEquipment.find(
+                        eq => eq.equipmentId === value
+                      );
+                      onUpdate({
+                        equipmentId: value,
+                        equipmentName: option.label,
+                        rentalFee: selectedEq?.rentalFee || 0,
+                      });
+                    }}
+                    options={availableEquipment.map(eq => ({
+                      value: eq.equipmentId,
+                      label: `${eq.brand} ${eq.model} - ${eq.equipmentName}`,
+                    }))}
+                  />
+                  {instrument.equipmentId && (
+                    <Space>
+                      <Text>Quantity:</Text>
+                      <InputNumber
+                        min={1}
+                        value={instrument.quantity}
+                        onChange={value => onUpdate({ quantity: value })}
+                      />
+                      <Text type="secondary">
+                        • Fee: {instrument.rentalFee?.toLocaleString('vi-VN')}{' '}
+                        VND
+                      </Text>
+                    </Space>
+                  )}
+                </Space>
+              )}
+            </div>
+          )}
       </div>
     </Space>
   );

@@ -641,7 +641,7 @@ const ContractBuilder = () => {
           // Tính payment percent: chia đều phần còn lại (100 - depositPercent) cho 2 milestones
           const remainingPercent = 100 - depositPercent;
           const paymentPercentPerMilestone = Math.floor(remainingPercent / 2);
-          
+
           defaultMilestones = [
             {
               name: 'Arrangement',
@@ -667,7 +667,8 @@ const ContractBuilder = () => {
           defaultMilestones = [
             {
               name: 'Transcription',
-              description: 'Complete transcription service - Convert audio recordings into musical notation',
+              description:
+                'Complete transcription service - Convert audio recordings into musical notation',
               orderIndex: 1,
               milestoneType: 'transcription',
               hasPayment: true,
@@ -680,7 +681,8 @@ const ContractBuilder = () => {
           defaultMilestones = [
             {
               name: 'Arrangement',
-              description: 'Complete arrangement service - Create musical arrangements based on provided materials',
+              description:
+                'Complete arrangement service - Create musical arrangements based on provided materials',
               orderIndex: 1,
               milestoneType: 'arrangement',
               hasPayment: true,
@@ -693,7 +695,8 @@ const ContractBuilder = () => {
           defaultMilestones = [
             {
               name: 'Recording Session',
-              description: 'Complete recording service as specified in booking details',
+              description:
+                'Complete recording service as specified in booking details',
               orderIndex: 1,
               milestoneType: 'recording',
               hasPayment: true,

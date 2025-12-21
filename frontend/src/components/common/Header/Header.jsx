@@ -130,11 +130,8 @@ function Header() {
                 'ai-transcription',
                 'AI Transcription'
               )}
-              {isAuthenticated && navLink(
-                '/recording-flow',
-                'recording',
-                'Recording Booking'
-              )}
+              {isAuthenticated &&
+                navLink('/recording-flow', 'recording', 'Recording Booking')}
             </Nav>
 
             {/* Auth Section */}

@@ -185,14 +185,14 @@ export default function TaskAssignmentWorkspace() {
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
         const requestId = response.data.requestId;
-        
+
         // Chạy song song các API không phụ thuộc để tăng tốc
         const promises = [];
         if (requestId) {
           promises.push(fetchRequestDetail(requestId));
         }
         promises.push(fetchTaskStats(contractId));
-        
+
         // Chờ tất cả hoàn thành
         await Promise.all(promises);
       }
@@ -783,9 +783,8 @@ export default function TaskAssignmentWorkspace() {
             extra={
               requestData?.requestType && (
                 <Tag color="cyan">
-                  {REQUEST_TYPE_LABELS[
-                    requestData.requestType.toLowerCase()
-                  ] || requestData.requestType}
+                  {REQUEST_TYPE_LABELS[requestData.requestType.toLowerCase()] ||
+                    requestData.requestType}
                 </Tag>
               )
             }
@@ -831,21 +830,21 @@ export default function TaskAssignmentWorkspace() {
 
                   {/* Additional fields for arrangement and arrangement_with_recording */}
                   {(requestData?.requestType === 'arrangement' ||
-                    requestData?.requestType === 'arrangement_with_recording') && (
+                    requestData?.requestType ===
+                      'arrangement_with_recording') && (
                     <>
-                      {requestData.genres &&
-                        requestData.genres.length > 0 && (
-                          <div>
-                            <Text strong>Genres: </Text>
-                            <Space wrap style={{ marginTop: 4 }}>
-                              {requestData.genres.map((genre, idx) => (
-                                <Tag key={idx} color="purple">
-                                  {genre}
-                                </Tag>
-                              ))}
-                            </Space>
-                          </div>
-                        )}
+                      {requestData.genres && requestData.genres.length > 0 && (
+                        <div>
+                          <Text strong>Genres: </Text>
+                          <Space wrap style={{ marginTop: 4 }}>
+                            {requestData.genres.map((genre, idx) => (
+                              <Tag key={idx} color="purple">
+                                {genre}
+                              </Tag>
+                            ))}
+                          </Space>
+                        </div>
+                      )}
 
                       {requestData.purpose && (
                         <div>
@@ -864,9 +863,7 @@ export default function TaskAssignmentWorkspace() {
                       {requestData.tempoPercentage != null && (
                         <div>
                           <Text strong>Tempo: </Text>
-                          <Tag color="blue">
-                            {requestData.tempoPercentage}%
-                          </Tag>
+                          <Tag color="blue">{requestData.tempoPercentage}%</Tag>
                         </div>
                       )}
 
@@ -1129,126 +1126,135 @@ export default function TaskAssignmentWorkspace() {
               />
             }
           >
-            <Spin spinning={loadingSpecialists} tip="Đang tải danh sách specialists...">
+            <Spin
+              spinning={loadingSpecialists}
+              tip="Đang tải danh sách specialists..."
+            >
               <div className={styles.specialistList}>
                 {filteredSpecialists.length > 0 ? (
                   <List
                     dataSource={filteredSpecialists}
                     rowKey="specialistId"
                     renderItem={item => {
-                    const active =
-                      selectedSpecialist?.specialistId === item.specialistId;
-                    const slaFull = isSlaWindowFull(item);
-                    const loadTagBadge = (() => {
+                      const active =
+                        selectedSpecialist?.specialistId === item.specialistId;
+                      const slaFull = isSlaWindowFull(item);
+                      const loadTagBadge = (() => {
+                        const open = item.totalOpenTasks ?? 0;
+                        const max = item.maxConcurrentTasks || 1;
+                        const ratio = open / max;
+                        if (ratio >= 1)
+                          return {
+                            color: 'red',
+                            text: `${open}/${max} (Full)`,
+                          };
+                        if (ratio >= 0.75)
+                          return {
+                            color: 'volcano',
+                            text: `${open}/${max} (Busy)`,
+                          };
+                        if (ratio >= 0.5)
+                          return {
+                            color: 'gold',
+                            text: `${open}/${max} (Normal)`,
+                          };
+                        return {
+                          color: 'green',
+                          text: `${open}/${max} (Available)`,
+                        };
+                      })();
                       const open = item.totalOpenTasks ?? 0;
                       const max = item.maxConcurrentTasks || 1;
                       const ratio = open / max;
-                      if (ratio >= 1)
-                        return { color: 'red', text: `${open}/${max} (Full)` };
-                      if (ratio >= 0.75)
+                      const loadTag = (() => {
+                        if (ratio >= 1)
+                          return { color: 'red', text: `${open}/${max} Full` };
+                        if (ratio >= 0.75)
+                          return {
+                            color: 'volcano',
+                            text: `${open}/${max} Busy`,
+                          };
+                        if (ratio >= 0.5)
+                          return {
+                            color: 'gold',
+                            text: `${open}/${max} Normal`,
+                          };
                         return {
-                          color: 'volcano',
-                          text: `${open}/${max} (Busy)`,
+                          color: 'green',
+                          text: `${open}/${max} Available`,
                         };
-                      if (ratio >= 0.5)
-                        return {
-                          color: 'gold',
-                          text: `${open}/${max} (Normal)`,
-                        };
-                      return {
-                        color: 'green',
-                        text: `${open}/${max} (Available)`,
-                      };
-                    })();
-                    const open = item.totalOpenTasks ?? 0;
-                    const max = item.maxConcurrentTasks || 1;
-                    const ratio = open / max;
-                    const loadTag = (() => {
-                      if (ratio >= 1)
-                        return { color: 'red', text: `${open}/${max} Full` };
-                      if (ratio >= 0.75)
-                        return {
-                          color: 'volcano',
-                          text: `${open}/${max} Busy`,
-                        };
-                      if (ratio >= 0.5)
-                        return { color: 'gold', text: `${open}/${max} Normal` };
-                      return {
-                        color: 'green',
-                        text: `${open}/${max} Available`,
-                      };
-                    })();
-                    return (
-                      <List.Item
-                        className={`${styles.specialistItem} ${
-                          active ? styles.specialistItemActive : ''
-                        } ${!active && slaFull ? styles.specialistItemDisabled : ''}`}
-                        onClick={() => {
-                          // Cho phép bỏ chọn nếu đã chọn rồi
-                          if (!active && slaFull) {
-                            message.warning(
-                              'Specialist đang Full trong SLA window, không thể chọn'
-                            );
-                            return;
-                          }
-                          setSelectedSpecialist(active ? null : item);
-                        }}
-                      >
-                        <div>
-                          <Text strong>
-                            {item.fullName || item.email || item.userId}
-                          </Text>
-                          <div className={styles.specialistMeta}>
-                            <Tag>{item.specialization || 'Generalist'}</Tag>
-                            <Tag color="blue">
-                              {item.experienceYears || 0} yrs exp
-                            </Tag>
-                            <Tag color={loadTagBadge.color}>
-                              {loadTagBadge.text}
-                            </Tag>
-                            <Tag color="purple">
-                              SLA: {item.tasksInSlaWindow ?? 0}
-                            </Tag>
-                            {slaFull && !active && (
-                              <Tag color="red">SLA Full</Tag>
-                            )}
-                            {item.totalProjects > 0 && (
-                              <Tag color="geekblue">
-                                Projects: {item.totalProjects}
+                      })();
+                      return (
+                        <List.Item
+                          className={`${styles.specialistItem} ${
+                            active ? styles.specialistItemActive : ''
+                          } ${!active && slaFull ? styles.specialistItemDisabled : ''}`}
+                          onClick={() => {
+                            // Cho phép bỏ chọn nếu đã chọn rồi
+                            if (!active && slaFull) {
+                              message.warning(
+                                'Specialist đang Full trong SLA window, không thể chọn'
+                              );
+                              return;
+                            }
+                            setSelectedSpecialist(active ? null : item);
+                          }}
+                        >
+                          <div>
+                            <Text strong>
+                              {item.fullName || item.email || item.userId}
+                            </Text>
+                            <div className={styles.specialistMeta}>
+                              <Tag>{item.specialization || 'Generalist'}</Tag>
+                              <Tag color="blue">
+                                {item.experienceYears || 0} yrs exp
                               </Tag>
+                              <Tag color={loadTagBadge.color}>
+                                {loadTagBadge.text}
+                              </Tag>
+                              <Tag color="purple">
+                                SLA: {item.tasksInSlaWindow ?? 0}
+                              </Tag>
+                              {slaFull && !active && (
+                                <Tag color="red">SLA Full</Tag>
+                              )}
+                              {item.totalProjects > 0 && (
+                                <Tag color="geekblue">
+                                  Projects: {item.totalProjects}
+                                </Tag>
+                              )}
+                            </div>
+                            {item.bio && (
+                              <Paragraph
+                                type="secondary"
+                                ellipsis={{ rows: 2 }}
+                                className={styles.specialistBio}
+                              >
+                                {item.bio}
+                              </Paragraph>
                             )}
                           </div>
-                          {item.bio && (
-                            <Paragraph
-                              type="secondary"
-                              ellipsis={{ rows: 2 }}
-                              className={styles.specialistBio}
-                            >
-                              {item.bio}
-                            </Paragraph>
-                          )}
-                        </div>
-                        <Button
-                          type={active ? 'primary' : 'default'}
-                          size="small"
-                          disabled={!active && slaFull}
-                        >
-                          {!active && slaFull
-                            ? 'Không thể chọn'
-                            : active
-                              ? 'Đang chọn'
-                              : 'Chọn'}
-                        </Button>
-                      </List.Item>
-                    );
-                  }}
-                />
-              ) : (
-                <Empty
-                  description="Không tìm thấy specialist phù hợp"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
+                          <Button
+                            type={active ? 'primary' : 'default'}
+                            size="small"
+                            disabled={!active && slaFull}
+                          >
+                            {!active && slaFull
+                              ? 'Không thể chọn'
+                              : active
+                                ? 'Đang chọn'
+                                : 'Chọn'}
+                          </Button>
+                        </List.Item>
+                      );
+                    }}
+                  />
+                ) : (
+                  <Empty
+                    description="Không tìm thấy specialist phù hợp"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
               </div>
             </Spin>
           </Card>
