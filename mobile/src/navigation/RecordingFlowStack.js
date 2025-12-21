@@ -5,6 +5,7 @@ import RecordingVocalScreen from '../screens/RecordingFlow/RecordingVocalScreen'
 import RecordingInstrumentScreen from '../screens/RecordingFlow/RecordingInstrumentScreen';
 import RecordingReviewScreen from '../screens/RecordingFlow/RecordingReviewScreen';
 import VocalistSelectionScreen from '../screens/Services/VocalistSelectionScreen';
+import VocalistDetailScreen from '../screens/Services/VocalistDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,11 @@ const RecordingFlowStack = () => {
       <Stack.Screen name="RecordingInstrument" component={RecordingInstrumentScreen} />
       <Stack.Screen name="RecordingReview" component={RecordingReviewScreen} />
       <Stack.Screen name="RecordingVocalistSelect" component={VocalistSelectionScreen} />
+      <Stack.Screen 
+        name="VocalistDetail" 
+        component={VocalistDetailScreen}
+        options={{ headerShown: true, title: "Vocalist Details" }}
+      />
     </Stack.Navigator>
   );
 };

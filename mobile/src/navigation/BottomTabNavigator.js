@@ -58,12 +58,12 @@ const HomeStack = ({ navigation }) => {
       <Stack.Screen
         name="VocalistSelection"
         component={VocalistSelectionScreen}
-        options={{ title: "Chọn ca sĩ ưu tiên" }}
+        options={{ title: "Choose preferred singer" }}
       />
       <Stack.Screen
         name="VocalistDetail"
         component={VocalistDetailScreen}
-        options={{ title: "Chi tiết ca sĩ" }}
+        options={{ title: "Singer details" }}
       />
       <Stack.Screen
         name="ServiceQuote"
