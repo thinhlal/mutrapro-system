@@ -13,6 +13,7 @@ import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.event.SlotBookedEvent;
 import com.mutrapro.project_service.entity.BookingParticipant;
 import com.mutrapro.project_service.entity.BookingRequiredEquipment;
 import com.mutrapro.project_service.entity.Contract;
@@ -65,6 +66,10 @@ import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.StudioRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mutrapro.project_service.entity.OutboxEvent;
+import com.mutrapro.project_service.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +88,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -106,6 +112,8 @@ public class StudioBookingService {
     TaskAssignmentService taskAssignmentService;
     ContractMilestoneService contractMilestoneService;
     SkillEquipmentMappingRepository skillEquipmentMappingRepository;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
     
     /**
      * Lấy specialistId của user hiện tại từ JWT token
@@ -264,6 +272,24 @@ public class StudioBookingService {
             throw InvalidTimeRangeException.startEqualsEnd(request.getStartTime(), request.getEndTime());
         }
         
+        // 6.5. Validate grid system: duration phải là bội số của 2h
+        long durationHours = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toHours();
+        if (durationHours <= 0 || durationHours % 2 != 0) {
+            throw InvalidTimeRangeException.invalidDuration(
+                request.getStartTime(), request.getEndTime(), 
+                "Duration must be a multiple of 2 hours (2h, 4h, 6h, etc.)");
+        }
+        
+        // 6.6. Validate startTime phải align với grid (08:00, 10:00, 12:00, 14:00, 16:00)
+        List<LocalTime> validStartTimes = List.of(
+            LocalTime.of(8, 0), LocalTime.of(10, 0), LocalTime.of(12, 0), 
+            LocalTime.of(14, 0), LocalTime.of(16, 0));
+        if (!validStartTimes.contains(request.getStartTime())) {
+            throw InvalidTimeRangeException.invalidStartTime(
+                request.getStartTime(), 
+                "Start time must be one of: 08:00, 10:00, 12:00, 14:00, 16:00");
+        }
+        
         // 7. Check studio availability (tránh double booking)
         // Lấy tất cả bookings trong ngày đó để check conflict
         List<StudioBooking> bookingsOnDate = studioBookingRepository
@@ -315,6 +341,45 @@ public class StudioBookingService {
                     .toList();
                 
                 throw ArtistBookingConflictException.forArtists(conflictingSpecialistIds);
+            }
+            
+            // Check work slots (BẮT BUỘC) - Grid system
+            // Logic: Nếu specialist không đăng ký slot → không available
+            //         Chỉ available khi có TẤT CẢ slots liên tiếp đều AVAILABLE
+            for (String artistId : artistIds) {
+                try {
+                    // Format date và time cho API call
+                    String dateStr = request.getBookingDate().toString();
+                    String startTimeStr = request.getStartTime().toString();
+                    String endTimeStr = request.getEndTime().toString();
+                    
+                    ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
+                        .checkSpecialistAvailability(artistId, dateStr, startTimeStr, endTimeStr);
+                    
+                    // Check availability (bắt buộc)
+                    if (availabilityResponse != null && 
+                        "success".equals(availabilityResponse.getStatus()) &&
+                        availabilityResponse.getData() != null) {
+                        boolean isAvailable = availabilityResponse.getData();
+                        if (!isAvailable) {
+                            log.warn("Artist {} is not available for date={}, time={}-{} (no registered slots or missing slots)",
+                                artistId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
+                            throw ArtistBookingConflictException.artistNotAvailable(artistId);
+                        }
+                    } else {
+                        // Nếu không check được (API error), log warning nhưng vẫn cho phép booking
+                        // (fallback để tránh block booking khi service unavailable)
+                        log.warn("Failed to check availability for artist {}: response={}", 
+                            artistId, availabilityResponse);
+                    }
+                } catch (ArtistBookingConflictException e) {
+                    // Re-throw để block booking
+                    throw e;
+                } catch (Exception e) {
+                    // Log warning nhưng không block booking nếu API error
+                    // (fallback để tránh block booking khi service unavailable)
+                    log.warn("Failed to check work slots for artist {}: {}", artistId, e.getMessage());
+                }
             }
         }
         
@@ -382,6 +447,17 @@ public class StudioBookingService {
                 bookingParticipantRepository.save(participant);
                 log.info("Created booking participant: bookingId={}, specialistId={}, roleType={}, isPrimary={}",
                     saved.getBookingId(), artistInfo.getSpecialistId(), participant.getRoleType(), participant.getIsPrimary());
+                
+                // Publish Kafka event để mark slots as BOOKED (async)
+                if (artistInfo.getSpecialistId() != null) {
+                    publishSlotBookedEvent(
+                        artistInfo.getSpecialistId(),
+                        saved.getBookingId(),
+                        request.getBookingDate(),
+                        request.getStartTime(),
+                        request.getEndTime()
+                    );
+                }
             }
             // LƯU Ý: Không cần update artistFee vì:
             // - Luồng 2 (arrangement_with_recording) không tính phí trong booking (totalCost = 0)
@@ -544,6 +620,24 @@ public class StudioBookingService {
             throw InvalidTimeRangeException.startEqualsEnd(request.getStartTime(), request.getEndTime());
         }
         
+        // 4.5. Validate grid system: duration phải là bội số của 2h
+        long durationHours = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toHours();
+        if (durationHours <= 0 || durationHours % 2 != 0) {
+            throw InvalidTimeRangeException.invalidDuration(
+                request.getStartTime(), request.getEndTime(), 
+                "Duration must be a multiple of 2 hours (2h, 4h, 6h, etc.)");
+        }
+        
+        // 4.6. Validate startTime phải align với grid (08:00, 10:00, 12:00, 14:00, 16:00)
+        List<LocalTime> validStartTimes = List.of(
+            LocalTime.of(8, 0), LocalTime.of(10, 0), LocalTime.of(12, 0), 
+            LocalTime.of(14, 0), LocalTime.of(16, 0));
+        if (!validStartTimes.contains(request.getStartTime())) {
+            throw InvalidTimeRangeException.invalidStartTime(
+                request.getStartTime(), 
+                "Start time must be one of: 08:00, 10:00, 12:00, 14:00, 16:00");
+        }
+        
         // 5. Check studio availability (tránh double booking)
         List<StudioBooking> bookingsOnDate = studioBookingRepository
             .findByStudioStudioIdAndBookingDate(studio.getStudioId(), request.getBookingDate());
@@ -646,6 +740,45 @@ public class StudioBookingService {
                 if (!uniqueConflicts.isEmpty()) {
                     throw ArtistBookingConflictException.forArtists(uniqueConflicts);
                 }
+                
+                // Check work slots (BẮT BUỘC) - Grid system
+                // Logic: Nếu specialist không đăng ký slot → không available
+                //         Chỉ available khi có TẤT CẢ slots liên tiếp đều AVAILABLE
+                for (String specialistId : specialistIds) {
+                    try {
+                        // Format date và time cho API call
+                        String dateStr = request.getBookingDate().toString();
+                        String startTimeStr = request.getStartTime().toString();
+                        String endTimeStr = request.getEndTime().toString();
+                        
+                        ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
+                            .checkSpecialistAvailability(specialistId, dateStr, startTimeStr, endTimeStr);
+                        
+                        // Check availability (bắt buộc)
+                        if (availabilityResponse != null && 
+                            "success".equals(availabilityResponse.getStatus()) &&
+                            availabilityResponse.getData() != null) {
+                            boolean isAvailable = availabilityResponse.getData();
+                            if (!isAvailable) {
+                                log.warn("Artist {} is not available for date={}, time={}-{} (no registered slots or missing slots)",
+                                    specialistId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
+                                throw ArtistBookingConflictException.artistNotAvailable(specialistId);
+                            }
+                        } else {
+                            // Nếu không check được (API error), log warning nhưng vẫn cho phép booking
+                            // (fallback để tránh block booking khi service unavailable)
+                            log.warn("Failed to check availability for artist {}: response={}", 
+                                specialistId, availabilityResponse);
+                        }
+                    } catch (ArtistBookingConflictException e) {
+                        // Re-throw để block booking
+                        throw e;
+                    } catch (Exception e) {
+                        // Log warning nhưng không block booking nếu API error
+                        // (fallback để tránh block booking khi service unavailable)
+                        log.warn("Failed to check work slots for artist {}: {}", specialistId, e.getMessage());
+                    }
+                }
             }
         }
         
@@ -729,6 +862,18 @@ public class StudioBookingService {
                 log.info("Created booking participant: participantId={}, roleType={}, performerSource={}, specialistId={}",
                     participant.getParticipantId(), participant.getRoleType(), 
                     participant.getPerformerSource(), participant.getSpecialistId());
+                
+                // Publish Kafka event để mark slots as BOOKED (async) - chỉ cho INTERNAL_ARTIST
+                if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST 
+                    && participant.getSpecialistId() != null) {
+                    publishSlotBookedEvent(
+                        participant.getSpecialistId(),
+                        saved.getBookingId(),
+                        request.getBookingDate(),
+                        request.getStartTime(),
+                        request.getEndTime()
+                    );
+                }
             }
         }
         
@@ -1048,6 +1193,38 @@ public class StudioBookingService {
                 .findFirst()
                 .orElse(null);
             
+            // Check slot availability (BẮT BUỘC) - Grid system
+            // Nếu không có slot AVAILABLE → không available
+            boolean hasAvailableSlots = true;
+            if (!isBusy) { // Chỉ check nếu không busy (tránh gọi API không cần thiết)
+                try {
+                    String dateStr = bookingDate.toString();
+                    String startTimeStr = startTime.toString();
+                    String endTimeStr = endTime.toString();
+                    
+                    ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
+                        .checkSpecialistAvailability(specialistId, dateStr, startTimeStr, endTimeStr);
+                    
+                    if (availabilityResponse != null && 
+                        "success".equals(availabilityResponse.getStatus()) &&
+                        availabilityResponse.getData() != null) {
+                        hasAvailableSlots = availabilityResponse.getData();
+                    } else {
+                        // Nếu không check được (API error), giả sử không available để an toàn
+                        log.warn("Failed to check slot availability for artist {}: response={}", 
+                            specialistId, availabilityResponse);
+                        hasAvailableSlots = false;
+                    }
+                } catch (Exception e) {
+                    // Nếu API error, giả sử không available để an toàn
+                    log.warn("Failed to check slot availability for artist {}: {}", specialistId, e.getMessage());
+                    hasAvailableSlots = false;
+                }
+            }
+            
+            // Artist chỉ available nếu không busy VÀ có slot AVAILABLE
+            boolean isAvailable = !isBusy && hasAvailableSlots;
+            
             // Get role (default VOCALIST)
             // recordingRoles là List<RecordingRole> enum, cần convert sang String
             // Ưu tiên VOCALIST nếu artist có cả VOCALIST và INSTRUMENT_PLAYER
@@ -1122,8 +1299,8 @@ public class StudioBookingService {
                 .totalProjects(totalProjects)
                 .hourlyRate(hourlyRate)
                 .isPreferred(isPreferred)  // Mark preferred ones
-                .isAvailable(!isBusy)
-                .availabilityStatus(isBusy ? "busy" : "available")
+                .isAvailable(isAvailable)
+                .availabilityStatus(isAvailable ? "available" : (isBusy ? "busy" : "no_slots"))
                 .conflictStartTime(conflict != null ? conflict.getBooking().getStartTime() : null)
                 .conflictEndTime(conflict != null ? conflict.getBooking().getEndTime() : null)
                 .build());
@@ -1134,6 +1311,11 @@ public class StudioBookingService {
             ? genres.stream().filter(Objects::nonNull).map(String::toLowerCase).toList()
             : java.util.List.of();
 
+        // Filter: Chỉ lấy artists có slot AVAILABLE và không có booking conflict
+        artists = artists.stream()
+            .filter(a -> Boolean.TRUE.equals(a.getIsAvailable()))
+            .collect(java.util.stream.Collectors.toList());
+        
         // Sort:
         // 1. Preferred artists trước
         // 2. Nghệ sĩ match nhiều genres hơn (theo request) đứng trước
@@ -1316,6 +1498,38 @@ public class StudioBookingService {
                 conflictEndTime = participantConflict.getBooking().getEndTime();
             }
             
+            // Check slot availability (BẮT BUỘC) - Grid system
+            // Nếu không có slot AVAILABLE → không available
+            boolean hasAvailableSlots = true;
+            if (!isBusy) { // Chỉ check nếu không busy (tránh gọi API không cần thiết)
+                try {
+                    String dateStr = bookingDate.toString();
+                    String startTimeStr = startTime.toString();
+                    String endTimeStr = endTime.toString();
+                    
+                    ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
+                        .checkSpecialistAvailability(specialistId, dateStr, startTimeStr, endTimeStr);
+                    
+                    if (availabilityResponse != null && 
+                        "success".equals(availabilityResponse.getStatus()) &&
+                        availabilityResponse.getData() != null) {
+                        hasAvailableSlots = availabilityResponse.getData();
+                    } else {
+                        // Nếu không check được (API error), giả sử không available để an toàn
+                        log.warn("Failed to check slot availability for artist {}: response={}", 
+                            specialistId, availabilityResponse);
+                        hasAvailableSlots = false;
+                    }
+                } catch (Exception e) {
+                    // Nếu API error, giả sử không available để an toàn
+                    log.warn("Failed to check slot availability for artist {}: {}", specialistId, e.getMessage());
+                    hasAvailableSlots = false;
+                }
+            }
+            
+            // Artist chỉ available nếu không busy VÀ có slot AVAILABLE
+            boolean isAvailable = !isBusy && hasAvailableSlots;
+            
             // Get role
             String role = "VOCALIST";
             if (artist.get("recordingRoles") != null) {
@@ -1404,8 +1618,8 @@ public class StudioBookingService {
                 .totalProjects(totalProjects)
                 .hourlyRate(hourlyRate)
                 .isPreferred(false)
-                .isAvailable(!isBusy)
-                .availabilityStatus(isBusy ? "busy" : "available")
+                .isAvailable(isAvailable)
+                .availabilityStatus(isAvailable ? "available" : (isBusy ? "busy" : "no_slots"))
                 .conflictStartTime(conflictStartTime)
                 .conflictEndTime(conflictEndTime)
                 .skillId(artistSkillId)
@@ -1413,10 +1627,15 @@ public class StudioBookingService {
                 .build());
         }
         
+        // Filter: Chỉ lấy artists có slot AVAILABLE và không có booking conflict
+        artists = artists.stream()
+            .filter(a -> Boolean.TRUE.equals(a.getIsAvailable()))
+            .collect(java.util.stream.Collectors.toList());
+        
         // Sort: by name
         artists.sort((a1, a2) -> a1.getName().compareToIgnoreCase(a2.getName()));
         
-        log.info("Found {} available artists for request: date={}, time={}-{}, roleType={}, skillId={}", 
+        log.info("Found {} available artists (filtered) for request: date={}, time={}-{}, roleType={}, skillId={}", 
             artists.size(), bookingDate, startTime, endTime, roleType, skillId);
         return artists;
     }
@@ -1732,6 +1951,49 @@ public class StudioBookingService {
         
         log.info("Updated booking status to CONFIRMED: bookingId={}, contractId={}", 
             booking.getBookingId(), contractId);
+    }
+    
+    /**
+     * Helper method để publish slot booked event vào Kafka (via Outbox Pattern)
+     */
+    private void publishSlotBookedEvent(String specialistId, String bookingId, 
+                                        LocalDate bookingDate, LocalTime startTime, LocalTime endTime) {
+        try {
+            // Tạo event với eventId
+            UUID eventId = UUID.randomUUID();
+            SlotBookedEvent event = SlotBookedEvent.builder()
+                    .eventId(eventId)
+                    .specialistId(specialistId)
+                    .bookingId(bookingId)
+                    .bookingDate(bookingDate)
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(bookingId);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("StudioBooking")
+                    .eventType("slot.booked")
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued slot booked event in outbox: eventId={}, specialistId={}, bookingId={}, date={}, time={}-{}", 
+                eventId, specialistId, bookingId, bookingDate, startTime, endTime);
+        } catch (Exception e) {
+            log.error("Failed to enqueue slot booked event to outbox: specialistId={}, bookingId={}, error={}", 
+                specialistId, bookingId, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
     }
     
 }

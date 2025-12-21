@@ -88,6 +88,32 @@ public enum SpecialistServiceErrorCodes implements ErrorCode {
     USER_ID_NOT_FOUND("SPECIALIST_8251", 401,
         "https://docs.mutrapro.com/errors/SPECIALIST_8251",
         "User ID not found in JWT token",
+        Retryable.NON_TRANSIENT),
+    
+    // Slot Errors (8300-8349)
+    SLOT_NOT_FOUND("SPECIALIST_8300", 404,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8300",
+        "Slot not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_SLOT_START_TIME("SPECIALIST_8301", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8301",
+        "Invalid slot start time. Must be one of: 08:00, 10:00, 12:00, 14:00, 16:00",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_SLOT_DURATION("SPECIALIST_8302", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8302",
+        "Invalid slot duration. Duration must be a multiple of 2 hours",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_DATE_RANGE("SPECIALIST_8303", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8303",
+        "Invalid date range. Start date must be before or equal to end date",
+        Retryable.NON_TRANSIENT),
+    
+    CANNOT_UPDATE_BOOKED_SLOT("SPECIALIST_8304", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8304",
+        "Cannot update slot with status BOOKED. Slot is already booked and cannot be changed",
         Retryable.NON_TRANSIENT);
 
     private final String code;

@@ -553,3 +553,119 @@ export const getSpecialistDetail = async specialistId => {
     );
   }
 };
+
+// ===== SLOT MANAGEMENT (FOR RECORDING ARTIST) =====
+
+/**
+ * Lấy slots của một ngày
+ * GET /specialists/me/slots/day?date=2024-01-01
+ */
+export const getDaySlots = async date => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_DAY_SLOTS(date)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy slots của ngày' };
+  }
+};
+
+/**
+ * Lấy slots trong một khoảng thời gian
+ * GET /specialists/me/slots?startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getSlotsByDateRange = async (startDate, endDate) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_SLOTS_BY_DATE_RANGE(
+        startDate,
+        endDate
+      )
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy slots theo khoảng thời gian' }
+    );
+  }
+};
+
+/**
+ * Tạo hoặc update slot
+ * POST /specialists/me/slots
+ */
+export const createOrUpdateSlot = async slotData => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.CREATE_OR_UPDATE_SLOT,
+      slotData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi tạo/cập nhật slot' };
+  }
+};
+
+/**
+ * Update status của một slot
+ * PUT /specialists/me/slots/{slotId}/status
+ */
+export const updateSlotStatus = async (slotId, status) => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPDATE_SLOT_STATUS(slotId),
+      { slotStatus: status }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi cập nhật status slot' };
+  }
+};
+
+/**
+ * Bulk update nhiều slots cùng lúc
+ * PUT /specialists/me/slots/bulk
+ */
+export const bulkUpdateSlots = async bulkData => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.BULK_UPDATE_SLOTS,
+      bulkData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi bulk update slots' };
+  }
+};
+
+/**
+ * Bulk update slots cho nhiều ngày cùng lúc (tối ưu cho "Mở slots cho 7 ngày")
+ * PUT /specialists/me/slots/bulk-date-range
+ */
+export const bulkUpdateSlotsForDateRange = async bulkData => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.BULK_UPDATE_SLOTS_FOR_DATE_RANGE,
+      bulkData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi bulk update slots cho nhiều ngày' };
+  }
+};
+
+/**
+ * Xóa slot
+ * DELETE /specialists/me/slots/{slotId}
+ */
+export const deleteSlot = async slotId => {
+  try {
+    const response = await axiosInstance.delete(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.DELETE_SLOT(slotId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi xóa slot' };
+  }
+};

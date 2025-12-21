@@ -542,6 +542,24 @@ export const API_ENDPOINTS = {
       // DELETE /specialists/me/demos/{demoId}
       DELETE_DEMO: demoId =>
         `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
+      // GET /specialists/me/slots/day?date=2024-01-01
+      GET_DAY_SLOTS: date =>
+        `${SPECIALIST_PATH}/specialists/me/slots/day?date=${date}`,
+      // GET /specialists/me/slots?startDate=2024-01-01&endDate=2024-01-31
+      GET_SLOTS_BY_DATE_RANGE: (startDate, endDate) =>
+        `${SPECIALIST_PATH}/specialists/me/slots?startDate=${startDate}&endDate=${endDate}`,
+      // POST /specialists/me/slots
+      CREATE_OR_UPDATE_SLOT: `${SPECIALIST_PATH}/specialists/me/slots`,
+      // PUT /specialists/me/slots/{slotId}/status
+      UPDATE_SLOT_STATUS: slotId =>
+        `${SPECIALIST_PATH}/specialists/me/slots/${slotId}/status`,
+      // PUT /specialists/me/slots/bulk
+      BULK_UPDATE_SLOTS: `${SPECIALIST_PATH}/specialists/me/slots/bulk`,
+      // PUT /specialists/me/slots/bulk/date-range
+      BULK_UPDATE_SLOTS_FOR_DATE_RANGE: `${SPECIALIST_PATH}/specialists/me/slots/bulk/date-range`,
+      // DELETE /specialists/me/slots/{slotId}
+      DELETE_SLOT: slotId =>
+        `${SPECIALIST_PATH}/specialists/me/slots/${slotId}`,
     },
   },
 };

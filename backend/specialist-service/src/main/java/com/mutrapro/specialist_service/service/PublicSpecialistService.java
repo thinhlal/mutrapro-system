@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class PublicSpecialistService {
     private final SpecialistRepository specialistRepository;
     private final SpecialistSkillRepository specialistSkillRepository;
     private final SpecialistLookupService specialistLookupService;
+    private final SpecialistSlotService specialistSlotService;
     
     /**
      * Lấy danh sách vocalists (public access)
@@ -124,6 +127,23 @@ public class PublicSpecialistService {
         
         // Dùng SpecialistLookupService để lấy full detail (bao gồm skills và demos)
         return specialistLookupService.getSpecialistDetail(specialistId);
+    }
+    
+    /**
+     * Check xem specialist có available trong slot cụ thể không (public access)
+     * Dùng để check work slots khi booking
+     */
+    public boolean checkSpecialistAvailability(String specialistId, String dateStr, String startTimeStr, String endTimeStr) {
+        log.info("[checkSpecialistAvailability] Checking availability for specialistId={}, date={}, time={}-{}", 
+            specialistId, dateStr, startTimeStr, endTimeStr);
+        
+        // Parse date and time
+        LocalDate date = LocalDate.parse(dateStr);
+        LocalTime startTime = LocalTime.parse(startTimeStr);
+        LocalTime endTime = LocalTime.parse(endTimeStr);
+        
+        // Dùng SpecialistSlotService để check
+        return specialistSlotService.isSpecialistAvailable(specialistId, date, startTime, endTime);
     }
     
     /**

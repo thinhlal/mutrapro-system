@@ -29,5 +29,13 @@ public class ArtistBookingConflictException extends BusinessException {
             conflictingSpecialistIds
         );
     }
+    
+    public static ArtistBookingConflictException artistNotAvailable(String specialistId) {
+        return new ArtistBookingConflictException(
+            String.format("Artist %s is not available for the requested time slot (no registered slots or missing slots)", 
+                specialistId != null ? specialistId : "unknown"),
+            List.of(specialistId != null ? specialistId : "unknown")
+        );
+    }
 }
 

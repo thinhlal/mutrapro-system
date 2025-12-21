@@ -66,5 +66,14 @@ public class AccessDeniedException extends ForbiddenException {
             "Only Recording Artist specialists can manage demos"
         );
     }
+    
+    /**
+     * Khi specialist không phải Recording Artist cố gắng truy cập slots
+     */
+    public static AccessDeniedException cannotAccessSlots() {
+        return new AccessDeniedException(
+            "Only Recording Artist specialists can manage work slots"
+        );
+    }
 }
 

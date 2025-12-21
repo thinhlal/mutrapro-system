@@ -17,6 +17,16 @@ spring:
   sql:
     init:
       mode: never
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:specialist-service}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "*"
   servlet:
     multipart:
       enabled: true
@@ -50,6 +60,12 @@ project:
 identity:
   service:
     base-url: ${IDENTITY_SERVICE_BASE_URL:http://identity-service:8081}
+
+# Event Topics Configuration
+app:
+  event-topics:
+    mappings:
+      slot.booked: ${KAFKA_TOPIC_SLOT_BOOKED:slot-booked-events}
 
 # Management & Actuator
 management:

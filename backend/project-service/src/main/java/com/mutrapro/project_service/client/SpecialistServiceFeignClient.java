@@ -60,5 +60,18 @@ public interface SpecialistServiceFeignClient {
      */
     @GetMapping("/public/specialists/{specialistId}")
     ApiResponse<Map<String, Object>> getPublicSpecialistById(@PathVariable String specialistId);
+    
+    /**
+     * Check xem specialist có available trong slot cụ thể không (public endpoint)
+     * GET /public/specialists/{specialistId}/availability
+     * Public endpoint - không cần authentication
+     * Dùng để check work slots khi booking
+     */
+    @GetMapping("/public/specialists/{specialistId}/availability")
+    ApiResponse<Boolean> checkSpecialistAvailability(
+        @PathVariable String specialistId,
+        @RequestParam String date,
+        @RequestParam String startTime,
+        @RequestParam String endTime);
 }
 

@@ -36,5 +36,21 @@ public class InvalidTimeRangeException extends BusinessException {
             endTime
         );
     }
+    
+    public static InvalidTimeRangeException invalidDuration(LocalTime startTime, LocalTime endTime, String message) {
+        return new InvalidTimeRangeException(
+            message != null ? message : String.format("Invalid duration: %s to %s", startTime, endTime),
+            startTime,
+            endTime
+        );
+    }
+    
+    public static InvalidTimeRangeException invalidStartTime(LocalTime startTime, String message) {
+        return new InvalidTimeRangeException(
+            message != null ? message : String.format("Invalid start time: %s", startTime),
+            startTime,
+            null
+        );
+    }
 }
 

@@ -84,4 +84,30 @@ public class PublicSpecialistController {
             .data(specialistDetail)
                 .build();
     }
+    
+    /**
+     * Check xem specialist có available trong slot cụ thể không (public access)
+     * GET /public/specialists/{specialistId}/availability?date=2024-01-01&startTime=08:00&endTime=10:00
+     * Dùng để check work slots khi booking
+     */
+    @GetMapping("/{specialistId}/availability")
+    @Operation(
+        summary = "Check specialist availability (public)", 
+        description = "Check if a specialist is available for a specific time slot. No authentication required. Used for booking."
+    )
+    public ApiResponse<Boolean> checkSpecialistAvailability(
+            @PathVariable String specialistId,
+            @RequestParam String date,
+            @RequestParam String startTime,
+            @RequestParam String endTime) {
+        log.info("GET /public/specialists/{}/availability - date={}, time={}-{}", 
+            specialistId, date, startTime, endTime);
+        boolean isAvailable = publicSpecialistService.checkSpecialistAvailability(
+            specialistId, date, startTime, endTime);
+        return ApiResponse.<Boolean>builder()
+            .message("Availability checked successfully")
+            .data(isAvailable)
+            .build();
+    }
+    
 }

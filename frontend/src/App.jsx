@@ -115,6 +115,7 @@ import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookin
 import WithdrawalRequestsManagement from './pages/manager/WithdrawalRequests/WithdrawalRequestsManagement';
 import MyStudioBookings from './pages/recordingArtist/MyStudioBookings/MyStudioBookings';
 import RecordingArtistStudioBookingDetailPage from './pages/recordingArtist/StudioBookingDetail/StudioBookingDetailPage';
+import MySlotsPage from './pages/recordingArtist/MySlots/MySlotsPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -622,6 +623,7 @@ function App() {
               path="studio-bookings/:bookingId"
               element={<RecordingArtistStudioBookingDetailPage />}
             />
+            <Route path="my-slots" element={<MySlotsPage />} />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 
