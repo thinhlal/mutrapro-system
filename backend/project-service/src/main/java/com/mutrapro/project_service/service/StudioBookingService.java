@@ -219,7 +219,7 @@ public class StudioBookingService {
         
         // ⚠️ QUAN TRỌNG: Check TẤT CẢ arrangement milestones đã có actualEndAt (đã thanh toán)
         // Lý do: Đảm bảo booking date validation chính xác, không bị lệch nếu customer thanh toán muộn
-        ContractMilestone lastArrangementMilestone = arrangementMilestones.get(arrangementMilestones.size() - 1);
+        ContractMilestone lastArrangementMilestone = arrangementMilestones.getLast();
         
         if (lastArrangementMilestone.getActualEndAt() == null) {
             throw ArrangementMilestoneNotPaidException.lastMilestoneNotPaid(lastArrangementMilestone.getOrderIndex());
@@ -261,7 +261,7 @@ public class StudioBookingService {
         if (activeStudios.size() > 1) {
             throw NoActiveStudioException.multipleFound(activeStudios.size());
         }
-        Studio studio = activeStudios.get(0);
+        Studio studio = activeStudios.getFirst();
         log.info("Auto-selected studio for booking: studioId={}, studioName={}",
             studio.getStudioId(), studio.getStudioName());
         
@@ -336,7 +336,7 @@ public class StudioBookingService {
             if (!conflictingParticipants.isEmpty()) {
                 // Group by specialistId để show message rõ ràng
                 List<String> conflictingSpecialistIds = conflictingParticipants.stream()
-                    .map(bp -> bp.getSpecialistId())
+                    .map(BookingParticipant::getSpecialistId)
                     .filter(id -> id != null && !id.isBlank())
                     .distinct()
                     .toList();
@@ -609,7 +609,7 @@ public class StudioBookingService {
         if (activeStudios.size() > 1) {
             throw NoActiveStudioException.multipleFound(activeStudios.size());
         }
-        Studio studio = activeStudios.get(0);
+        Studio studio = activeStudios.getFirst();
         log.info("Auto-selected studio for booking: studioId={}, studioName={}",
             studio.getStudioId(), studio.getStudioName());
         
@@ -1049,7 +1049,7 @@ public class StudioBookingService {
         if (activeStudios.size() > 1) {
             throw NoActiveStudioException.multipleFound(activeStudios.size());
         }
-        Studio studio = activeStudios.get(0);
+        Studio studio = activeStudios.getFirst();
         String studioId = studio.getStudioId();
         
         // 2. Lấy tất cả bookings trong ngày đó
@@ -1141,10 +1141,9 @@ public class StudioBookingService {
         List<Map<String, Object>> allVocalists = new java.util.ArrayList<>();
         try {
             // Dùng genres từ parameter (nếu có), nếu không thì mới gọi request-service
-            List<String> genresToUse = genres;
-            
+
             ApiResponse<List<Map<String, Object>>> vocalistsResponse = 
-                specialistServiceFeignClient.getVocalists(null, genresToUse); // gender = null (lấy tất cả)
+                specialistServiceFeignClient.getVocalists(null, genres); // gender = null (lấy tất cả)
             if (vocalistsResponse != null && vocalistsResponse.getData() != null) {
                 allVocalists = vocalistsResponse.getData();
             }
@@ -1825,7 +1824,7 @@ public class StudioBookingService {
         }
         
         // Lấy booking đầu tiên (should be only one)
-        StudioBooking booking = bookings.get(0);
+        StudioBooking booking = bookings.getFirst();
         
         // Eager load studio để tránh LazyInitializationException
         if (booking.getStudio() != null) {

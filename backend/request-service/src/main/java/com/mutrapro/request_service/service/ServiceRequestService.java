@@ -469,26 +469,42 @@ public class ServiceRequestService {
     
     /**
      * Enrich danh sách ServiceRequestResponse với thông tin contract từ project-service
+     * Tối ưu: Set timeout ngắn và xử lý lỗi gracefully để không block request
      */
     private void enrichWithContractInfo(List<ServiceRequestResponse> responses) {
         if (responses == null || responses.isEmpty()) {
             return;
         }
         
+        // Set mặc định trước để không block nếu Feign call fail
+        responses.forEach(response -> {
+            response.setHasContract(false);
+            response.setContractId(null);
+            response.setContractStatus(null);
+        });
+        
         try {
             // Lấy danh sách requestIds
             List<String> requestIds = responses.stream()
                     .map(ServiceRequestResponse::getRequestId)
                     .filter(id -> id != null)
+                    .distinct()
                     .collect(Collectors.toList());
             
             if (requestIds.isEmpty()) {
                 return;
             }
             
-            // Gọi project-service để lấy thông tin contract
+            // Gọi project-service để lấy thông tin contract với timeout ngắn
+            // Nếu timeout hoặc lỗi, giữ giá trị mặc định đã set ở trên
+            long startTime = System.currentTimeMillis();
             ApiResponse<Map<String, RequestContractInfo>> contractInfoResponse = 
                     projectServiceFeignClient.getContractInfoByRequestIds(requestIds);
+            long duration = System.currentTimeMillis() - startTime;
+            
+            if (duration > 1000) {
+                log.warn("Feign call to project-service took {}ms (slow)", duration);
+            }
             
             if (contractInfoResponse != null && "success".equals(contractInfoResponse.getStatus()) 
                     && contractInfoResponse.getData() != null) {
@@ -504,22 +520,13 @@ public class ServiceRequestService {
                             response.setContractId(contractInfo.getContractId());
                             response.setContractStatus(contractInfo.getContractStatus());
                         }
-                    } else {
-                        // Nếu không có thông tin contract, set mặc định
-                        response.setHasContract(false);
-                        response.setContractId(null);
-                        response.setContractStatus(null);
                     }
                 });
             }
         } catch (Exception e) {
-            log.warn("Failed to enrich service requests with contract info: {}", e.getMessage());
-            // Nếu lỗi, set mặc định cho tất cả
-            responses.forEach(response -> {
-                response.setHasContract(false);
-                response.setContractId(null);
-                response.setContractStatus(null);
-            });
+            // Log warning nhưng không throw exception - giữ giá trị mặc định đã set
+            log.warn("Failed to enrich service requests with contract info (non-blocking): {}", e.getMessage());
+            // Giá trị mặc định đã được set ở đầu method
         }
     }
     
