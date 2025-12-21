@@ -148,6 +148,22 @@
   border-radius: 8px;
 }
 
+.selectedVocalistItem {
+  padding: 12px 0 !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.selectedVocalistItem:last-child {
+  border-bottom: none !important;
+}
+
+.selectedVocalistItem:hover {
+  background: #fafafa;
+  border-radius: 4px;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
 /* Action Row */
 .actionRow {
   display: flex;

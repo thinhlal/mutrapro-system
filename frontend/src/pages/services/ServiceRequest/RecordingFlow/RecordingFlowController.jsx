@@ -76,6 +76,25 @@ export default function RecordingFlowController() {
       setCurrentStep(stepFromUrl);
     }
 
+    // Always reload flow data from sessionStorage when navigating back
+    // This ensures data is up-to-date after returning from selection pages
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const updated = JSON.parse(stored);
+        setFlowData(updated);
+        // Update step if it's in the stored data and different
+        if (
+          updated.currentStep !== undefined &&
+          updated.currentStep !== currentStep
+        ) {
+          setCurrentStep(updated.currentStep);
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring flow data:', error);
+    }
+
     // Check if returning from selection page and update flow data
     if (location.state?.returnFromSelection) {
       try {
@@ -193,6 +212,7 @@ export default function RecordingFlowController() {
               bookingEndTime: flowData.step1?.bookingEndTime,
             }}
             onComplete={data => handleStepComplete({ step2: data })}
+            onBack={handlePrev}
           />
         );
       case 3:

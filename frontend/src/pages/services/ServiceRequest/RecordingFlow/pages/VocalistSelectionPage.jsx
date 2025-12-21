@@ -29,16 +29,28 @@ export default function VocalistSelectionPage() {
     selectedVocalist,
     selectedVocalists,
     allowMultiple = false,
-    maxSelections = 1,
+    maxSelections,
     fromArrangement = false,
   } = location.state || {};
+
+  // Set default maxSelections based on context
+  // - Arrangement with recording: max 2 preferred vocalists
+  // - Recording flow: max 10 (or unlimited)
+  const effectiveMaxSelections = allowMultiple
+    ? maxSelections ||
+      (fromArrangement ? 2 : 10) // Default: 2 for arrangement, 10 for recording flow
+    : 1;
 
   const [selectedId, setSelectedId] = useState(selectedVocalist || null);
   const [selectedIds, setSelectedIds] = useState(() => {
     if (allowMultiple && selectedVocalists) {
-      return Array.isArray(selectedVocalists)
+      const ids = Array.isArray(selectedVocalists)
         ? selectedVocalists
         : [selectedVocalists];
+      // Extract specialistId if it's an object
+      return ids.map(v =>
+        typeof v === 'object' ? v.specialistId || v.id : v
+      );
     }
     return [];
   });
@@ -91,7 +103,10 @@ export default function VocalistSelectionPage() {
           return prev.filter(id => id !== singerId);
         } else {
           // Select (check max limit)
-          if (prev.length >= maxSelections) {
+          if (prev.length >= effectiveMaxSelections) {
+            message.warning(
+              `You can only select up to ${effectiveMaxSelections} vocalist${effectiveMaxSelections > 1 ? 's' : ''}`
+            );
             return prev; // Don't add if reached max
           }
           return [...prev, singerId];
@@ -106,26 +121,105 @@ export default function VocalistSelectionPage() {
   const handleConfirm = () => {
     if (allowMultiple) {
       if (selectedIds.length === 0) {
+        message.warning('Please select at least one vocalist');
         return; // At least select one
       }
     } else {
       if (!selectedId) {
+        message.warning('Please select a vocalist');
         return;
       }
     }
 
-    // Get callback data from sessionStorage
     try {
-      const callbackDataStr = sessionStorage.getItem(
-        fromArrangement
-          ? 'arrangementVocalistCallback'
-          : 'recordingFlowVocalistCallback'
-      );
-      if (callbackDataStr) {
-        const callbackData = JSON.parse(callbackDataStr);
+      if (fromArrangement && allowMultiple) {
+        // For arrangement with recording - save multiple selections with names
+        const selectedVocalistsWithNames = selectedIds.map(id => {
+          const vocalist = vocalists.find(v => v.specialistId === id);
+          return vocalist
+            ? {
+                id: vocalist.specialistId,
+                name: vocalist.fullName || `Vocalist ${id}`,
+              }
+            : { id, name: `Vocalist ${id}` };
+        });
 
+        const flowDataStr = sessionStorage.getItem('recordingFlowData');
+        const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+        flowData.step2 = {
+          wantsVocalist: true,
+          vocalistIds: selectedVocalistsWithNames,
+        };
+        sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+        sessionStorage.removeItem('arrangementVocalistCallback');
+
+        // Navigate back to arrangement page
+        navigate(-1);
+      } else {
+        // For recording flow - handle both single and multiple selection
+        const flowDataStr = sessionStorage.getItem('recordingFlowData');
+        const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+
+        if (allowMultiple) {
+          // Multiple selection - save with full info
+          const selectedVocalistsWithInfo = selectedIds.map(id => {
+            const vocalist = vocalists.find(v => v.specialistId === id);
+            return vocalist
+              ? {
+                  specialistId: vocalist.specialistId,
+                  name: vocalist.name || vocalist.fullName || `Vocalist ${id}`,
+                  hourlyRate: vocalist.hourlyRate || 0,
+                  avatarUrl: vocalist.avatarUrl,
+                  rating: vocalist.rating,
+                  experienceYears: vocalist.experienceYears,
+                  genres: vocalist.genres,
+                }
+              : {
+                  specialistId: id,
+                  name: `Vocalist ${id}`,
+                  hourlyRate: 0,
+                };
+          });
+
+          flowData.step2 = {
+            ...flowData.step2, // Keep existing data (including vocalChoice)
+            selectedVocalists: selectedVocalistsWithInfo,
+          };
+        } else {
+          // Single selection
+          flowData.step2 = {
+            ...flowData.step2,
+            wantsVocalist: true,
+            vocalistId: selectedId,
+          };
+        }
+
+        sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+        
+        // Try to remove callback if exists
+        try {
+          sessionStorage.removeItem('recordingFlowVocalistCallback');
+        } catch (e) {
+          // Ignore if doesn't exist
+        }
+        
+        message.success(
+          `Selected ${allowMultiple ? selectedIds.length : 1} vocalist${allowMultiple && selectedIds.length > 1 ? 's' : ''} successfully`
+        );
+        navigate('/recording-flow', { state: { step: 2 } });
+      }
+    } catch (error) {
+      console.error('Error saving vocalist selection:', error);
+      message.error('Failed to save vocalist selection. Please try again.');
+    }
+  };
+
+  const handleBack = () => {
+    // Save current selections before going back (if any)
+    if ((allowMultiple && selectedIds.length > 0) || (!allowMultiple && selectedId)) {
+      try {
         if (fromArrangement && allowMultiple) {
-          // For arrangement with recording - save multiple selections with names
+          // For arrangement - save selections
           const selectedVocalistsWithNames = selectedIds.map(id => {
             const vocalist = vocalists.find(v => v.specialistId === id);
             return vocalist
@@ -143,33 +237,54 @@ export default function VocalistSelectionPage() {
             vocalistIds: selectedVocalistsWithNames,
           };
           sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
-          sessionStorage.removeItem('arrangementVocalistCallback');
-
-          // Navigate back to arrangement page
-          navigate(-1);
         } else {
-          // For recording flow - single selection
+          // For recording flow - save selections
           const flowDataStr = sessionStorage.getItem('recordingFlowData');
           const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
-          flowData.step2 = {
-            wantsVocalist: true,
-            vocalistId: selectedId,
-          };
-          sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
-          sessionStorage.removeItem('recordingFlowVocalistCallback');
-          navigate('/recording-flow', { state: { step: 1 } });
-        }
-      }
-    } catch (error) {
-      console.error('Error saving vocalist selection:', error);
-    }
-  };
 
-  const handleBack = () => {
+          if (allowMultiple) {
+            const selectedVocalistsWithInfo = selectedIds.map(id => {
+              const vocalist = vocalists.find(v => v.specialistId === id);
+              return vocalist
+                ? {
+                    specialistId: vocalist.specialistId,
+                    name: vocalist.name || vocalist.fullName || `Vocalist ${id}`,
+                    hourlyRate: vocalist.hourlyRate || 0,
+                    avatarUrl: vocalist.avatarUrl,
+                    rating: vocalist.rating,
+                    experienceYears: vocalist.experienceYears,
+                    genres: vocalist.genres,
+                  }
+                : {
+                    specialistId: id,
+                    name: `Vocalist ${id}`,
+                    hourlyRate: 0,
+                  };
+            });
+
+            flowData.step2 = {
+              ...flowData.step2, // Keep existing data (including vocalChoice)
+              selectedVocalists: selectedVocalistsWithInfo,
+            };
+          } else {
+            flowData.step2 = {
+              ...flowData.step2,
+              wantsVocalist: true,
+              vocalistId: selectedId,
+            };
+          }
+
+          sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+        }
+      } catch (error) {
+        console.error('Error saving selections on back:', error);
+      }
+    }
+
     if (fromArrangement) {
       navigate(-1);
     } else {
-      navigate('/recording-flow', { state: { step: 1 } });
+      navigate('/recording-flow', { state: { step: 2 } });
     }
   };
 
@@ -181,7 +296,7 @@ export default function VocalistSelectionPage() {
   };
 
   const canSelectMore = allowMultiple
-    ? selectedIds.length < maxSelections
+    ? selectedIds.length < effectiveMaxSelections
     : true;
 
   return (
@@ -202,12 +317,22 @@ export default function VocalistSelectionPage() {
               Back to Flow
             </Button>
             <Title level={2} className={styles.title}>
-              {allowMultiple ? 'Select Preferred Vocalist' : 'Select Vocalist'}
+              {fromArrangement
+                ? allowMultiple
+                  ? 'Select Preferred Vocalist(s)'
+                  : 'Select Preferred Vocalist'
+                : allowMultiple
+                  ? 'Select Vocalist(s)'
+                  : 'Select Vocalist'}
             </Title>
             <p className={styles.description}>
-              {allowMultiple
-                ? `Choose ${maxSelections === 2 ? '1-2' : '1'} vocalist${maxSelections === 2 ? 's' : ''} you like (selected: ${selectedIds.length}/${maxSelections})`
-                : 'Choose a vocalist for your recording session'}
+              {fromArrangement
+                ? allowMultiple
+                  ? `Choose ${effectiveMaxSelections === 2 ? '1-2' : 'up to ' + effectiveMaxSelections} preferred vocalist${effectiveMaxSelections > 1 ? 's' : ''} for your arrangement (selected: ${selectedIds.length}/${effectiveMaxSelections})`
+                  : 'Choose a preferred vocalist for your arrangement'
+                : allowMultiple
+                  ? `Choose up to ${effectiveMaxSelections} vocalist${effectiveMaxSelections > 1 ? 's' : ''} for your recording session (selected: ${selectedIds.length}/${effectiveMaxSelections})`
+                  : 'Choose a vocalist for your recording session'}
             </p>
           </div>
         </Card>
