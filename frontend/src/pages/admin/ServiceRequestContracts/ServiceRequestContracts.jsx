@@ -596,15 +596,6 @@ export default function ServiceRequestContracts() {
                           : []),
                       ]
                     : []),
-                  ...(request.requestType?.toLowerCase() === 'recording'
-                    ? [
-                        {
-                          key: 'externalGuests',
-                          label: 'External Guests',
-                          value: request.externalGuestCount ?? 0,
-                        },
-                      ]
-                    : []),
                   ...(request.requestType === 'arrangement' ||
                   request.requestType === 'arrangement_with_recording'
                     ? [
@@ -868,19 +859,50 @@ export default function ServiceRequestContracts() {
                     size="small"
                     style={{ width: '100%' }}
                   >
-                    {booking.participants.map((p, index) => (
-                      <div key={index}>
-                        <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}>
-                          {p.roleType}
-                        </Tag>
-                        {p.specialistName || 'Self'}
-                        {p.participantFee && (
-                          <span style={{ marginLeft: 8, color: '#666' }}>
-                            - {p.participantFee.toLocaleString('vi-VN')} VND
+                    {booking.participants.map((p, index) => {
+                      const roleLabel =
+                        p.roleType === 'VOCAL'
+                          ? 'Vocal'
+                          : p.roleType === 'INSTRUMENT'
+                            ? 'Instrument'
+                            : p.roleType || 'Participant';
+
+                      const performerLabel =
+                        p.performerSource === 'CUSTOMER_SELF'
+                          ? 'Self'
+                          : p.specialistName || 'Internal artist';
+
+                      const skillLabel = p.skillName
+                        ? ` (${p.skillName})`
+                        : '';
+
+                      const feeNumber =
+                        typeof p.participantFee === 'number'
+                          ? p.participantFee
+                          : p.participantFee
+                            ? Number(p.participantFee)
+                            : 0;
+
+                      return (
+                        <div key={index}>
+                          <Tag
+                            color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
+                            style={{ marginRight: 8 }}
+                          >
+                            {roleLabel}
+                          </Tag>
+                          <span>
+                            {performerLabel}
+                            {skillLabel}
                           </span>
-                        )}
-                      </div>
-                    ))}
+                          {feeNumber > 0 && (
+                            <span style={{ marginLeft: 8, color: '#666' }}>
+                              - {feeNumber.toLocaleString('vi-VN')} VND
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </Space>
                 </Descriptions.Item>
               )}

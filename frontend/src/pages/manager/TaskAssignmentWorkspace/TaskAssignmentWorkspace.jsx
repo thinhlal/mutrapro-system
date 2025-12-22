@@ -878,21 +878,6 @@ export default function TaskAssignmentWorkspace() {
                     </>
                   )}
 
-                  {/* Fields for recording */}
-                  {requestData?.requestType === 'recording' && (
-                    <>
-                      {requestData.externalGuestCount != null &&
-                        requestData.externalGuestCount > 0 && (
-                          <div>
-                            <Text strong>External Guests: </Text>
-                            <Tag color="orange">
-                              {requestData.externalGuestCount} người
-                            </Tag>
-                          </div>
-                        )}
-                    </>
-                  )}
-
                   {/* Preferred Vocalists for arrangement_with_recording */}
                   {requestData?.requestType === 'arrangement_with_recording' &&
                     requestData.preferredSpecialists &&

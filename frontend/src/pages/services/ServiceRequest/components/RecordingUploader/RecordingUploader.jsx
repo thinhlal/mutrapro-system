@@ -242,16 +242,6 @@ export default function RecordingUploader({ serviceType, formData }) {
                     </Tag>
                   </div>
                 )}
-                {formData.externalGuestCount > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <Tag
-                      color="orange"
-                      style={{ fontSize: 14, padding: '4px 12px' }}
-                    >
-                      External Guests: {formData.externalGuestCount}
-                    </Tag>
-                  </div>
-                )}
               </div>
             </div>
           )}

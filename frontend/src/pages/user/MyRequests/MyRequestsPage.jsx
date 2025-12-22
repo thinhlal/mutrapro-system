@@ -436,18 +436,6 @@ const MyRequestsContent = () => {
                       </div>
                     )}
 
-                    {request.externalGuestCount > 0 && (
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>Guests:</span>
-                        <span className={styles.infoValue}>
-                          {request.externalGuestCount}{' '}
-                          {request.externalGuestCount === 1
-                            ? 'person'
-                            : 'people'}
-                        </span>
-                      </div>
-                    )}
-
                     {/* Show genres and purpose for arrangement requests */}
                     {(request.requestType === 'arrangement' ||
                       request.requestType === 'arrangement_with_recording') &&

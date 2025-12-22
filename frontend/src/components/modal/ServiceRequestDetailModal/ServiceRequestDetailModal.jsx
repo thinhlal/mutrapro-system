@@ -169,11 +169,6 @@ export default function ServiceRequestDetailModal({
               </Space>
             </Descriptions.Item>
           )}
-        {request.requestType === 'recording' && (
-          <Descriptions.Item label="External Guest Count">
-            {request.externalGuestCount || 0}
-          </Descriptions.Item>
-        )}
         <Descriptions.Item label="Contact Name">
           {request.contactName}
         </Descriptions.Item>

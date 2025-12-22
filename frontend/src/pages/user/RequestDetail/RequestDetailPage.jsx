@@ -560,15 +560,6 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-            {request.externalGuestCount > 0 &&
-              request.requestType === 'recording' && (
-                <Descriptions.Item label="Guests">
-                  <Tag>
-                    {request.externalGuestCount}{' '}
-                    {request.externalGuestCount === 1 ? 'person' : 'people'}
-                  </Tag>
-                </Descriptions.Item>
-              )}
 
             {/* Show genres and purpose for arrangement requests */}
             {(request.requestType === 'arrangement' ||

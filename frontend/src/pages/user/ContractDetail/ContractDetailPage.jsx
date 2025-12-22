@@ -2796,37 +2796,77 @@ const ContractDetailPage = () => {
                               </td>
                             </tr>
                             {bookingData.participants.map(
-                              (participant, index) => (
-                                <tr key={`participant-${index}`}>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      paddingLeft: '24px',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    • {participant.specialistName || 'Unnamed'}{' '}
-                                    ({participant.roleType}) -{' '}
-                                    {participant.participantFee?.toLocaleString()}{' '}
-                                    VND/giờ × {bookingData.durationHours} giờ
-                                  </td>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      textAlign: 'right',
-                                      fontWeight: 'bold',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {(
-                                      (participant.participantFee || 0) *
-                                      (bookingData.durationHours || 1)
-                                    ).toLocaleString()}
-                                  </td>
-                                </tr>
-                              )
+                              (participant, index) => {
+                                const roleLabel =
+                                  participant.roleType === 'VOCAL'
+                                    ? 'Vocal'
+                                    : participant.roleType === 'INSTRUMENT'
+                                      ? 'Instrument'
+                                      : participant.roleType || 'Participant';
+
+                                const performerLabel =
+                                  participant.performerSource ===
+                                  'CUSTOMER_SELF'
+                                    ? 'Self'
+                                    : participant.specialistName ||
+                                      'Internal artist';
+
+                                const skillLabel = participant.skillName
+                                  ? ` (${participant.skillName})`
+                                  : '';
+
+                                const totalFee =
+                                  typeof participant.participantFee === 'number'
+                                    ? participant.participantFee
+                                    : participant.participantFee
+                                      ? Number(participant.participantFee)
+                                      : 0;
+
+                                const duration =
+                                  bookingData.durationHours &&
+                                  bookingData.durationHours > 0
+                                    ? bookingData.durationHours
+                                    : 1;
+
+                                const hourlyRate =
+                                  duration > 0 ? totalFee / duration : 0;
+
+                                return (
+                                  <tr key={`participant-${index}`}>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        paddingLeft: '24px',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      • {roleLabel} {performerLabel}
+                                      {skillLabel}
+                                      <div
+                                        style={{
+                                          color: '#666',
+                                          fontSize: '12px',
+                                          marginTop: '4px',
+                                        }}
+                                      >
+                                        ({hourlyRate.toLocaleString('vi-VN')}{' '}
+                                        VND/hour × {duration}h)
+                                      </div>
+                                    </td>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        textAlign: 'right',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {totalFee.toLocaleString('vi-VN')}
+                                    </td>
+                                  </tr>
+                                );
+                              }
                             )}
                             <tr>
                               <td
@@ -2837,7 +2877,7 @@ const ContractDetailPage = () => {
                                   backgroundColor: '#e8e8e8',
                                 }}
                               >
-                                Participant Total:
+                                Participant Fee (Total):
                               </td>
                               <td
                                 style={{
@@ -2848,15 +2888,9 @@ const ContractDetailPage = () => {
                                   backgroundColor: '#e8e8e8',
                                 }}
                               >
-                                {bookingData.participants
-                                  .reduce(
-                                    (sum, p) =>
-                                      sum +
-                                      (p.participantFee || 0) *
-                                        (bookingData.durationHours || 1),
-                                    0
-                                  )
-                                  .toLocaleString()}
+                                {(bookingData.artistFee || 0).toLocaleString(
+                                  'vi-VN'
+                                )}
                               </td>
                             </tr>
                           </>
@@ -2881,38 +2915,56 @@ const ContractDetailPage = () => {
                               </td>
                             </tr>
                             {bookingData.requiredEquipment.map(
-                              (equipment, index) => (
-                                <tr key={`equipment-${index}`}>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      paddingLeft: '24px',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    • {equipment.equipmentName || 'Unnamed'} ×{' '}
-                                    {equipment.quantity} -{' '}
-                                    {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
-                                    VND/giờ × {bookingData.durationHours} giờ
-                                  </td>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      textAlign: 'right',
-                                      fontWeight: 'bold',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {(
-                                      (equipment.rentalFeePerUnit || 0) *
-                                      (equipment.quantity || 1) *
-                                      (bookingData.durationHours || 1)
-                                    ).toLocaleString()}
-                                  </td>
-                                </tr>
-                              )
+                              (equipment, index) => {
+                                const rentalFeePerHour =
+                                  bookingData.durationHours > 0 &&
+                                  equipment.quantity > 0
+                                    ? equipment.totalRentalFee /
+                                      (equipment.quantity *
+                                        bookingData.durationHours)
+                                    : 0;
+
+                                return (
+                                  <tr key={`equipment-${index}`}>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        paddingLeft: '24px',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {equipment.equipmentName || 'Unnamed'} (Qty:{' '}
+                                      {equipment.quantity})
+                                      <div
+                                        style={{
+                                          color: '#666',
+                                          fontSize: '12px',
+                                          marginTop: '4px',
+                                        }}
+                                      >
+                                        (
+                                        {rentalFeePerHour.toLocaleString(
+                                          'vi-VN'
+                                        )}{' '}
+                                        VND/hour × {equipment.quantity} ×{' '}
+                                        {bookingData.durationHours}h)
+                                      </div>
+                                    </td>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        textAlign: 'right',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {equipment.totalRentalFee?.toLocaleString?.() ??
+                                        equipment.totalRentalFee}
+                                    </td>
+                                  </tr>
+                                );
+                              }
                             )}
                             <tr>
                               <td
@@ -2923,7 +2975,7 @@ const ContractDetailPage = () => {
                                   backgroundColor: '#e8e8e8',
                                 }}
                               >
-                                Equipment Total:
+                                Equipment Fee (Total):
                               </td>
                               <td
                                 style={{
@@ -2934,20 +2986,156 @@ const ContractDetailPage = () => {
                                   backgroundColor: '#e8e8e8',
                                 }}
                               >
-                                {bookingData.requiredEquipment
-                                  .reduce(
-                                    (sum, eq) =>
-                                      sum +
-                                      (eq.rentalFeePerUnit || 0) *
-                                        (eq.quantity || 1) *
-                                        (bookingData.durationHours || 1),
-                                    0
-                                  )
-                                  .toLocaleString()}
+                                {(
+                                  bookingData.equipmentRentalFee || 0
+                                ).toLocaleString('vi-VN')}
                               </td>
                             </tr>
                           </>
                         )}
+
+                      {/* Recording: Fee summary (Studio / Guest) */}
+                      {contract?.contractType === 'recording' && bookingData && (
+                        <>
+                          <tr>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                fontWeight: 'bold',
+                                backgroundColor: '#e8e8e8',
+                              }}
+                            >
+                              Studio Fee
+                              <div
+                                style={{
+                                  color: '#666',
+                                  fontSize: '12px',
+                                  marginTop: '4px',
+                                  fontWeight: 'normal',
+                                }}
+                              >
+                                {(() => {
+                                  const artistFee = bookingData.artistFee || 0;
+                                  const equipmentFee =
+                                    bookingData.equipmentRentalFee || 0;
+                                  const guestFee =
+                                    bookingData.externalGuestFee || 0;
+                                  const rawStudioFee =
+                                    (bookingData.totalCost || 0) -
+                                    artistFee -
+                                    equipmentFee -
+                                    guestFee;
+                                  const studioFee =
+                                    rawStudioFee > 0 ? rawStudioFee : 0;
+                                  const duration =
+                                    bookingData.durationHours &&
+                                    bookingData.durationHours > 0
+                                      ? bookingData.durationHours
+                                      : 1;
+                                  const hourlyRate =
+                                    duration > 0 ? studioFee / duration : 0;
+                                  return `(${hourlyRate.toLocaleString(
+                                    'vi-VN'
+                                  )} VND/hour × ${duration}h)`;
+                                })()}
+                              </div>
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                textAlign: 'right',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              {(() => {
+                                const artistFee = bookingData.artistFee || 0;
+                                const equipmentFee =
+                                  bookingData.equipmentRentalFee || 0;
+                                const guestFee =
+                                  bookingData.externalGuestFee || 0;
+                                const rawStudioFee =
+                                  (bookingData.totalCost || 0) -
+                                  artistFee -
+                                  equipmentFee -
+                                  guestFee;
+                                const studioFee =
+                                  rawStudioFee > 0 ? rawStudioFee : 0;
+                                return studioFee.toLocaleString('vi-VN');
+                              })()}
+                            </td>
+                          </tr>
+                          {bookingData.externalGuestFee !== undefined && (
+                            <tr>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {(() => {
+                                  const count =
+                                    typeof bookingData.externalGuestCount ===
+                                    'number'
+                                      ? bookingData.externalGuestCount
+                                      : 0;
+                                  const freeLimit =
+                                    typeof bookingData
+                                      .freeExternalGuestsLimit === 'number'
+                                      ? bookingData.freeExternalGuestsLimit
+                                      : 0;
+                                  const paidGuests = Math.max(
+                                    0,
+                                    count - freeLimit
+                                  );
+                                  const freeGuests = Math.max(
+                                    0,
+                                    count - paidGuests
+                                  );
+
+                                  if (count === 0) {
+                                    return 'Guest Fee (0 guests)';
+                                  }
+
+                                  if (paidGuests > 0 && freeLimit > 0) {
+                                    return `Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
+                                  }
+
+                                  if (paidGuests > 0) {
+                                    return `Guest Fee (${count} paid guest${
+                                      count === 1 ? '' : 's'
+                                    })`;
+                                  }
+
+                                  return `Guest Fee (${count} free guest${
+                                    count === 1 ? '' : 's'
+                                  })`;
+                                })()}
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {bookingData.externalGuestFee &&
+                                bookingData.externalGuestFee > 0
+                                  ? bookingData.externalGuestFee.toLocaleString(
+                                      'vi-VN'
+                                    )
+                                  : '0'}
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )}
 
                       {/* Instruments */}
                       {pricingBreakdown.instruments.length > 0 && (
