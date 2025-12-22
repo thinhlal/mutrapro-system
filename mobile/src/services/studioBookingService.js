@@ -3,6 +3,21 @@ import { API_ENDPOINTS } from '../config/apiConfig';
 import axiosInstance from '../utils/axiosInstance';
 
 /**
+ * Get active studio information
+ * GET /projects/studio-bookings/active-studio
+ */
+export const getActiveStudio = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.GET_ACTIVE_STUDIO
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to load studio information' };
+  }
+};
+
+/**
  * Get available studio slots for a given date (YYYY-MM-DD)
  */
 export const getAvailableSlots = async (date) => {
