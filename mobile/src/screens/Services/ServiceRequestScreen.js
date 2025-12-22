@@ -122,12 +122,15 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    // Common validations for all services
     if (!title.trim()) {
       newErrors.title = "Title is required";
     }
 
     if (!description.trim()) {
       newErrors.description = "Description is required";
+    } else if (description.trim().length < 10) {
+      newErrors.description = "Description must be at least 10 characters";
     }
 
     if (!contactName.trim()) {
@@ -144,30 +147,52 @@ const ServiceRequestScreen = ({ route, navigation }) => {
       newErrors.contactPhone = "Contact phone is required";
     }
 
-    // Validate instruments
-    if (needsInstruments) {
-      if (serviceType === "transcription" && selectedInstruments.length !== 1) {
+    // Service-specific validations
+    if (serviceType === "transcription") {
+      // Transcription: exactly 1 instrument required
+      if (selectedInstruments.length !== 1) {
         newErrors.instruments = "Please select exactly one instrument for transcription";
-      } else if (
-        (serviceType === "arrangement" || serviceType === "arrangement_with_recording") &&
-        selectedInstruments.length === 0
-      ) {
+      }
+
+      // Transcription: validate tempo
+      const tempo = parseInt(tempoPercentage);
+      if (isNaN(tempo) || tempo < 50 || tempo > 200) {
+        newErrors.tempo = "Tempo must be between 50-200%";
+      }
+
+      // Transcription: file must be audio/video
+      if (!selectedFile) {
+        newErrors.file = "Please upload an audio/video file";
+      }
+    } else if (serviceType === "arrangement" || serviceType === "arrangement_with_recording") {
+      // Arrangement: at least 1 instrument required
+      if (selectedInstruments.length === 0) {
         newErrors.instruments = "Please select at least one instrument";
       }
-    }
-    
-    // Validate main instrument for arrangement
-    if (isArrangement && !mainInstrumentId) {
-      newErrors.mainInstrument = "Please select a main instrument";
-    }
 
-    // Validate file upload
-    if (!selectedFile) {
-      newErrors.file = "Please upload an audio/video file";
-    }
+      // Arrangement: main instrument required
+      if (!mainInstrumentId) {
+        newErrors.mainInstrument = "Please select a main instrument for your arrangement";
+      }
 
-    // Recording slot validation
-    if (needsRecordingSlot) {
+      // Arrangement: file must be notation file
+      if (!selectedFile) {
+        newErrors.file = "Please upload a notation file (MusicXML, MIDI, or PDF)";
+      }
+
+      // Arrangement: genres required (at least one)
+      if (!genres || genres.length === 0) {
+        newErrors.genres = "Please select at least one music genre";
+      }
+
+      // Arrangement: purpose required
+      if (!purpose) {
+        newErrors.purpose = "Please select the purpose of this arrangement";
+      }
+    } else if (serviceType === "recording") {
+      // Recording: no instruments required (they're selected in a different flow)
+      
+      // Recording: booking slot required
       if (!bookingDate || !bookingStartTime || !bookingEndTime) {
         newErrors.slot = "Please choose booking date and time";
       } else {
@@ -177,13 +202,10 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           newErrors.slot = "End time must be after start time";
         }
       }
-    }
 
-    // Validate tempo - Only for transcription
-    if (serviceType === "transcription") {
-      const tempo = parseInt(tempoPercentage);
-      if (isNaN(tempo) || tempo < 50 || tempo > 200) {
-        newErrors.tempo = "Tempo must be between 50-200%";
+      // Recording: file required
+      if (!selectedFile) {
+        newErrors.file = "Please upload an audio/video file";
       }
     }
 
@@ -218,7 +240,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               role: "VOCALIST", // Mặc định là VOCALIST cho arrangement_with_recording
             }))
           : null,
-        durationMinutes: selectedFile?.duration || 0,
+        durationMinutes: serviceType === "transcription" ? (selectedFile?.duration || 0) : undefined,
         bookingDate,
         bookingStartTime,
         bookingEndTime,
@@ -509,7 +531,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {/* Genres Selection - Only for arrangement */}
         {isArrangement && (
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Music Genres (Optional)</Text>
+            <Text style={styles.label}>
+              Music Genres <Text style={styles.required}>*</Text>
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genresContainer}>
               {MUSIC_GENRES.map((genre) => {
                 const isSelected = genres.includes(genre.value);
@@ -523,6 +547,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                       } else {
                         setGenres([...genres, genre.value]);
                       }
+                      if (errors.genres) {
+                        setErrors({ ...errors, genres: null });
+                      }
                     }}
                   >
                     <Text style={[styles.genreTagText, isSelected && styles.genreTagTextSelected]}>
@@ -532,13 +559,16 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                 );
               })}
             </ScrollView>
+            {errors.genres && <Text style={styles.errorText}>{errors.genres}</Text>}
           </View>
         )}
         
         {/* Purpose Selection - Only for arrangement */}
         {isArrangement && (
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Purpose (Optional)</Text>
+            <Text style={styles.label}>
+              Purpose <Text style={styles.required}>*</Text>
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.purposeContainer}>
               {MUSIC_PURPOSES.map((p) => {
                 const isSelected = purpose === p.value;
@@ -548,6 +578,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                     style={[styles.purposeButton, isSelected && styles.purposeButtonSelected]}
                     onPress={() => {
                       setPurpose(isSelected ? null : p.value);
+                      if (errors.purpose) {
+                        setErrors({ ...errors, purpose: null });
+                      }
                     }}
                   >
                     <Text style={[styles.purposeButtonText, isSelected && styles.purposeButtonTextSelected]}>
@@ -557,6 +590,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                 );
               })}
             </ScrollView>
+            {errors.purpose && <Text style={styles.errorText}>{errors.purpose}</Text>}
           </View>
         )}
 
@@ -635,7 +669,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {/* File Upload */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>
-            Audio/Video File <Text style={styles.required}>*</Text>
+            {isArrangement 
+              ? "Notation File (MusicXML, MIDI, PDF)" 
+              : "Audio/Video File"} <Text style={styles.required}>*</Text>
           </Text>
           <FileUploader
             onFileSelect={(file) => {
@@ -646,6 +682,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
             }}
             selectedFile={selectedFile}
             onClearFile={() => setSelectedFile(null)}
+            allowedFileTypes={isArrangement ? ["xml", "musicxml", "mid", "midi", "pdf"] : null}
           />
           {errors.file && <Text style={styles.errorText}>{errors.file}</Text>}
         </View>
