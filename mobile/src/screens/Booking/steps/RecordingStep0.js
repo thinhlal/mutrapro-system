@@ -105,15 +105,15 @@ const RecordingStep0 = ({ data, onComplete }) => {
               <Text style={styles.studioName}>
                 {studio.studioName || 'MuTraPro Studio'}
               </Text>
-              {studio.location && (
-                <View style={styles.locationRow}>
-                  <Ionicons name="location" size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.locationText}>{studio.location}</Text>
-                </View>
-              )}
             </View>
 
             <View style={styles.infoSection}>
+              {studio.location && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Address</Text>
+                  <Text style={styles.infoValue}>{studio.location}</Text>
+                </View>
+              )}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Booking price per hour</Text>
                 <Text style={styles.priceText}>
@@ -146,19 +146,19 @@ const RecordingStep0 = ({ data, onComplete }) => {
             <View style={styles.features}>
               <Text style={styles.featuresTitle}>Services include:</Text>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   Studio professional with modern equipment
                 </Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   Support professional technician support
                 </Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   High-quality recording space
                 </Text>
@@ -172,9 +172,8 @@ const RecordingStep0 = ({ data, onComplete }) => {
           onPress={handleContinue}
           activeOpacity={0.8}
         >
-          <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
           <Text style={styles.continueButtonText}>
-            I understand, continue selecting the time
+            Continue to select time
           </Text>
         </TouchableOpacity>
       </View>
@@ -257,15 +256,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.textSecondary,
-  },
   infoSection: {
     marginBottom: SPACING.lg,
   },
@@ -308,7 +298,10 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   featureText: {
     marginLeft: SPACING.sm,
@@ -317,7 +310,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   continueButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
@@ -326,7 +318,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   continueButtonText: {
-    marginLeft: SPACING.sm,
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.white,

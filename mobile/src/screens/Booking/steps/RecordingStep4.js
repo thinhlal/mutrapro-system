@@ -16,6 +16,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { createServiceRequest } from '../../../services/serviceRequestService';
 import { createBookingFromServiceRequest } from '../../../services/studioBookingService';
 import FileUploader from '../../../components/FileUploader';
+import { removeItem } from '../../../utils/storage';
 
 const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
   const { user } = useAuth();
@@ -294,7 +295,14 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
         bookingData
       );
 
-      // Clear storage
+      // Clear storage - ensure it's cleared even if onSubmit fails
+      try {
+        await removeItem('recordingFlowData');
+      } catch (error) {
+        console.error('Error clearing recording flow data:', error);
+      }
+
+      // Call onSubmit callback (which also clears storage and resets state)
       await onSubmit();
 
       Alert.alert(
@@ -353,50 +361,45 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
         {/* Booking Time */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booking time</Text>
-          <View style={styles.timeRow}>
-            <View style={styles.timeItem}>
-              <Text style={styles.timeLabel}>Date</Text>
-              <View style={styles.timeValue}>
-                <Text style={styles.timeValueText}>
-                  {step1?.bookingDate || 'Not selected'}
-                </Text>
-              </View>
+          <View style={styles.timeTable}>
+            <View style={styles.timeTableRow}>
+              <Text style={styles.timeTableLabel}>Date:</Text>
+              <Text style={styles.timeTableValue}>
+                {step1?.bookingDate || 'Not selected'}
+              </Text>
             </View>
-            <View style={styles.timeItem}>
-              <Text style={styles.timeLabel}>Start time</Text>
-              <View style={[styles.timeValue, styles.timeValueGreen]}>
-                <Text style={styles.timeValueText}>
-                  {step1?.bookingStartTime || 'Not selected'}
-                </Text>
-              </View>
+            <View style={styles.timeTableRow}>
+              <Text style={styles.timeTableLabel}>Start time:</Text>
+              <Text style={[styles.timeTableValue, styles.timeTableValueGreen]}>
+                {step1?.bookingStartTime || 'Not selected'}
+              </Text>
             </View>
-            <View style={styles.timeItem}>
-              <Text style={styles.timeLabel}>End time</Text>
-              <View style={[styles.timeValue, styles.timeValueOrange]}>
-                <Text style={styles.timeValueText}>
-                  {step1?.bookingEndTime || 'Not selected'}
-                </Text>
-              </View>
+            <View style={styles.timeTableRow}>
+              <Text style={styles.timeTableLabel}>End time:</Text>
+              <Text style={[styles.timeTableValue, styles.timeTableValueOrange]}>
+                {step1?.bookingEndTime || 'Not selected'}
+              </Text>
             </View>
+            {typeof step1?.externalGuestCount === 'number' && (
+              <>
+                <View style={styles.timeTableRow}>
+                  <Text style={styles.timeTableLabel}>Guests:</Text>
+                  <Text style={styles.timeTableValue}>
+                    {step1.externalGuestCount} guest{step1.externalGuestCount === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                {fees.chargeableGuests > 0 && fees.guestFee > 0 && (
+                  <View style={styles.timeTableRow}>
+                    <Text style={styles.timeTableLabel}>Guest fee:</Text>
+                    <Text style={styles.timeTableValue}>
+                      {formatPrice(fees.guestFee)} ({fees.chargeableGuests} paid guest
+                      {fees.chargeableGuests === 1 ? '' : 's'})
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
           </View>
-
-          {/* External guests */}
-          {typeof step1?.externalGuestCount === 'number' && (
-            <View style={styles.guestsRow}>
-              <Text style={styles.timeLabel}>Guests</Text>
-              <View style={styles.timeValue}>
-                <Text style={styles.timeValueText}>
-                  {step1.externalGuestCount} guest{step1.externalGuestCount === 1 ? '' : 's'}
-                </Text>
-              </View>
-              {fees.chargeableGuests > 0 && fees.guestFee > 0 && (
-                <Text style={styles.guestFeeText}>
-                  Guest fee: {formatPrice(fees.guestFee)} ({fees.chargeableGuests} paid guest
-                  {fees.chargeableGuests === 1 ? '' : 's'})
-                </Text>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Vocal Setup */}
@@ -674,45 +677,38 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
-  timeRow: {
+  timeTable: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: 'hidden',
+  },
+  timeTableRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.white,
   },
-  timeItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timeLabel: {
-    fontSize: FONT_SIZES.sm,
+  timeTableLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    minWidth: 100,
+    marginRight: SPACING.md,
   },
-  timeValue: {
-    backgroundColor: COLORS.info + '20',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  timeValueGreen: {
-    backgroundColor: COLORS.success + '20',
-  },
-  timeValueOrange: {
-    backgroundColor: COLORS.warning + '20',
-  },
-  timeValueText: {
+  timeTableValue: {
     fontSize: FONT_SIZES.base,
     fontWeight: '600',
     color: COLORS.text,
+    flex: 1,
   },
-  guestsRow: {
-    alignItems: 'center',
-    marginTop: SPACING.md,
+  timeTableValueGreen: {
+    color: COLORS.success,
   },
-  guestFeeText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  timeTableValueOrange: {
+    color: COLORS.warning,
   },
   alertBox: {
     flexDirection: 'row',
@@ -850,13 +846,12 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     marginTop: SPACING.xl,
     gap: SPACING.md,
   },
   backButton: {
-    flex: 1,
+    width: '100%',
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
@@ -870,7 +865,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   submitButton: {
-    flex: 2,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

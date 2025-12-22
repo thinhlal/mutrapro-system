@@ -9,8 +9,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import dayjs from 'dayjs';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../../config/constants';
 import { getItem, setItem } from '../../../utils/storage';
 
@@ -165,15 +167,18 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
             <Ionicons name="information-circle" size={20} color={COLORS.info} />
             <View style={styles.alertContent}>
               <Text style={styles.alertTitle}>Selected Slot</Text>
-              <Text style={styles.alertText}>
-                {new Date(bookingDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}{' '}
-                • {bookingStartTime} - {bookingEndTime}
-              </Text>
+              <View style={styles.slotInfoRow}>
+                <Text style={styles.slotInfoLabel}>Date:</Text>
+                <Text style={styles.slotInfoValue}>
+                  {dayjs(bookingDate).format('dddd, MMMM DD, YYYY')}
+                </Text>
+              </View>
+              <View style={styles.slotInfoRow}>
+                <Text style={styles.slotInfoLabel}>Time:</Text>
+                <Text style={styles.slotInfoValue}>
+                  {bookingStartTime} - {bookingEndTime}
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -217,7 +222,6 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
                 )}
               </View>
               <View style={styles.radioContent}>
-                <Ionicons name="person" size={20} color={COLORS.text} />
                 <Text style={styles.radioLabel}>I will sing</Text>
                 <View style={[styles.tag, styles.tagSuccess]}>
                   <Text style={[styles.tagText, styles.tagTextSuccess]}>
@@ -243,7 +247,6 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
                 )}
               </View>
               <View style={styles.radioContent}>
-                <Ionicons name="people" size={20} color={COLORS.text} />
                 <Text style={styles.radioLabel}>
                   I want to hire an in-house vocalist
                 </Text>
@@ -268,7 +271,6 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
                 )}
               </View>
               <View style={styles.radioContent}>
-                <Ionicons name="people" size={20} color={COLORS.text} />
                 <Text style={styles.radioLabel}>
                   I will sing & hire in-house vocalist(s) (backing/duet)
                 </Text>
@@ -285,23 +287,19 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
         {/* Vocalist Selection Section */}
         {needsVocalistSelection && (
           <View style={styles.vocalistSelectionSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeaderLeft}>
-                <Text style={styles.sectionTitle}>Select Vocalist</Text>
-                <Text style={styles.sectionSubtitle}>
-                  {vocalChoice === VOCAL_CHOICES.BOTH
-                    ? 'Select vocalists to support you (backing/duet)'
-                    : 'Choose a professional vocalist for the session'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.browseButton}
-                onPress={handleBrowseVocalists}
-              >
-                <Ionicons name="search" size={18} color={COLORS.primary} />
-                <Text style={styles.browseButtonText}>Browse All Vocalists</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.sectionTitle}>Select Vocalist</Text>
+            <Text style={styles.sectionSubtitle}>
+              {vocalChoice === VOCAL_CHOICES.BOTH
+                ? 'Select vocalists to support you (backing/duet)'
+                : 'Choose a professional vocalist for the session'}
+            </Text>
+            <TouchableOpacity
+              style={styles.browseButton}
+              onPress={handleBrowseVocalists}
+            >
+              <Ionicons name="search" size={18} color={COLORS.primary} />
+              <Text style={styles.browseButtonText}>Browse All Vocalists</Text>
+            </TouchableOpacity>
 
             {/* Only show selected vocalists summary */}
             {selectedVocalists.length > 0 ? (
@@ -310,41 +308,55 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
                   Selected Vocalist{selectedVocalists.length > 1 ? 's' : ''} (
                   {selectedVocalists.length})
                 </Text>
-                {selectedVocalists.map((vocalist, idx) => (
-                  <View key={idx} style={styles.vocalistItem}>
-                    <View style={styles.vocalistInfo}>
-                      <Text style={styles.vocalistName}>{vocalist.name}</Text>
-                      {vocalist.rating && (
-                        <View style={styles.ratingRow}>
-                          <Ionicons name="star" size={12} color={COLORS.warning} />
-                          <Text style={styles.ratingText}>
-                            {vocalist.rating.toFixed(1)}
+                {selectedVocalists.map((vocalist, idx) => {
+                  const avatarUrl = vocalist.avatar || vocalist.avatarUrl;
+                  const vocalistName = vocalist.name || vocalist.fullName || 'Unknown Vocalist';
+                  const avatarSource = avatarUrl 
+                    ? { uri: avatarUrl }
+                    : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(vocalistName)}&size=64&background=random` };
+                  
+                  return (
+                    <View key={idx} style={styles.vocalistItem}>
+                      <Image 
+                        source={avatarSource}
+                        style={styles.vocalistAvatar}
+                      />
+                      <View style={styles.vocalistInfo}>
+                        <Text style={styles.vocalistName}>
+                          {vocalistName}
+                        </Text>
+                        {vocalist.rating && typeof vocalist.rating === 'number' && (
+                          <View style={styles.ratingRow}>
+                            <Ionicons name="star" size={12} color={COLORS.warning} />
+                            <Text style={styles.ratingText}>
+                              {vocalist.rating.toFixed(1)}
+                            </Text>
+                          </View>
+                        )}
+                        {vocalist.experienceYears && typeof vocalist.experienceYears === 'number' && (
+                          <Text style={styles.vocalistDetail}>
+                            {vocalist.experienceYears} years experience
                           </Text>
-                        </View>
-                      )}
-                      {vocalist.experienceYears && (
-                        <Text style={styles.vocalistDetail}>
-                          {vocalist.experienceYears} years experience
-                        </Text>
-                      )}
-                      {vocalist.hourlyRate && (
-                        <Text style={styles.vocalistDetail}>
-                          {new Intl.NumberFormat('vi-VN', {
-                            style: 'currency',
-                            currency: 'VND',
-                          }).format(vocalist.hourlyRate)}
-                          /hour
-                        </Text>
-                      )}
+                        )}
+                        {vocalist.hourlyRate && typeof vocalist.hourlyRate === 'number' && (
+                          <Text style={styles.vocalistDetail}>
+                            {new Intl.NumberFormat('vi-VN', {
+                              style: 'currency',
+                              currency: 'VND',
+                            }).format(vocalist.hourlyRate)}
+                            /hour
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => handleVocalistSelect(vocalist)}
+                      >
+                        <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => handleVocalistSelect(vocalist)}
-                    >
-                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             ) : (
               <View style={styles.alertContainer}>
@@ -424,6 +436,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.info,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.lg,
     marginBottom: SPACING.lg,
   },
   alertContent: {
@@ -434,11 +447,29 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   alertText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+  },
+  slotInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  slotInfoLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 50,
+  },
+  slotInfoValue: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+    flex: 1,
   },
   vocalChoiceSection: {
     marginBottom: SPACING.xl,
@@ -477,16 +508,14 @@ const styles = StyleSheet.create({
   },
   radioContent: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: SPACING.xs,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   radioLabel: {
     fontSize: FONT_SIZES.base,
     fontWeight: '600',
     color: COLORS.text,
-    flex: 1,
+    marginBottom: SPACING.xs,
   },
   tag: {
     backgroundColor: COLORS.gray[200],
@@ -520,16 +549,6 @@ const styles = StyleSheet.create({
   vocalistSelectionSection: {
     marginTop: SPACING.lg,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  sectionHeaderLeft: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
@@ -539,6 +558,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
   },
   browseButton: {
     flexDirection: 'row',
@@ -576,6 +596,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     backgroundColor: COLORS.background,
   },
+  vocalistAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: SPACING.md,
+    backgroundColor: COLORS.gray[200],
+  },
   vocalistInfo: {
     flex: 1,
   },
@@ -604,13 +631,12 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     marginTop: SPACING.xl,
     gap: SPACING.md,
   },
   backButton: {
-    flex: 1,
+    width: '100%',
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
@@ -624,7 +650,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   continueButton: {
-    flex: 2,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

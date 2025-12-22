@@ -1,5 +1,6 @@
 // RecordingStep3.js - Instrument Setup (which instruments, who plays, from where)
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -11,11 +12,13 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import dayjs from 'dayjs';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../../config/constants';
 import axiosInstance from '../../../utils/axiosInstance';
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { getAvailableArtistsForRequest } from '../../../services/studioBookingService';
 import { getAllEquipment } from '../../../services/equipmentService';
+import { getItem, setItem } from '../../../utils/storage';
 
 const PERFORMER_SOURCE = {
   CUSTOMER_SELF: 'CUSTOMER_SELF',
@@ -69,6 +72,44 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
       }
     }
   }, [data]);
+
+  // Reload data from storage when screen comes into focus (after returning from InstrumentalistSelection)
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadFlowData = async () => {
+        try {
+          const stored = await getItem('recordingFlowData');
+          if (stored?.step3) {
+            if (stored.step3.instruments && Array.isArray(stored.step3.instruments)) {
+              // Ensure custom instruments always have CUSTOMER_SELF, no specialist, and CUSTOMER_SIDE
+              const normalizedInstruments = stored.step3.instruments.map(inst => {
+                if (inst.isCustomInstrument) {
+                  return {
+                    ...inst,
+                    performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
+                    specialistId: null,
+                    specialistName: null,
+                    instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
+                    equipmentId: null,
+                    equipmentName: null,
+                    rentalFee: 0,
+                  };
+                }
+                return inst;
+              });
+              setSelectedInstruments(normalizedInstruments);
+            }
+            if (stored.step3.hasLiveInstruments !== undefined) {
+              setHasLiveInstruments(stored.step3.hasLiveInstruments);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading flow data:', error);
+        }
+      };
+      loadFlowData();
+    }, [])
+  );
 
   // Fetch available instrument skills
   useEffect(() => {
@@ -309,15 +350,18 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
             <Ionicons name="information-circle" size={20} color={COLORS.info} />
             <View style={styles.alertContent}>
               <Text style={styles.alertTitle}>Selected Slot</Text>
-              <Text style={styles.alertText}>
-                {new Date(bookingDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}{' '}
-                • {bookingStartTime} - {bookingEndTime}
-              </Text>
+              <View style={styles.slotInfoRow}>
+                <Text style={styles.slotInfoLabel}>Date:</Text>
+                <Text style={styles.slotInfoValue}>
+                  {dayjs(bookingDate).format('dddd, MMMM DD, YYYY')}
+                </Text>
+              </View>
+              <View style={styles.slotInfoRow}>
+                <Text style={styles.slotInfoLabel}>Time:</Text>
+                <Text style={styles.slotInfoValue}>
+                  {bookingStartTime} - {bookingEndTime}
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -384,7 +428,6 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                 )}
               </View>
               <View style={styles.radioContent}>
-                <Ionicons name="musical-notes" size={20} color={COLORS.text} />
                 <Text style={styles.radioLabel}>Yes, use live instruments</Text>
                 <View style={[styles.tag, styles.tagInfo]}>
                   <Text style={[styles.tagText, styles.tagTextInfo]}>
@@ -411,7 +454,11 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
             ) : (
               <>
                 <Text style={styles.sectionLabel}>Select instruments:</Text>
-                <View style={styles.skillsGrid}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.skillsGrid}
+                >
                   {availableSkills.map(skill => {
                     const isSelected = selectedInstruments.some(
                       inst => inst.skillId === skill.skillId
@@ -441,7 +488,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                </ScrollView>
 
                 {/* Custom Instruments Section */}
                 <View style={styles.customInstrumentsSection}>
@@ -463,7 +510,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
 
                   {/* Add Custom Instrument Input */}
                   {showCustomInstrumentInput ? (
-                    <View style={styles.customInputContainer}>
+                    <View style={styles.customInputWrapper}>
                       <TextInput
                         style={styles.customInput}
                         placeholder="Enter instrument name (e.g., Didgeridoo, Sitar, etc.)"
@@ -472,35 +519,41 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                         onSubmitEditing={handleAddCustomInstrument}
                         autoFocus
                       />
-                      <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={handleAddCustomInstrument}
-                      >
-                        <Text style={styles.addButtonText}>Add</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => {
-                          setShowCustomInstrumentInput(false);
-                          setCustomInstrumentName('');
-                        }}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
+                      <Text style={styles.helperText}>
+                        If your instrument is not in the list above, you can add it here
+                      </Text>
+                      <View style={styles.customInputButtons}>
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={handleAddCustomInstrument}
+                        >
+                          <Text style={styles.addButtonText}>Add</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cancelButton}
+                          onPress={() => {
+                            setShowCustomInstrumentInput(false);
+                            setCustomInstrumentName('');
+                          }}
+                        >
+                          <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ) : (
-                    <TouchableOpacity
-                      style={styles.addCustomButton}
-                      onPress={() => setShowCustomInstrumentInput(true)}
-                    >
-                      <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
-                      <Text style={styles.addCustomButtonText}>Add Custom Instrument</Text>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity
+                        style={styles.addCustomButton}
+                        onPress={() => setShowCustomInstrumentInput(true)}
+                      >
+                        <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+                        <Text style={styles.addCustomButtonText}>Add Custom Instrument</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.helperText}>
+                        If your instrument is not in the list above, you can add it here
+                      </Text>
+                    </>
                   )}
-
-                  <Text style={styles.helperText}>
-                    If your instrument is not in the list above, you can add it here
-                  </Text>
                 </View>
 
                 {selectedInstruments.length > 0 && (
@@ -703,7 +756,6 @@ function InstrumentConfig({
                 <View style={configStyles.radioCircleInner} />
               )}
             </View>
-            <Ionicons name="person" size={16} color={COLORS.text} />
             <Text style={configStyles.radioLabel}>I will play</Text>
           </TouchableOpacity>
 
@@ -736,7 +788,6 @@ function InstrumentConfig({
                   <View style={configStyles.radioCircleInner} />
                 )}
             </View>
-            <Ionicons name="people" size={16} color={COLORS.text} />
             <Text style={configStyles.radioLabel}>Hire in-house instrumentalist</Text>
           </TouchableOpacity>
         </View>
@@ -771,12 +822,33 @@ function InstrumentConfig({
               <TouchableOpacity
                 style={configStyles.browseButton}
                 onPress={() => {
-                  // Navigate to instrumentalist selection (similar to vocalist)
-                  // For now, show alert
-                  Alert.alert(
-                    'Info',
-                    'Instrumentalist selection screen will be implemented'
-                  );
+                  // Save current state to storage before navigating
+                  const saveState = async () => {
+                    try {
+                      const stored = await getItem('recordingFlowData') || {};
+                      if (!stored.step3) {
+                        stored.step3 = { instruments: [] };
+                      }
+                      await setItem('recordingFlowData', stored);
+                    } catch (error) {
+                      console.error('Error saving flow data:', error);
+                    }
+                  };
+                  saveState();
+
+                  // Navigate to instrumentalist selection screen in HomeStack
+                  navigation.navigate('Home', {
+                    screen: 'InstrumentalistSelection',
+                    params: {
+                      fromFlow: true,
+                      skillId: instrument.skillId,
+                      skillName: instrument.skillName,
+                      bookingDate,
+                      bookingStartTime,
+                      bookingEndTime,
+                      selectedInstrumentalistId: instrument.specialistId,
+                    },
+                  });
                 }}
               >
                 <Ionicons name="search" size={16} color={COLORS.primary} />
@@ -789,6 +861,9 @@ function InstrumentConfig({
             </View>
           )}
       </View>
+
+      {/* Divider */}
+      <View style={configStyles.divider} />
 
       {/* Instrument Source */}
       <View style={configStyles.configItem}>
@@ -897,20 +972,22 @@ function InstrumentConfig({
               )}
               {instrument.equipmentId && (
                 <View style={configStyles.quantityContainer}>
-                  <Text style={configStyles.quantityLabel}>Quantity:</Text>
-                  <TextInput
-                    style={configStyles.quantityInput}
-                    value={instrument.quantity?.toString() || '1'}
-                    onChangeText={(text) => {
-                      const num = parseInt(text) || 1;
-                      if (num >= 1) {
-                        onUpdate({ quantity: num });
-                      }
-                    }}
-                    keyboardType="number-pad"
-                  />
+                  <View style={configStyles.quantityRow}>
+                    <Text style={configStyles.quantityLabel}>Quantity:</Text>
+                    <TextInput
+                      style={configStyles.quantityInput}
+                      value={instrument.quantity?.toString() || '1'}
+                      onChangeText={(text) => {
+                        const num = parseInt(text) || 1;
+                        if (num >= 1) {
+                          onUpdate({ quantity: num });
+                        }
+                      }}
+                      keyboardType="number-pad"
+                    />
+                  </View>
                   <Text style={configStyles.rentalFeeText}>
-                    • Fee: {instrument.rentalFee?.toLocaleString('vi-VN')} VND
+                    Fee: {instrument.rentalFee?.toLocaleString('vi-VN')} VND
                   </Text>
                 </View>
               )}
@@ -964,6 +1041,11 @@ const configStyles = StyleSheet.create({
   configItem: {
     marginTop: SPACING.md,
   },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
+  },
   configLabel: {
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
@@ -975,7 +1057,7 @@ const configStyles = StyleSheet.create({
   },
   radioOption: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1005,6 +1087,8 @@ const configStyles = StyleSheet.create({
     marginLeft: SPACING.xs,
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
+    flex: 1,
+    flexWrap: 'wrap',
   },
   selectionContainer: {
     marginTop: SPACING.sm,
@@ -1078,9 +1162,12 @@ const configStyles = StyleSheet.create({
     marginTop: SPACING.xs / 2,
   },
   quantityContainer: {
+    marginTop: SPACING.sm,
+  },
+  quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   quantityLabel: {
     fontSize: FONT_SIZES.base,
@@ -1098,7 +1185,6 @@ const configStyles = StyleSheet.create({
     color: COLORS.text,
   },
   rentalFeeText: {
-    marginLeft: SPACING.sm,
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
@@ -1156,11 +1242,29 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   alertText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+  },
+  slotInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  slotInfoLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 50,
+  },
+  slotInfoValue: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+    flex: 1,
   },
   liveInstrumentsSection: {
     marginBottom: SPACING.xl,
@@ -1289,8 +1393,8 @@ const styles = StyleSheet.create({
   },
   skillsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingRight: SPACING.md,
     marginBottom: SPACING.lg,
   },
   skillCheckbox: {
@@ -1303,7 +1407,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     backgroundColor: COLORS.white,
     marginRight: SPACING.sm,
-    marginBottom: SPACING.sm,
   },
   skillCheckboxSelected: {
     borderColor: COLORS.primary,
@@ -1336,6 +1439,9 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
   },
+  customInputWrapper: {
+    marginTop: SPACING.sm,
+  },
   customInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1343,7 +1449,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   customInput: {
-    flex: 1,
+    width: '100%',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
@@ -1351,12 +1457,20 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  customInputButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
   },
   addButton: {
+    flex: 1,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
   },
   addButtonText: {
     fontSize: FONT_SIZES.base,
@@ -1364,10 +1478,12 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   cancelButton: {
+    flex: 1,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.gray[200],
     borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: FONT_SIZES.base,
@@ -1407,13 +1523,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     marginTop: SPACING.xl,
     gap: SPACING.md,
   },
   backButton: {
-    flex: 1,
+    width: '100%',
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
@@ -1427,7 +1542,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   continueButton: {
-    flex: 2,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
