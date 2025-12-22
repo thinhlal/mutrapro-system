@@ -10,6 +10,7 @@ import {
   Alert,
   message,
   Spin,
+  InputNumber,
 } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -32,6 +33,11 @@ export default function RecordingStep1({ data, onComplete }) {
   );
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [externalGuestCount, setExternalGuestCount] = useState(
+    typeof data?.externalGuestCount === 'number'
+      ? data.externalGuestCount
+      : 0
+  );
 
   // Fetch available slots from backend when date is selected
   useEffect(() => {
@@ -184,6 +190,7 @@ export default function RecordingStep1({ data, onComplete }) {
       bookingStartTime: startStr,
       bookingEndTime: endStr,
       durationHours, // Save duration for fee calculation
+      externalGuestCount,
     });
   };
 
@@ -348,6 +355,25 @@ export default function RecordingStep1({ data, onComplete }) {
                 </Space>
               </div>
             )}
+
+            {/* External Guests */}
+            <div style={{ marginTop: 24 }}>
+              <Title level={5}>External Guests</Title>
+              <Text type="secondary">
+                Number of guests accompanying you to the session (if any)
+              </Text>
+              <div style={{ marginTop: 8 }}>
+                <Space>
+                  <span>Guests:</span>
+                  <InputNumber
+                    min={0}
+                    max={50}
+                    value={externalGuestCount}
+                    onChange={value => setExternalGuestCount(value ?? 0)}
+                  />
+                </Space>
+              </div>
+            </div>
 
             {selectedTimeRange && (
               <div className={styles.selectedInfo}>

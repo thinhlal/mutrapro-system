@@ -93,11 +93,13 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     setUploadedFile(null);
   };
 
-  // Calculate fees (studio + participant + equipment)
+  // Calculate fees (studio + participant + equipment + guests)
   const calculateFees = () => {
     let studioFee = 0;
     let participantFee = 0;
     let equipmentRentalFee = 0;
+    let guestFee = 0;
+    let chargeableGuests = 0;
 
     // Studio fee = hourlyRate * durationHours
     const studio = step0?.studio;
@@ -143,11 +145,34 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       });
     }
 
+    // Guest fee (based on externalGuestCount and studio policy)
+    const externalGuestCount =
+      typeof step1?.externalGuestCount === 'number'
+        ? step1.externalGuestCount
+        : 0;
+
+    if (
+      studio &&
+      typeof studio.extraGuestFeePerPerson === 'number' &&
+      externalGuestCount > 0
+    ) {
+      const freeLimit =
+        typeof studio.freeExternalGuestsLimit === 'number'
+          ? studio.freeExternalGuestsLimit
+          : 0;
+      chargeableGuests = Math.max(0, externalGuestCount - freeLimit);
+      if (chargeableGuests > 0) {
+        guestFee = chargeableGuests * studio.extraGuestFeePerPerson;
+      }
+    }
+
     return {
       studioFee,
       participantFee,
       equipmentRentalFee,
-      totalFee: studioFee + participantFee + equipmentRentalFee,
+      guestFee,
+      chargeableGuests,
+      totalFee: studioFee + participantFee + equipmentRentalFee + guestFee,
     };
   };
 
@@ -338,6 +363,9 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       startTime: step1.bookingStartTime,
       endTime: step1.bookingEndTime,
       durationHours: step1.durationHours,
+      externalGuestCount: typeof step1.externalGuestCount === 'number'
+        ? step1.externalGuestCount
+        : 0,
       participants,
       requiredEquipment,
     };
@@ -536,6 +564,35 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </div>
             </Col>
           </Row>
+
+          {/* External guests (if any) */}
+          {typeof step1?.externalGuestCount === 'number' && (
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col xs={24}>
+                <div style={{ textAlign: 'center' }}>
+                  <Text
+                    type="secondary"
+                    style={{ display: 'block', marginBottom: 8 }}
+                  >
+                    Guests
+                  </Text>
+                  <Space direction="vertical">
+                    <Tag color="default" style={{ fontSize: 14 }}>
+                      {step1.externalGuestCount} guest
+                      {step1.externalGuestCount === 1 ? '' : 's'}
+                    </Tag>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {fees.chargeableGuests > 0 && fees.guestFee > 0
+                        ? `Guest fee: ${fees.guestFee.toLocaleString('vi-VN')} VND (${fees.chargeableGuests} paid guest${
+                            fees.chargeableGuests === 1 ? '' : 's'
+                          })`
+                        : 'No extra guest fee (within free guest limit)'}
+                    </Text>
+                  </Space>
+                </div>
+              </Col>
+            </Row>
+          )}
         </Card>
 
         {/* Vocal Setup */}
@@ -657,6 +714,17 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
             <Col xs={24} sm={6}>
               <Statistic
+                title="Guest fee"
+                value={fees.guestFee}
+                suffix="VND"
+                valueStyle={{ color: '#faad14' }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                (Extra guests beyond free limit)
+              </Text>
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
                 title="Total"
                 value={fees.totalFee}
                 suffix="VND"
@@ -723,6 +791,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
                   {fees.totalFee.toLocaleString('vi-VN')} VND
                 </Text>
+                {fees.guestFee > 0 && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      (Includes guest fee:{' '}
+                      {fees.guestFee.toLocaleString('vi-VN')} VND)
+                    </Text>
+                  </div>
+                )}
               </Descriptions.Item>
             </Descriptions>
           </div>

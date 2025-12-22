@@ -141,7 +141,7 @@ const RequestDetailPage = () => {
 
     loadContracts();
   }, [requestId]);
-
+  
   const getStatusConfig = status => {
     const hasManager = !!request?.managerUserId;
     const configs = {
@@ -706,21 +706,52 @@ const RequestDetailPage = () => {
                       size="small"
                       style={{ width: '100%' }}
                     >
-                      {booking.participants.map((p, index) => (
-                        <div key={index}>
-                          <Tag
-                            color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
-                          >
-                            {p.roleType}
-                          </Tag>
-                          {p.specialistName || 'Self'}
-                          {p.participantFee && (
-                            <span style={{ marginLeft: 8, color: '#666' }}>
-                              - {p.participantFee.toLocaleString('vi-VN')} VND
+                      {booking.participants.map((p, index) => {
+                        const roleLabel =
+                          p.roleType === 'VOCAL'
+                            ? 'Vocal'
+                            : p.roleType === 'INSTRUMENT'
+                              ? 'Instrument'
+                              : p.roleType || 'Participant';
+
+                        const performerLabel =
+                          p.performerSource === 'CUSTOMER_SELF'
+                            ? 'Self'
+                            : p.specialistName || 'Internal artist';
+
+                        const skillLabel = p.skillName
+                          ? ` (${p.skillName})`
+                          : '';
+
+                        const feeNumber =
+                          typeof p.participantFee === 'number'
+                            ? p.participantFee
+                            : p.participantFee
+                              ? Number(p.participantFee)
+                              : 0;
+
+                        return (
+                          <div key={index}>
+                            <Tag
+                              color={
+                                p.roleType === 'VOCAL' ? 'blue' : 'purple'
+                              }
+                              style={{ marginRight: 8 }}
+                            >
+                              {roleLabel}
+                            </Tag>
+                            <span>
+                              {performerLabel}
+                              {skillLabel}
                             </span>
-                          )}
-                        </div>
-                      ))}
+                            {feeNumber > 0 && (
+                              <span style={{ marginLeft: 8, color: '#666' }}>
+                                - {feeNumber.toLocaleString('vi-VN')} VND
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </Space>
                   </Descriptions.Item>
                 )}
@@ -748,31 +779,82 @@ const RequestDetailPage = () => {
                     </Descriptions.Item>
                   )}
 
-                {booking.artistFee && booking.artistFee > 0 && (
-                  <Descriptions.Item label="💰 Participant Fee">
-                    {booking.artistFee.toLocaleString('vi-VN')} VND
+                <Descriptions.Item label="💰 Participant Fee">
+                  {(booking.artistFee || 0).toLocaleString('vi-VN')} VND
+                </Descriptions.Item>
+
+                <Descriptions.Item label="🔧 Equipment Fee">
+                  {(booking.equipmentRentalFee || 0).toLocaleString('vi-VN')} VND
+                </Descriptions.Item>
+
+                {booking.externalGuestFee !== undefined && (
+                  <Descriptions.Item
+                    label={(() => {
+                      const count =
+                        typeof booking.externalGuestCount === 'number'
+                          ? booking.externalGuestCount
+                          : 0;
+                      const freeLimit =
+                        typeof booking.freeExternalGuestsLimit === 'number'
+                          ? booking.freeExternalGuestsLimit
+                          : 0;
+                      const paidGuests = Math.max(0, count - freeLimit);
+                      const freeGuests = Math.max(0, count - paidGuests);
+
+                      if (count === 0) {
+                        return '👥 Guest Fee (0 guests)';
+                      }
+
+                      if (paidGuests > 0 && freeLimit > 0) {
+                        return `👥 Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
+                      }
+
+                      if (paidGuests > 0) {
+                        return `👥 Guest Fee (${count} paid guest${
+                          count === 1 ? '' : 's'
+                        })`;
+                      }
+
+                      return `👥 Guest Fee (${count} free guest${
+                        count === 1 ? '' : 's'
+                      })`;
+                    })()}
+                  >
+                    {booking.externalGuestFee && booking.externalGuestFee > 0
+                      ? `${booking.externalGuestFee.toLocaleString('vi-VN')} VND`
+                      : '0 VND'}
                   </Descriptions.Item>
                 )}
-                {booking.equipmentRentalFee &&
-                  booking.equipmentRentalFee > 0 && (
-                    <Descriptions.Item label="🔧 Equipment Fee">
-                      {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
-                    </Descriptions.Item>
-                  )}
+
+                {/* Studio fee is derived from totalCost - (artistFee + equipmentRentalFee + externalGuestFee) */}
                 {booking.totalCost && (
-                  <Descriptions.Item label="💵 Total Cost" span={2}>
-                    <Space>
-                      <span
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 'bold',
-                          color: '#ff4d4f',
-                        }}
-                      >
-                        {booking.totalCost.toLocaleString('vi-VN')} VND
-                      </span>
-                    </Space>
-                  </Descriptions.Item>
+                  <>
+                    <Descriptions.Item label="🏢 Studio Fee">
+                      {(() => {
+                        const artistFee = booking.artistFee || 0;
+                        const equipmentFee = booking.equipmentRentalFee || 0;
+                        const guestFee = booking.externalGuestFee || 0;
+                        const rawStudioFee =
+                          booking.totalCost - artistFee - equipmentFee - guestFee;
+                        const studioFee =
+                          rawStudioFee > 0 ? rawStudioFee : 0;
+                        return `${studioFee.toLocaleString('vi-VN')} VND`;
+                      })()}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="💵 Total Cost" span={2}>
+                      <Space>
+                        <span
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 'bold',
+                            color: '#ff4d4f',
+                          }}
+                        >
+                          {booking.totalCost.toLocaleString('vi-VN')} VND
+                        </span>
+                      </Space>
+                    </Descriptions.Item>
+                  </>
                 )}
               </Descriptions>
             ) : (

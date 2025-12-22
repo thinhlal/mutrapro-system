@@ -3,6 +3,7 @@ package com.mutrapro.request_service.controller;
 import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
+import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.request_service.service.ServiceRequestService;
@@ -22,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @Slf4j
 @RestController
@@ -181,6 +184,25 @@ public class ServiceRequestController {
         ServiceRequestResponse updated = serviceRequestService.updateRequestStatus(requestId, status);
         return ApiResponse.<ServiceRequestResponse>builder()
                 .message("Request status updated successfully")
+                .data(updated)
+                .statusCode(200)
+                .build();
+    }
+    
+    @PutMapping("/{requestId}/total-price")
+    @Operation(summary = "Cập nhật totalPrice snapshot cho service request (dùng sau khi tạo booking)")
+    public ApiResponse<ServiceRequestResponse> updateRequestTotalPrice(
+            @Parameter(description = "ID của request")
+            @PathVariable String requestId,
+            @Parameter(description = "Total price mới (snapshot từ booking.totalCost)")
+            @RequestParam BigDecimal totalPrice,
+            @Parameter(description = "Currency (VD: VND, USD, EUR)")
+            @RequestParam(required = false) CurrencyType currency) {
+        log.info("Updating request totalPrice: requestId={}, totalPrice={}, currency={}", 
+            requestId, totalPrice, currency);
+        ServiceRequestResponse updated = serviceRequestService.updateTotalPrice(requestId, totalPrice, currency);
+        return ApiResponse.<ServiceRequestResponse>builder()
+                .message("Request totalPrice updated successfully")
                 .data(updated)
                 .statusCode(200)
                 .build();

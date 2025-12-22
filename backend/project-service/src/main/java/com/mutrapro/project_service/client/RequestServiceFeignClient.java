@@ -43,6 +43,16 @@ public interface RequestServiceFeignClient {
     ApiResponse<ServiceRequestInfoResponse> updateRequestStatus(
         @PathVariable("requestId") String requestId,
         @RequestParam("status") String status);
+    
+    /**
+     * Cập nhật totalPrice snapshot cho service request (dùng sau khi tạo booking)
+     * PUT /requests/{requestId}/total-price?totalPrice={totalPrice}&currency={currency}
+     */
+    @PutMapping("/requests/{requestId}/total-price")
+    ApiResponse<ServiceRequestInfoResponse> updateRequestTotalPrice(
+        @PathVariable("requestId") String requestId,
+        @RequestParam("totalPrice") java.math.BigDecimal totalPrice,
+        @RequestParam(value = "currency", required = false) String currency);
 }
 
 

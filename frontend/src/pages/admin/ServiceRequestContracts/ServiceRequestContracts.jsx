@@ -907,16 +907,53 @@ export default function ServiceRequestContracts() {
                   </Descriptions.Item>
                 )}
 
-              {booking.artistFee && booking.artistFee > 0 && (
-                <Descriptions.Item label="💰 Participant Fee">
-                  {booking.artistFee.toLocaleString('vi-VN')} VND
+              <Descriptions.Item label="💰 Participant Fee">
+                {(booking.artistFee || 0).toLocaleString('vi-VN')} VND
+              </Descriptions.Item>
+
+              <Descriptions.Item label="🔧 Equipment Fee">
+                {(booking.equipmentRentalFee || 0).toLocaleString('vi-VN')} VND
+              </Descriptions.Item>
+
+              {booking.externalGuestFee !== undefined && (
+                <Descriptions.Item
+                  label={(() => {
+                    const count =
+                      typeof booking.externalGuestCount === 'number'
+                        ? booking.externalGuestCount
+                        : 0;
+                    const freeLimit =
+                      typeof booking.freeExternalGuestsLimit === 'number'
+                        ? booking.freeExternalGuestsLimit
+                        : 0;
+                    const paidGuests = Math.max(0, count - freeLimit);
+                    const freeGuests = Math.max(0, count - paidGuests);
+
+                    if (count === 0) {
+                      return '👥 Guest Fee (0 guests)';
+                    }
+
+                    if (paidGuests > 0 && freeLimit > 0) {
+                      return `👥 Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
+                    }
+
+                    if (paidGuests > 0) {
+                      return `👥 Guest Fee (${count} paid guest${
+                        count === 1 ? '' : 's'
+                      })`;
+                    }
+
+                    return `👥 Guest Fee (${count} free guest${
+                      count === 1 ? '' : 's'
+                    })`;
+                  })()}
+                >
+                  {booking.externalGuestFee && booking.externalGuestFee > 0
+                    ? `${booking.externalGuestFee.toLocaleString('vi-VN')} VND`
+                    : '0 VND'}
                 </Descriptions.Item>
               )}
-              {booking.equipmentRentalFee && booking.equipmentRentalFee > 0 && (
-                <Descriptions.Item label="🔧 Equipment Fee">
-                  {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
-                </Descriptions.Item>
-              )}
+
               {booking.totalCost && (
                 <Descriptions.Item label="💵 Total Cost" span={2}>
                   <Space>

@@ -821,6 +821,23 @@ public class StudioBookingService {
             .multiply(durationHoursDecimal)
             .setScale(2, java.math.RoundingMode.HALF_UP);
         
+        // 8.6. Tính guest fee dựa trên externalGuestCount và studio policy
+        Integer externalGuestCount = request.getExternalGuestCount() != null
+            ? request.getExternalGuestCount()
+            : 0;
+        
+        int freeGuestLimit = studio.getFreeExternalGuestsLimit() != null
+            ? studio.getFreeExternalGuestsLimit()
+            : 0;
+        int chargeableGuests = Math.max(0, externalGuestCount - freeGuestLimit);
+        
+        BigDecimal guestFee = BigDecimal.ZERO;
+        if (chargeableGuests > 0 && studio.getExtraGuestFeePerPerson() != null) {
+            guestFee = studio.getExtraGuestFeePerPerson()
+                .multiply(BigDecimal.valueOf(chargeableGuests))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        
         // 9. Tạo booking
         StudioBooking booking = StudioBooking.builder()
             .userId(customerUserId)
@@ -835,19 +852,34 @@ public class StudioBookingService {
             .endTime(request.getEndTime())
             .status(BookingStatus.TENTATIVE) // Chờ Manager tạo contract
             .durationHours(request.getDurationHours())
-            .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
+            .externalGuestCount(externalGuestCount)
             .artistFee(totalParticipantFee)
             .equipmentRentalFee(totalEquipmentRentalFee)
-            .externalGuestFee(BigDecimal.ZERO)
-            .totalCost(studioCost.add(totalParticipantFee).add(totalEquipmentRentalFee)) // Studio cost + participant fees + equipment fees
+            .externalGuestFee(guestFee)
+            .totalCost(studioCost.add(totalParticipantFee).add(totalEquipmentRentalFee).add(guestFee)) // Studio cost + participant fees + equipment fees + guest fee
             .purpose(request.getPurpose())
             .specialInstructions(request.getSpecialInstructions())
             .notes(request.getNotes())
             .build();
         
         StudioBooking saved = studioBookingRepository.save(booking);
-        log.info("Created studio booking from service request: bookingId={}, requestId={}, bookingDate={}",
-            saved.getBookingId(), requestId, request.getBookingDate());
+        log.info("Created studio booking from service request: bookingId={}, requestId={}, bookingDate={}, totalCost={}",
+            saved.getBookingId(), requestId, request.getBookingDate(), saved.getTotalCost());
+        
+        // 9.5. Cập nhật snapshot totalPrice cho service request (totalPrice = booking.totalCost, currency = VND)
+        try {
+            if (saved.getTotalCost() != null) {
+                requestServiceFeignClient.updateRequestTotalPrice(
+                    requestId,
+                    saved.getTotalCost(),
+                    "VND"
+                );
+            }
+        } catch (Exception e) {
+            // Non-blocking: log warning nhưng không rollback booking
+            log.warn("Failed to update totalPrice for service request {} from booking {}: {}", 
+                requestId, saved.getBookingId(), e.getMessage());
+        }
         
         // 10. Tạo booking_participants
         if (request.getParticipants() != null && !request.getParticipants().isEmpty()) {
@@ -1037,6 +1069,10 @@ public class StudioBookingService {
             .startTime(booking.getStartTime())
             .endTime(booking.getEndTime())
             .status(booking.getStatus())
+            .freeExternalGuestsLimit(
+                booking.getStudio() != null
+                    ? booking.getStudio().getFreeExternalGuestsLimit()
+                    : null)
             .holdExpiresAt(booking.getHoldExpiresAt())
             .externalGuestCount(booking.getExternalGuestCount())
             .durationHours(booking.getDurationHours())

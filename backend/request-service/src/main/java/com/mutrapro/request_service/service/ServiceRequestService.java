@@ -404,6 +404,30 @@ public class ServiceRequestService {
     }
     
     /**
+     * Cập nhật snapshot totalPrice & currency cho service request (dùng sau khi tạo booking)
+     * Hiện tại dùng cho recording flow: totalPrice = booking.totalCost (VND)
+     */
+    @Transactional
+    public ServiceRequestResponse updateTotalPrice(String requestId, BigDecimal totalPrice, CurrencyType currency) {
+        ServiceRequest request = serviceRequestRepository.findById(requestId)
+            .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
+        
+        BigDecimal safeTotal = totalPrice != null ? totalPrice.setScale(2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        request.setTotalPrice(safeTotal);
+        if (currency != null) {
+            request.setCurrency(currency);
+        } else if (request.getCurrency() == null) {
+            request.setCurrency(CurrencyType.VND);
+        }
+        
+        ServiceRequest saved = serviceRequestRepository.save(request);
+        log.info("Updated totalPrice for request {}: totalPrice={}, currency={}", 
+            saved.getRequestId(), saved.getTotalPrice(), saved.getCurrency());
+        
+        return serviceRequestMapper.toServiceRequestResponse(saved);
+    }
+    
+    /**
      * Lấy tất cả service requests với các filter tùy chọn (có phân trang)
      * 
      * @param status Filter theo status (optional)

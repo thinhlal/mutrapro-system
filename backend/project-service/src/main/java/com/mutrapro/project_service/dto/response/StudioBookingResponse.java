@@ -37,6 +37,7 @@ public class StudioBookingResponse {
     LocalTime startTime;
     LocalTime endTime;
     BookingStatus status;
+    Integer freeExternalGuestsLimit;
     LocalDateTime holdExpiresAt;
     Integer externalGuestCount;
     BigDecimal durationHours;
