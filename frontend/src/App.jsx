@@ -137,14 +137,17 @@ function RecordingFlowStorageWatcher() {
 
   useEffect(() => {
     const isRecordingFlowPath = location.pathname.startsWith('/recording-flow');
+    const isDetailPageFromFlow = location.pathname.startsWith('/pros/singer/') && 
+                                  location.state?.fromFlow;
 
-    if (!isRecordingFlowPath) {
+    // Don't clear if still in flow or viewing detail page from flow
+    if (!isRecordingFlowPath && !isDetailPageFromFlow) {
       // Clear flow-related session storage when user leaves the flow routes
       RECORDING_FLOW_STORAGE_KEYS.forEach(key =>
         sessionStorage.removeItem(key)
       );
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.state]);
 
   useEffect(() => {
     // Cleanup when app unmounts (e.g. tab close or full reload)

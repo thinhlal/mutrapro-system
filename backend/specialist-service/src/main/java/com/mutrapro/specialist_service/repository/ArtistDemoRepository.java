@@ -40,5 +40,13 @@ public interface ArtistDemoRepository extends JpaRepository<ArtistDemo, String>,
      * Tìm tất cả main demos của specialist (nên chỉ có 1, nhưng để an toàn)
      */
     List<ArtistDemo> findBySpecialistAndIsMainDemoTrue(Specialist specialist);
+    
+    /**
+     * Batch load main demos public cho nhiều specialists cùng lúc (tối ưu hiệu suất)
+     * @param specialists Danh sách specialists
+     * @return Danh sách main demos public
+     */
+    @Query("SELECT ad FROM ArtistDemo ad WHERE ad.specialist IN :specialists AND ad.isMainDemo = true AND ad.isPublic = true")
+    List<ArtistDemo> findBySpecialistInAndIsMainDemoTrueAndIsPublicTrue(@Param("specialists") List<Specialist> specialists);
 }
 

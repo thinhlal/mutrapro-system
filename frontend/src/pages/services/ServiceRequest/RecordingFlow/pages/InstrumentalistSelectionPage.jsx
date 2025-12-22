@@ -55,6 +55,16 @@ export default function InstrumentalistSelectionPage() {
   const fetchInstrumentalists = async () => {
     setLoading(true);
     try {
+      // Debug: Log parameters
+      console.log('Fetching instrumentalists with params:', {
+        bookingDate,
+        bookingStartTime,
+        bookingEndTime,
+        skillId,
+        skillName,
+        roleType: 'INSTRUMENT',
+      });
+      
       const response = await getAvailableArtistsForRequest(
         bookingDate,
         bookingStartTime,
@@ -64,12 +74,22 @@ export default function InstrumentalistSelectionPage() {
         null
       );
 
+      console.log('API Response:', response);
+
       if (response?.status === 'success' && response?.data) {
+        console.log('Available instrumentalists:', response.data);
         setInstrumentalists(response.data);
       } else {
+        console.warn('No data in response or status not success:', response);
         setInstrumentalists([]);
       }
     } catch (error) {
+      console.error('Error fetching instrumentalists:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       message.error(error.message || 'Unable to load instrumentalist list');
       setInstrumentalists([]);
     } finally {
@@ -143,6 +163,9 @@ export default function InstrumentalistSelectionPage() {
         });
       }
 
+      // Preserve currentStep
+      flowData.currentStep = flowData.currentStep || 3;
+
       sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
 
       // Try to remove callback if exists
@@ -153,7 +176,13 @@ export default function InstrumentalistSelectionPage() {
       }
 
       message.success('Selected instrumentalist successfully');
-      navigate('/recording-flow', { state: { step: 3 } });
+      navigate('/recording-flow', { 
+        state: { 
+          step: 3,
+          returnFromSelection: true,
+          timestamp: Date.now() // Force re-render
+        } 
+      });
     } catch (error) {
       console.error('Error saving instrumentalist selection:', error);
       message.error(
@@ -212,6 +241,9 @@ export default function InstrumentalistSelectionPage() {
             });
           }
 
+          // Preserve currentStep
+          flowData.currentStep = flowData.currentStep || 3;
+
           sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
         }
       } catch (error) {
@@ -219,7 +251,13 @@ export default function InstrumentalistSelectionPage() {
       }
     }
 
-    navigate('/recording-flow', { state: { step: 3 } });
+    navigate('/recording-flow', { 
+      state: { 
+        step: 3,
+        returnFromSelection: true,
+        timestamp: Date.now() // Force re-render
+      } 
+    });
   };
 
   const isSelected = specialistId => {
@@ -299,9 +337,18 @@ export default function InstrumentalistSelectionPage() {
                     key={instrumentalist.specialistId}
                     specialist={{
                       ...instrumentalist,
-                      fullName: instrumentalist.name,
-                      bio: instrumentalist.role || '',
-                      reviews: instrumentalist.totalProjects || 0,
+                      // Ensure fullName is set (use name as fallback if fullName is not available)
+                      fullName: instrumentalist.fullName || instrumentalist.name,
+                      // Ensure all required fields are present
+                      avatarUrl: instrumentalist.avatarUrl,
+                      bio: instrumentalist.bio || '',
+                      rating: instrumentalist.rating,
+                      reviews: instrumentalist.reviews || 0,
+                      genres: instrumentalist.genres || [],
+                      credits: instrumentalist.credits || [],
+                      experienceYears: instrumentalist.experienceYears,
+                      mainDemoPreviewUrl: instrumentalist.mainDemoPreviewUrl,
+                      gender: instrumentalist.gender,
                     }}
                     isSelected={isSelected(instrumentalist.specialistId)}
                     selectedId={selectedId}

@@ -90,4 +90,41 @@ public interface SpecialistSlotRepository extends JpaRepository<SpecialistSlot, 
      * Đếm số slots của một specialist
      */
     long countBySpecialist(Specialist specialist);
+    
+    /**
+     * Batch check booked slots cho nhiều specialists cùng lúc (tối ưu hiệu suất)
+     */
+    @Query("SELECT s FROM SpecialistSlot s " +
+           "WHERE s.specialist IN :specialists " +
+           "AND s.slotStatus = 'BOOKED' " +
+           "AND (" +
+           "  (s.slotDate = :date AND s.isRecurring = false) OR " +
+           "  (s.isRecurring = true AND s.dayOfWeek = :dayOfWeek)" +
+           ") " +
+           "AND s.startTime IN :startTimes")
+    List<SpecialistSlot> findBookedSlotsForMultipleSpecialists(
+        @Param("specialists") List<Specialist> specialists,
+        @Param("date") LocalDate date,
+        @Param("dayOfWeek") Integer dayOfWeek,
+        @Param("startTimes") List<LocalTime> startTimes
+    );
+    
+    /**
+     * Batch check available slots cho nhiều specialists cùng lúc (tối ưu hiệu suất)
+     */
+    @Query("SELECT s FROM SpecialistSlot s " +
+           "WHERE s.specialist IN :specialists " +
+           "AND s.slotStatus = 'AVAILABLE' " +
+           "AND (" +
+           "  (s.slotDate = :date AND s.isRecurring = false) OR " +
+           "  (s.isRecurring = true AND s.dayOfWeek = :dayOfWeek)" +
+           ") " +
+           "AND s.startTime IN :startTimes " +
+           "ORDER BY s.specialist.specialistId ASC, s.startTime ASC")
+    List<SpecialistSlot> findAvailableSlotsForMultipleSpecialists(
+        @Param("specialists") List<Specialist> specialists,
+        @Param("date") LocalDate date,
+        @Param("dayOfWeek") Integer dayOfWeek,
+        @Param("startTimes") List<LocalTime> startTimes
+    );
 }

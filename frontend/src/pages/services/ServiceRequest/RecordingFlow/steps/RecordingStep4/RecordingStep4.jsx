@@ -298,10 +298,13 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             participantFee: totalFee, // Send calculated value (hourlyRate x hours)
           });
         } else if (instrument.performerSource === 'CUSTOMER_SELF') {
+          // Custom instruments: skillId = null, skillName = instrument name
+          const isCustomInstrument = instrument.isCustomInstrument;
           participants.push({
             roleType: 'INSTRUMENT',
             performerSource: 'CUSTOMER_SELF',
-            skillId: instrument.skillId,
+            skillId: isCustomInstrument ? null : instrument.skillId,
+            skillName: isCustomInstrument ? instrument.skillName : null,
             instrumentSource: instrument.instrumentSource,
             equipmentId:
               instrument.instrumentSource === 'STUDIO_SIDE'
@@ -404,11 +407,18 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       }
     } catch (error) {
       console.error('Submit error:', error);
-      const errorMessage =
-        error?.message ||
-        error?.data?.message ||
-        'Failed to create request and booking';
-      toast.error(errorMessage);
+      
+      // Parse error message to provide better user feedback
+      let errorMessage = error?.message || error?.data?.message || 'Failed to create request and booking';
+      
+      // Check for artist availability errors
+      if (errorMessage.includes('not available') || errorMessage.includes('no registered slots') || errorMessage.includes('missing slots')) {
+        errorMessage = 'One or more selected artists are no longer available for the requested time slot. Please go back and select different artists or choose a different time slot.';
+      } else if (errorMessage.includes('Artist') && errorMessage.includes('conflict')) {
+        errorMessage = 'One or more selected artists have a scheduling conflict. Please go back and select different artists or choose a different time slot.';
+      }
+      
+      toast.error(errorMessage, { duration: 6000 });
     } finally {
       setSubmitting(false);
     }
@@ -605,35 +615,6 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           )}
         </Card>
 
-        <Divider />
-
-        {/* File Upload Section */}
-        <Card type="inner" title="Upload File *" className={styles.section}>
-          <Alert
-            message="File required"
-            description="Please upload a reference track, backing track, or sheet music (PDF/XML)"
-            type="info"
-            style={{ marginBottom: 16 }}
-          />
-          <Upload
-            fileList={fileList}
-            onChange={handleFileChange}
-            beforeUpload={handleBeforeUpload}
-            onRemove={handleRemoveFile}
-            maxCount={1}
-          >
-            <Button size="large">Choose file</Button>
-          </Upload>
-          {fileList.length > 0 && (
-            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              File: {fileList[0].name} (
-              {(fileList[0].size / 1024 / 1024).toFixed(2)} MB)
-            </Text>
-          )}
-        </Card>
-
-        <Divider />
-
         {/* Fee Summary */}
         <Card
           type="inner"
@@ -718,10 +699,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                         {item.type === 'studio'
                           ? '🏢 Studio'
                           : item.type === 'vocalist'
-                            ? '🎤 Vocalist'
-                            : item.type === 'instrumentalist'
-                              ? '🎸 Instrumentalist'
-                              : '🔧 Equipment'}
+                          ? '🎤 Vocalist'
+                          : item.type === 'instrumentalist'
+                            ? '🎸 Instrumentalist'
+                            : '🔧 Equipment'}
                       </Text>
                       <Text type="secondary">({item.name})</Text>
                     </Space>
@@ -755,11 +736,15 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           title={<span>Service Request Information</span>}
           className={styles.section}
         >
-          <Form form={form} layout="vertical" requiredMark="optional">
+          <Form form={form} layout="vertical">
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label="Title"
+                  label={
+                    <span>
+                      Title
+                    </span>
+                  }
                   name="title"
                   rules={[{ required: true, message: 'Please enter a title' }]}
                 >
@@ -768,7 +753,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </Col>
               <Col xs={24}>
                 <Form.Item
-                  label="Description"
+                  label={
+                    <span>
+                      Description
+                    </span>
+                  }
                   name="description"
                   rules={[
                     { required: true, message: 'Please enter a description' },
@@ -788,7 +777,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label="Contact name"
+                  label={
+                    <span>
+                      Contact name
+                    </span>
+                  }
                   name="contactName"
                   rules={[{ required: true, message: 'Please enter a name' }]}
                 >
@@ -797,7 +790,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label="Phone number"
+                  label={
+                    <span>
+                      Phone number 
+                    </span>
+                  }
                   name="contactPhone"
                   rules={[
                     { required: true, message: 'Please enter a phone number' },
@@ -810,7 +807,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label="Contact email"
+                  label={
+                    <span>
+                      Contact email
+                    </span>
+                  }
                   name="contactEmail"
                   rules={[
                     { required: true, message: 'Please enter an email' },
@@ -822,6 +823,33 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </Col>
             </Row>
           </Form>
+        </Card>
+
+        <Divider />
+
+        {/* File Upload Section */}
+        <Card type="inner" title="Upload File *" className={styles.section}>
+          <Alert
+            message="File required"
+            description="Please upload a reference track, backing track, or sheet music (PDF/XML)"
+            type="info"
+            style={{ marginBottom: 16 }}
+          />
+          <Upload
+            fileList={fileList}
+            onChange={handleFileChange}
+            beforeUpload={handleBeforeUpload}
+            onRemove={handleRemoveFile}
+            maxCount={1}
+          >
+            <Button size="large">Choose file</Button>
+          </Upload>
+          {fileList.length > 0 && (
+            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+              File: {fileList[0].name} (
+              {(fileList[0].size / 1024 / 1024).toFixed(2)} MB)
+            </Text>
+          )}
         </Card>
       </div>
 

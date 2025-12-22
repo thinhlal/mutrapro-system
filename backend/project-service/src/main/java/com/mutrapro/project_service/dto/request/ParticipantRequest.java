@@ -36,7 +36,10 @@ public class ParticipantRequest {
 
     // CHỈ CHO INSTRUMENT role
     String skillId; // Optional - Soft reference to specialist-service.skills.skill_id
-    // LƯU Ý: skill_id BẮT BUỘC nếu roleType = INSTRUMENT
+    // LƯU Ý: skill_id BẮT BUỘC nếu roleType = INSTRUMENT (trừ custom instruments)
+    
+    // CHỈ CHO INSTRUMENT role - Custom instrument name (nếu skillId = null)
+    String skillName; // Optional - Tên custom instrument nếu skillId = null
 
     // CHỈ CHO INSTRUMENT role
     InstrumentSource instrumentSource; // Optional - STUDIO_SIDE | CUSTOMER_SIDE

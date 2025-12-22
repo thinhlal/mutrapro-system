@@ -13,6 +13,7 @@ import {
 } from 'antd';
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
 import { getVocalists } from '../../../../../services/specialistService';
+import { getAvailableArtistsForRequest } from '../../../../../services/studioBookingService';
 import { MUSIC_GENRES } from '../../../../../constants/musicOptionsConstants';
 import VocalistSelectionCard from './components/VocalistSelectionCard';
 import Header from '../../../../../components/common/Header/Header';
@@ -31,6 +32,9 @@ export default function VocalistSelectionPage() {
     allowMultiple = false,
     maxSelections,
     fromArrangement = false,
+    bookingDate,
+    bookingStartTime,
+    bookingEndTime,
   } = location.state || {};
 
   // Set default maxSelections based on context
@@ -67,10 +71,48 @@ export default function VocalistSelectionPage() {
   // Get full list of genres from constants
   const availableGenres = MUSIC_GENRES.map(g => g.value);
 
-  // Fetch vocalists from backend with filter
+  // Get booking info from sessionStorage if not in location.state
+  const [effectiveBookingDate, setEffectiveBookingDate] = useState(bookingDate);
+  const [effectiveBookingStartTime, setEffectiveBookingStartTime] = useState(bookingStartTime);
+  const [effectiveBookingEndTime, setEffectiveBookingEndTime] = useState(bookingEndTime);
+  const [bookingInfoLoaded, setBookingInfoLoaded] = useState(false);
+
   useEffect(() => {
-    fetchVocalists();
-  }, [genderFilter, selectedGenres]);
+    if (!bookingDate && fromFlow) {
+      try {
+        const flowDataStr = sessionStorage.getItem('recordingFlowData');
+        if (flowDataStr) {
+          const flowData = JSON.parse(flowDataStr);
+          if (flowData.step1) {
+            setEffectiveBookingDate(flowData.step1.bookingDate);
+            setEffectiveBookingStartTime(flowData.step1.bookingStartTime);
+            setEffectiveBookingEndTime(flowData.step1.bookingEndTime);
+            setBookingInfoLoaded(true);
+          } else {
+            setBookingInfoLoaded(true); // Mark as loaded even if no step1 data
+          }
+        } else {
+          setBookingInfoLoaded(true); // Mark as loaded even if no flowData
+        }
+      } catch (error) {
+        console.error('Error reading flow data:', error);
+        setBookingInfoLoaded(true);
+      }
+    } else {
+      setEffectiveBookingDate(bookingDate);
+      setEffectiveBookingStartTime(bookingStartTime);
+      setEffectiveBookingEndTime(bookingEndTime);
+      setBookingInfoLoaded(true);
+    }
+  }, [bookingDate, bookingStartTime, bookingEndTime, fromFlow]);
+
+  // Fetch vocalists from backend with filter
+  // Only fetch after booking info is loaded (to avoid fetching all vocalists first)
+  useEffect(() => {
+    if (bookingInfoLoaded) {
+      fetchVocalists();
+    }
+  }, [genderFilter, selectedGenres, effectiveBookingDate, effectiveBookingStartTime, effectiveBookingEndTime, bookingInfoLoaded]);
 
   const fetchVocalists = async () => {
     setLoading(true);
@@ -79,13 +121,41 @@ export default function VocalistSelectionPage() {
       const gender = genderFilter !== 'ALL' ? genderFilter : null;
       const genres = selectedGenres.length > 0 ? selectedGenres : null;
 
-      // Fetch vocalists with filter from backend
-      const response = await getVocalists(gender, genres);
-      if (response?.data) {
-        setVocalists(response.data);
+      // If we have booking date/time, use getAvailableArtistsForRequest to filter by availability
+      if (fromFlow && effectiveBookingDate && effectiveBookingStartTime && effectiveBookingEndTime) {
+        const response = await getAvailableArtistsForRequest(
+          effectiveBookingDate,
+          effectiveBookingStartTime,
+          effectiveBookingEndTime,
+          null, // skillId - null for vocalists
+          'VOCAL', // roleType
+          genres // genres filter
+        );
+        
+        if (response?.status === 'success' && response?.data) {
+          let filteredVocalists = response.data;
+          
+          // Apply gender filter if needed
+          if (gender) {
+            filteredVocalists = filteredVocalists.filter(
+              v => v.gender === gender
+            );
+          }
+          
+          setVocalists(filteredVocalists);
+        } else {
+          setVocalists([]);
+        }
+      } else {
+        // Fallback: Fetch all vocalists (for arrangement flow or when no booking info)
+        const response = await getVocalists(gender, genres);
+        if (response?.data) {
+          setVocalists(response.data);
+        }
       }
     } catch (error) {
       message.error(error.message || 'Unable to load vocalists list');
+      setVocalists([]);
     } finally {
       setLoading(false);
     }
@@ -191,6 +261,9 @@ export default function VocalistSelectionPage() {
           };
         }
 
+        // Preserve currentStep
+        flowData.currentStep = flowData.currentStep || 2;
+
         sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
 
         // Try to remove callback if exists
@@ -203,7 +276,13 @@ export default function VocalistSelectionPage() {
         message.success(
           `Selected ${allowMultiple ? selectedIds.length : 1} vocalist${allowMultiple && selectedIds.length > 1 ? 's' : ''} successfully`
         );
-        navigate('/recording-flow', { state: { step: 2 } });
+        navigate('/recording-flow', { 
+          state: { 
+            step: 2,
+            returnFromSelection: true,
+            timestamp: Date.now() // Force re-render
+          } 
+        });
       }
     } catch (error) {
       console.error('Error saving vocalist selection:', error);
@@ -275,6 +354,9 @@ export default function VocalistSelectionPage() {
             };
           }
 
+          // Preserve currentStep
+          flowData.currentStep = flowData.currentStep || 2;
+
           sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
         }
       } catch (error) {
@@ -285,7 +367,13 @@ export default function VocalistSelectionPage() {
     if (fromArrangement) {
       navigate(-1);
     } else {
-      navigate('/recording-flow', { state: { step: 2 } });
+      navigate('/recording-flow', { 
+        state: { 
+          step: 2,
+          returnFromSelection: true,
+          timestamp: Date.now() // Force re-render
+        } 
+      });
     }
   };
 
@@ -373,6 +461,11 @@ export default function VocalistSelectionPage() {
               </Space>
               <Text type="secondary">
                 ({vocalists.length} vocalist{vocalists.length !== 1 ? 's' : ''})
+                {fromFlow && effectiveBookingDate && effectiveBookingStartTime && effectiveBookingEndTime && (
+                  <span style={{ marginLeft: 8, display: 'block', marginTop: 4 }}>
+                    Available for {effectiveBookingDate} ({effectiveBookingStartTime} - {effectiveBookingEndTime})
+                  </span>
+                )}
               </Text>
             </Space>
           </div>

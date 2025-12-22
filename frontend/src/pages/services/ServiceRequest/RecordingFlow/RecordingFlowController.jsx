@@ -70,52 +70,33 @@ export default function RecordingFlowController() {
   useEffect(() => {
     const stepFromUrl = location.state?.step;
 
-    // Only update step if it's explicitly provided in URL state and different from current
-    // This handles navigation from selection pages
-    if (stepFromUrl !== undefined && stepFromUrl !== currentStep) {
-      setCurrentStep(stepFromUrl);
-    }
-
     // Always reload flow data from sessionStorage when navigating back
     // This ensures data is up-to-date after returning from selection pages
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         const updated = JSON.parse(stored);
+        
+        // Always update flowData to ensure it's in sync with sessionStorage
         setFlowData(updated);
-        // Update step if it's in the stored data and different
-        if (
+        
+        // Update step if it's explicitly provided in URL state
+        if (stepFromUrl !== undefined && stepFromUrl !== currentStep) {
+          setCurrentStep(stepFromUrl);
+        } else if (
           updated.currentStep !== undefined &&
-          updated.currentStep !== currentStep
+          updated.currentStep !== currentStep &&
+          stepFromUrl === undefined
         ) {
+          // Only use stored currentStep if stepFromUrl is not provided
           setCurrentStep(updated.currentStep);
         }
       }
     } catch (error) {
       console.error('Error restoring flow data:', error);
     }
-
-    // Check if returning from selection page and update flow data
-    if (location.state?.returnFromSelection) {
-      try {
-        const stored = sessionStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const updated = JSON.parse(stored);
-          setFlowData(updated);
-          // Update step if it's in the stored data and different
-          if (
-            updated.currentStep !== undefined &&
-            updated.currentStep !== currentStep
-          ) {
-            setCurrentStep(updated.currentStep);
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring flow data:', error);
-      }
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]); // Only depend on location.state object changes (from navigation)
+  }, [location.state?.step, location.state?.timestamp]); // Depend on step and timestamp to force reload
 
   // Save flow data to storage
   const updateFlowData = (newData, stepOverride = null) => {

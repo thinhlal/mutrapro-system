@@ -110,4 +110,30 @@ public class PublicSpecialistController {
             .build();
     }
     
+    /**
+     * Batch check availability cho nhiều specialists cùng lúc (public access)
+     * POST /public/specialists/batch-availability?date=2024-01-01&startTime=08:00&endTime=10:00
+     * Body: List<String> specialistIds
+     * Dùng để tối ưu hiệu suất khi check nhiều specialists
+     */
+    @PostMapping("/batch-availability")
+    @Operation(
+        summary = "Batch check specialist availability (public)", 
+        description = "Check availability for multiple specialists at once. No authentication required. Used for optimizing performance when checking many specialists."
+    )
+    public ApiResponse<Map<String, Boolean>> batchCheckAvailability(
+            @RequestParam String date,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
+            @RequestBody List<String> specialistIds) {
+        log.info("POST /public/specialists/batch-availability - date={}, time={}-{}, {} specialists", 
+            date, startTime, endTime, specialistIds.size());
+        Map<String, Boolean> availabilityMap = publicSpecialistService.batchCheckAvailability(
+            specialistIds, date, startTime, endTime);
+        return ApiResponse.<Map<String, Boolean>>builder()
+            .message("Batch availability checked successfully")
+            .data(availabilityMap)
+            .build();
+    }
+    
 }

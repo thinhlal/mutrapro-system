@@ -46,13 +46,20 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
 
   // Sync selectedVocalists and vocalChoice from data (when returning from VocalistSelectionPage)
   useEffect(() => {
-    if (data?.selectedVocalists && Array.isArray(data.selectedVocalists)) {
-      setSelectedVocalists(data.selectedVocalists);
+    if (data) {
+      // Always sync from data props to ensure we have the latest data
+      if (data.selectedVocalists && Array.isArray(data.selectedVocalists)) {
+        setSelectedVocalists(data.selectedVocalists);
+      } else if (data.selectedVocalists === undefined || data.selectedVocalists === null) {
+        // Only reset if explicitly undefined/null (not if it's an empty array)
+        // Empty array means no vocalists selected, which is valid
+      }
+      
+      if (data.vocalChoice) {
+        setVocalChoice(data.vocalChoice);
+      }
     }
-    if (data?.vocalChoice) {
-      setVocalChoice(data.vocalChoice);
-    }
-  }, [data?.selectedVocalists, data?.vocalChoice]);
+  }, [data]);
 
   const handleVocalChoiceChange = e => {
     const newChoice = e.target.value;
@@ -253,15 +260,15 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
                   navigate('/recording-flow/vocalist-selection', {
                     state: {
                       fromFlow: true,
+                      bookingDate,
+                      bookingStartTime,
+                      bookingEndTime,
                       allowMultiple: true,
                       maxSelections: 10, // Allow multiple selections (up to 10)
                       selectedVocalists: selectedVocalists.map(v => ({
                         specialistId: v.specialistId,
                         name: v.name,
                       })),
-                      bookingDate,
-                      bookingStartTime,
-                      bookingEndTime,
                     },
                   });
                 }}

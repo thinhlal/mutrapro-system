@@ -24,6 +24,9 @@ import java.util.List;
     @Index(name = "idx_specialists_specialization", columnList = "specialization"),
     @Index(name = "idx_specialists_status", columnList = "status"),
     @Index(name = "idx_specialists_gender", columnList = "gender"),
+    // Composite index để tối ưu query getVocalists (findRecordingArtists)
+    @Index(name = "idx_specialists_specialization_status", columnList = "specialization,status"),
+    @Index(name = "idx_specialists_specialization_status_gender", columnList = "specialization,status,gender"),
 })
 @Getter
 @Setter

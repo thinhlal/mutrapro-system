@@ -65,39 +65,66 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
 
   // Sync selectedInstruments from data (when returning from InstrumentalistSelectionPage)
   useEffect(() => {
-    if (data?.instruments && Array.isArray(data.instruments)) {
-      // Ensure custom instruments always have CUSTOMER_SELF, no specialist, and CUSTOMER_SIDE
-      const normalizedInstruments = data.instruments.map(inst => {
-        if (inst.isCustomInstrument) {
-          return {
-            ...inst,
-            performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
-            specialistId: null,
-            specialistName: null,
-            instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
-            equipmentId: null,
-            equipmentName: null,
-            rentalFee: 0,
-          };
+    if (data) {
+      if (data.instruments && Array.isArray(data.instruments)) {
+        // Ensure custom instruments always have CUSTOMER_SELF, no specialist, and CUSTOMER_SIDE
+        const normalizedInstruments = data.instruments.map(inst => {
+          if (inst.isCustomInstrument) {
+            return {
+              ...inst,
+              performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
+              specialistId: null,
+              specialistName: null,
+              instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
+              equipmentId: null,
+              equipmentName: null,
+              rentalFee: 0,
+            };
+          }
+          return inst;
+        });
+
+        setSelectedInstruments(normalizedInstruments);
+
+        // Check if there are custom instruments
+        const customInstruments = normalizedInstruments.filter(
+          inst => inst.isCustomInstrument
+        );
+        if (customInstruments.length > 0) {
+          setShowCustomInstrumentInput(false);
+          setCustomInstrumentName('');
+        } else {
+          setShowCustomInstrumentInput(false);
+          setCustomInstrumentName('');
         }
-        return inst;
-      });
-
-      setSelectedInstruments(normalizedInstruments);
-
-      // Check if there are custom instruments
-      const customInstruments = normalizedInstruments.filter(
-        inst => inst.isCustomInstrument
-      );
-      if (customInstruments.length > 0) {
-        setShowCustomInstrumentInput(false);
-        setCustomInstrumentName('');
-      } else {
-        setShowCustomInstrumentInput(false);
-        setCustomInstrumentName('');
+      }
+      
+      // Sync hasLiveInstruments
+      if (data.hasLiveInstruments !== undefined) {
+        setHasLiveInstruments(data.hasLiveInstruments);
       }
     }
-  }, [data?.instruments]);
+  }, [data]);
+
+  // Save selectedInstruments to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      const flowDataStr = sessionStorage.getItem('recordingFlowData');
+      const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+      
+      // Only save if we have instruments or if hasLiveInstruments is set
+      if (flowData.step3 || selectedInstruments.length > 0 || hasLiveInstruments !== null) {
+        flowData.step3 = {
+          ...flowData.step3,
+          instruments: selectedInstruments,
+          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+        };
+        sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+      }
+    } catch (error) {
+      console.error('Error saving selectedInstruments:', error);
+    }
+  }, [selectedInstruments, hasLiveInstruments]);
 
   // Fetch available instrument skills
   useEffect(() => {
@@ -155,36 +182,83 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
   const handleInstrumentToggle = (skill, checked) => {
     if (checked) {
       // Add instrument
-      setSelectedInstruments([
-        ...selectedInstruments,
-        {
-          skillId: skill.skillId,
-          skillName: skill.skillName,
-          performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
-          specialistId: null,
-          specialistName: null,
-          instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
-          equipmentId: null,
-          equipmentName: null,
-          quantity: 1,
-          rentalFee: 0,
-          isCustomInstrument: false,
-        },
-      ]);
+      const newInstrument = {
+        skillId: skill.skillId,
+        skillName: skill.skillName,
+        performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
+        specialistId: null,
+        specialistName: null,
+        instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
+        equipmentId: null,
+        equipmentName: null,
+        quantity: 1,
+        rentalFee: 0,
+        isCustomInstrument: false,
+      };
+      const updated = [...selectedInstruments, newInstrument];
+      setSelectedInstruments(updated);
+      
+      // Save to sessionStorage immediately
+      try {
+        const flowDataStr = sessionStorage.getItem('recordingFlowData');
+        const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+        flowData.step3 = {
+          ...flowData.step3,
+          instruments: updated,
+          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+        };
+        sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+      } catch (error) {
+        console.error('Error saving instrument toggle:', error);
+      }
     } else {
       // Remove instrument
-      setSelectedInstruments(
-        selectedInstruments.filter(inst => inst.skillId !== skill.skillId)
-      );
+      const updated = selectedInstruments.filter(inst => inst.skillId !== skill.skillId);
+      setSelectedInstruments(updated);
+      
+      // Save to sessionStorage immediately
+      try {
+        const flowDataStr = sessionStorage.getItem('recordingFlowData');
+        const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+        flowData.step3 = {
+          ...flowData.step3,
+          instruments: updated,
+          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+        };
+        sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+      } catch (error) {
+        console.error('Error saving instrument toggle:', error);
+      }
     }
   };
 
-  const updateInstrument = (skillId, updates) => {
-    setSelectedInstruments(
-      selectedInstruments.map(inst =>
-        inst.skillId === skillId ? { ...inst, ...updates } : inst
-      )
-    );
+  const updateInstrument = (identifier, updates) => {
+    // identifier can be skillId (for regular instruments) or skillName (for custom instruments)
+    const updated = selectedInstruments.map(inst => {
+      if (inst.isCustomInstrument) {
+        // For custom instruments, match by skillName
+        return inst.skillName === identifier ? { ...inst, ...updates } : inst;
+      } else {
+        // For regular instruments, match by skillId
+        return inst.skillId === identifier ? { ...inst, ...updates } : inst;
+      }
+    });
+    
+    setSelectedInstruments(updated);
+    
+    // Save to sessionStorage immediately
+    try {
+      const flowDataStr = sessionStorage.getItem('recordingFlowData');
+      const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+      flowData.step3 = {
+        ...flowData.step3,
+        instruments: updated,
+        hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+      };
+      sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+    } catch (error) {
+      console.error('Error saving instrument update:', error);
+    }
   };
 
   const handleContinue = () => {
@@ -420,11 +494,34 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                           icon={<CloseOutlined />}
                           danger
                           onClick={() => {
-                            setSelectedInstruments(
-                              selectedInstruments.filter(
-                                i => i.skillId !== inst.skillId
-                              )
-                            );
+                            // For custom instruments, skillId is null, so use skillName to identify
+                            const updated = selectedInstruments.filter(i => {
+                              if (i.isCustomInstrument && inst.isCustomInstrument) {
+                                // Both are custom: compare by skillName
+                                return i.skillName !== inst.skillName;
+                              } else if (!i.isCustomInstrument && !inst.isCustomInstrument) {
+                                // Both are regular: compare by skillId
+                                return i.skillId !== inst.skillId;
+                              } else {
+                                // One is custom, one is regular: keep both
+                                return true;
+                              }
+                            });
+                            setSelectedInstruments(updated);
+                            
+                            // Save to sessionStorage immediately
+                            try {
+                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              flowData.step3 = {
+                                ...flowData.step3,
+                                instruments: updated,
+                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                              };
+                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                            } catch (error) {
+                              console.error('Error saving custom instrument removal:', error);
+                            }
                           }}
                         />
                       </div>
@@ -456,7 +553,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             }
 
                             const customInstrument = {
-                              skillId: `CUSTOM_${Date.now()}`, // Generate unique ID
+                              skillId: null, // Custom instruments: skillId = null
                               skillName: name,
                               isCustomInstrument: true,
                               performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
@@ -469,12 +566,25 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                               rentalFee: 0,
                             };
 
-                            setSelectedInstruments([
-                              ...selectedInstruments,
-                              customInstrument,
-                            ]);
+                            const updated = [...selectedInstruments, customInstrument];
+                            setSelectedInstruments(updated);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
+                            
+                            // Save to sessionStorage immediately
+                            try {
+                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              flowData.step3 = {
+                                ...flowData.step3,
+                                instruments: updated,
+                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                              };
+                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                            } catch (error) {
+                              console.error('Error saving custom instrument:', error);
+                            }
+                            
                             message.success(
                               `Added "${name}" as custom instrument`
                             );
@@ -504,7 +614,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             }
 
                             const customInstrument = {
-                              skillId: `CUSTOM_${Date.now()}`,
+                              skillId: null, // Custom instruments: skillId = null
                               skillName: name,
                               isCustomInstrument: true,
                               performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
@@ -517,12 +627,25 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                               rentalFee: 0,
                             };
 
-                            setSelectedInstruments([
-                              ...selectedInstruments,
-                              customInstrument,
-                            ]);
+                            const updated = [...selectedInstruments, customInstrument];
+                            setSelectedInstruments(updated);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
+                            
+                            // Save to sessionStorage immediately
+                            try {
+                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              flowData.step3 = {
+                                ...flowData.step3,
+                                instruments: updated,
+                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                              };
+                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                            } catch (error) {
+                              console.error('Error saving custom instrument:', error);
+                            }
+                            
                             message.success(
                               `Added "${name}" as custom instrument`
                             );
@@ -582,7 +705,11 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                             )}
                           </Space>
                         }
-                        key={instrument.skillId}
+                        key={
+                          instrument.isCustomInstrument
+                            ? `custom-${instrument.skillName}`
+                            : instrument.skillId
+                        }
                       >
                         <InstrumentConfig
                           instrument={instrument}
@@ -590,7 +717,12 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                           bookingStartTime={bookingStartTime}
                           bookingEndTime={bookingEndTime}
                           onUpdate={updates =>
-                            updateInstrument(instrument.skillId, updates)
+                            updateInstrument(
+                              instrument.isCustomInstrument
+                                ? instrument.skillName
+                                : instrument.skillId,
+                              updates
+                            )
                           }
                         />
                       </Panel>
@@ -646,7 +778,8 @@ function InstrumentConfig({
       !bookingDate ||
       !bookingStartTime ||
       !bookingEndTime ||
-      instrument.isCustomInstrument // Don't fetch for custom instruments
+      instrument.isCustomInstrument || // Don't fetch for custom instruments
+      !instrument.skillId // Must have skillId for regular instruments
     ) {
       setAvailableInstrumentalists([]);
       return;
@@ -655,21 +788,44 @@ function InstrumentConfig({
     const fetchInstrumentalists = async () => {
       try {
         setLoadingInstrumentalists(true);
+        
+        // Debug: Log parameters
+        console.log('Fetching instrumentalists with params:', {
+          bookingDate,
+          bookingStartTime,
+          bookingEndTime,
+          skillId: instrument.skillId,
+          roleType: 'INSTRUMENT',
+          instrumentName: instrument.skillName,
+        });
+        
         const response = await getAvailableArtistsForRequest(
           bookingDate,
           bookingStartTime,
           bookingEndTime,
-          instrument.skillId,
+          instrument.skillId, // skillId is required and validated above
           'INSTRUMENT',
-          null
+          null // genres - not needed for instrumentalists
         );
 
+        console.log('API Response:', response);
+
         if (response?.status === 'success' && response?.data) {
+          console.log('Available instrumentalists:', response.data);
           setAvailableInstrumentalists(response.data);
+        } else {
+          console.warn('No data in response or status not success:', response);
+          setAvailableInstrumentalists([]);
         }
       } catch (error) {
         console.error('Error fetching instrumentalists:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
         message.error('Unable to load instrumentalist list');
+        setAvailableInstrumentalists([]);
       } finally {
         setLoadingInstrumentalists(false);
       }
@@ -679,6 +835,7 @@ function InstrumentConfig({
   }, [
     instrument.performerSource,
     instrument.skillId,
+    instrument.isCustomInstrument,
     bookingDate,
     bookingStartTime,
     bookingEndTime,
@@ -915,10 +1072,16 @@ function InstrumentConfig({
                         rentalFee: selectedEq?.rentalFee || 0,
                       });
                     }}
-                    options={availableEquipment.map(eq => ({
-                      value: eq.equipmentId,
-                      label: `${eq.brand} ${eq.model} - ${eq.equipmentName}`,
-                    }))}
+                    options={availableEquipment.map(eq => {
+                      const priceLabel =
+                        typeof eq.rentalFee === 'number'
+                          ? ` - ${eq.rentalFee.toLocaleString('vi-VN')} VND`
+                          : '';
+                      return {
+                        value: eq.equipmentId,
+                        label: `${eq.brand} ${eq.model} - ${eq.equipmentName}${priceLabel}`,
+                      };
+                    })}
                   />
                   {instrument.equipmentId && (
                     <Space>

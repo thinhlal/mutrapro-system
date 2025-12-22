@@ -27,7 +27,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -414,6 +417,7 @@ public class SpecialistSlotService {
      * (Internal method - có thể được gọi từ project-service)
      */
     public boolean isSpecialistAvailable(String specialistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
+        long startTimeMs = System.currentTimeMillis();
         Specialist specialist = specialistRepository.findById(specialistId)
             .orElse(null);
         
@@ -451,25 +455,122 @@ public class SpecialistSlotService {
             return false;
         }
         
+        long queryStart = System.currentTimeMillis();
         // Check booked slots trước
         List<SpecialistSlot> bookedSlots = slotRepository.findBookedSlotsForStartTimes(
             specialist, date, dayOfWeek, requiredStartTimes);
+        long bookedQueryTime = System.currentTimeMillis() - queryStart;
         
         if (!bookedSlots.isEmpty()) {
             log.info("Specialist {} has booked slots for date={}, returning false", specialistId, date);
             return false;
         }
         
+        long availableQueryStart = System.currentTimeMillis();
         // Check available slots (phải có TẤT CẢ slots liên tiếp)
         // CHỈ AVAILABLE mới được tính (HOLD = đang được giữ, không thể book)
         List<SpecialistSlot> availableSlots = slotRepository.findAvailableSlotsForStartTimes(
             specialist, date, dayOfWeek, requiredStartTimes);
+        long availableQueryTime = System.currentTimeMillis() - availableQueryStart;
         
         // Phải có đủ số lượng slots với status AVAILABLE
         boolean isAvailable = availableSlots.size() == requiredStartTimes.size();
-        log.info("Specialist {} availability for date={}, time={}-{}: {} (required {} slots, found {})",
-            specialistId, date, startTime, endTime, isAvailable, requiredStartTimes.size(), availableSlots.size());
+        long totalTime = System.currentTimeMillis() - startTimeMs;
+        log.info("Specialist {} availability for date={}, time={}-{}: {} (required {} slots, found {}), total: {}ms (bookedQuery: {}ms, availableQuery: {}ms)",
+            specialistId, date, startTime, endTime, isAvailable, requiredStartTimes.size(), availableSlots.size(), 
+            totalTime, bookedQueryTime, availableQueryTime);
         return isAvailable;
+    }
+    
+    /**
+     * Batch check availability cho nhiều specialists cùng lúc (tối ưu hiệu suất)
+     * @param specialistIds Danh sách specialist IDs cần check
+     * @param date Ngày cần check
+     * @param startTime Thời gian bắt đầu
+     * @param endTime Thời gian kết thúc
+     * @return Map với key = specialistId, value = isAvailable
+     */
+    public Map<String, Boolean> batchCheckAvailability(
+            List<String> specialistIds, 
+            LocalDate date, 
+            LocalTime startTime, 
+            LocalTime endTime) {
+        long startTimeMs = System.currentTimeMillis();
+        log.info("[batchCheckAvailability] Checking availability for {} specialists, date={}, time={}-{}", 
+            specialistIds.size(), date, startTime, endTime);
+        
+        if (specialistIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        
+        // Validate duration và startTime
+        if (!SlotGridConstants.isValidDuration(startTime, endTime)) {
+            log.warn("Invalid duration: {} to {} is not a multiple of 2 hours", startTime, endTime);
+            return specialistIds.stream().collect(Collectors.toMap(id -> id, id -> false));
+        }
+        
+        if (!SlotGridConstants.isValidStartTime(startTime)) {
+            log.warn("Invalid start time: {} is not aligned with grid", startTime);
+            return specialistIds.stream().collect(Collectors.toMap(id -> id, id -> false));
+        }
+        
+        // Tính dayOfWeek và requiredStartTimes
+        int dayOfWeek = date.getDayOfWeek().getValue();
+        List<LocalTime> requiredStartTimes = new ArrayList<>();
+        LocalTime currentStartTime = startTime;
+        while (currentStartTime != null && currentStartTime.isBefore(endTime)) {
+            requiredStartTimes.add(currentStartTime);
+            currentStartTime = SlotGridConstants.getNextSlotStartTime(currentStartTime);
+            if (currentStartTime == null || currentStartTime.isAfter(endTime) || currentStartTime.equals(endTime)) {
+                break;
+            }
+        }
+        
+        if (requiredStartTimes.isEmpty()) {
+            return specialistIds.stream().collect(Collectors.toMap(id -> id, id -> false));
+        }
+        
+        // Load tất cả specialists
+        long loadStart = System.currentTimeMillis();
+        List<Specialist> specialists = specialistRepository.findAllById(specialistIds);
+        long loadTime = System.currentTimeMillis() - loadStart;
+        log.info("[batchCheckAvailability] Loaded {} specialists in {}ms", specialists.size(), loadTime);
+        
+        // Batch check booked slots cho tất cả specialists trong một query
+        long bookedQueryStart = System.currentTimeMillis();
+        List<SpecialistSlot> allBookedSlots = slotRepository.findBookedSlotsForMultipleSpecialists(
+            specialists, date, dayOfWeek, requiredStartTimes);
+        Map<String, List<SpecialistSlot>> bookedSlotsMap = allBookedSlots.stream()
+            .collect(Collectors.groupingBy(slot -> slot.getSpecialist().getSpecialistId()));
+        long bookedQueryTime = System.currentTimeMillis() - bookedQueryStart;
+        log.info("[batchCheckAvailability] Checked booked slots in {}ms, found {} specialists with bookings", 
+            bookedQueryTime, bookedSlotsMap.size());
+        
+        // Batch check available slots cho tất cả specialists trong một query
+        long availableQueryStart = System.currentTimeMillis();
+        List<SpecialistSlot> allAvailableSlots = slotRepository.findAvailableSlotsForMultipleSpecialists(
+            specialists, date, dayOfWeek, requiredStartTimes);
+        Map<String, List<SpecialistSlot>> availableSlotsMap = allAvailableSlots.stream()
+            .collect(Collectors.groupingBy(slot -> slot.getSpecialist().getSpecialistId()));
+        long availableQueryTime = System.currentTimeMillis() - availableQueryStart;
+        log.info("[batchCheckAvailability] Checked available slots in {}ms", availableQueryTime);
+        
+        // Tạo result map
+        Map<String, Boolean> result = new HashMap<>();
+        for (Specialist specialist : specialists) {
+            String specialistId = specialist.getSpecialistId();
+            boolean hasBooked = bookedSlotsMap.containsKey(specialistId);
+            List<SpecialistSlot> availableSlots = availableSlotsMap.getOrDefault(specialistId, Collections.emptyList());
+            boolean isAvailable = !hasBooked && availableSlots.size() == requiredStartTimes.size();
+            result.put(specialistId, isAvailable);
+        }
+        
+        long totalTime = System.currentTimeMillis() - startTimeMs;
+        long avgTimePerSpecialist = specialistIds.isEmpty() ? 0 : totalTime / specialistIds.size();
+        log.info("[batchCheckAvailability] Total time: {}ms (avg: {}ms per specialist), load: {}ms, bookedQuery: {}ms, availableQuery: {}ms", 
+            totalTime, avgTimePerSpecialist, loadTime, bookedQueryTime, availableQueryTime);
+        
+        return result;
     }
     
     /**

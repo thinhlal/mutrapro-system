@@ -21,7 +21,12 @@ import java.time.LocalTime;
 @Table(name = "specialist_slots", indexes = {
     @Index(name = "idx_specialist_slots_specialist_id", columnList = "specialist_id"),
     @Index(name = "idx_specialist_slots_date", columnList = "slot_date"),
-    @Index(name = "idx_specialist_slots_date_time", columnList = "specialist_id,slot_date,start_time", unique = true)
+    @Index(name = "idx_specialist_slots_date_time", columnList = "specialist_id,slot_date,start_time", unique = true),
+    // Composite index để tối ưu batch check availability queries
+    @Index(name = "idx_specialist_slots_specialist_date_status", columnList = "specialist_id,slot_date,slot_status"),
+    @Index(name = "idx_specialist_slots_specialist_date_status_time", columnList = "specialist_id,slot_date,slot_status,start_time"),
+    // Index cho recurring slots
+    @Index(name = "idx_specialist_slots_recurring_day", columnList = "is_recurring,day_of_week,slot_status"),
 })
 @Getter
 @Setter

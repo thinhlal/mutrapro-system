@@ -1,8 +1,8 @@
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Button, Rate, Tabs, Typography, Tag, Spin, message } from 'antd';
-import { PlayCircleFilled } from '@ant-design/icons';
+import { PlayCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import { SINGER_DETAIL_DATA as staticSingerData } from '../../../../constants/index';
 import { getSpecialistDetail } from '../../../../services/specialistService';
 import Header from '../../../../components/common/Header/Header';
@@ -175,10 +175,21 @@ const DemosTab = ({ demos }) => (
 export default function SingerDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-  const { specialistData } = location.state || {};
+  const navigate = useNavigate();
+  const { specialistData, fromFlow, returnTo, returnState } = location.state || {};
 
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
+
+  const handleBack = () => {
+    if (fromFlow && returnTo) {
+      // Navigate back to recording flow with state
+      navigate(returnTo, { state: returnState });
+    } else {
+      // Default: go back in history
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -328,6 +339,18 @@ export default function SingerDetailPage() {
         <Container className={styles.headerContainer}>
           <Row className="align-items-center">
             <Col md={7} className={styles.headerInfo}>
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={handleBack}
+                style={{
+                  marginBottom: 16,
+                  color: '#fff',
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                }}
+                ghost
+              >
+                {fromFlow ? 'Back to Selection' : 'Back'}
+              </Button>
               <Title level={1} className={styles.singerName}>
                 {specialist.fullName}
               </Title>

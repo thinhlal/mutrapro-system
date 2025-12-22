@@ -349,39 +349,29 @@ public class StudioBookingService {
             // Check work slots (BẮT BUỘC) - Grid system
             // Logic: Nếu specialist không đăng ký slot → không available
             //         Chỉ available khi có TẤT CẢ slots liên tiếp đều AVAILABLE
-            for (String artistId : artistIds) {
-                try {
-                    // Format date và time cho API call
-                    String dateStr = request.getBookingDate().toString();
-                    String startTimeStr = request.getStartTime().toString();
-                    String endTimeStr = request.getEndTime().toString();
-                    
-                    ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
-                        .checkSpecialistAvailability(artistId, dateStr, startTimeStr, endTimeStr);
-                    
-                    // Check availability (bắt buộc)
-                    if (availabilityResponse != null && 
-                        "success".equals(availabilityResponse.getStatus()) &&
-                        availabilityResponse.getData() != null) {
-                        boolean isAvailable = availabilityResponse.getData();
-                        if (!isAvailable) {
-                            log.warn("Artist {} is not available for date={}, time={}-{} (no registered slots or missing slots)",
-                                artistId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
-                            throw ArtistBookingConflictException.artistNotAvailable(artistId);
-                        }
-                    } else {
-                        // Nếu không check được (API error), log warning nhưng vẫn cho phép booking
-                        // (fallback để tránh block booking khi service unavailable)
-                        log.warn("Failed to check availability for artist {}: response={}", 
-                            artistId, availabilityResponse);
+            // Batch check availability cho tất cả artists cùng lúc (tối ưu hiệu suất)
+            if (!artistIds.isEmpty()) {
+                String dateStr = request.getBookingDate().toString();
+                String startTimeStr = request.getStartTime().toString();
+                String endTimeStr = request.getEndTime().toString();
+                
+                ApiResponse<Map<String, Boolean>> batchAvailabilityResponse = specialistServiceFeignClient
+                    .batchCheckAvailability(dateStr, startTimeStr, endTimeStr, artistIds);
+                
+                if (batchAvailabilityResponse == null || 
+                    !"success".equals(batchAvailabilityResponse.getStatus()) ||
+                    batchAvailabilityResponse.getData() == null) {
+                    throw new RuntimeException("Failed to check artist availability");
+                }
+                
+                Map<String, Boolean> availabilityMap = batchAvailabilityResponse.getData();
+                
+                // Check từng artist và throw exception nếu không available
+                for (String artistId : artistIds) {
+                    Boolean isAvailable = availabilityMap.get(artistId);
+                    if (isAvailable == null || !isAvailable) {
+                        throw ArtistBookingConflictException.artistNotAvailable(artistId);
                     }
-                } catch (ArtistBookingConflictException e) {
-                    // Re-throw để block booking
-                    throw e;
-                } catch (Exception e) {
-                    // Log warning nhưng không block booking nếu API error
-                    // (fallback để tránh block booking khi service unavailable)
-                    log.warn("Failed to check work slots for artist {}: {}", artistId, e.getMessage());
                 }
             }
         }
@@ -685,19 +675,37 @@ public class StudioBookingService {
                     }
                 }
                 
-                // Validate INSTRUMENT: bắt buộc skill_id
+                // Validate INSTRUMENT
                 if (participant.getRoleType() == SessionRoleType.INSTRUMENT) {
-                    if (participant.getSkillId() == null || participant.getSkillId().isBlank()) {
-                        throw InvalidParticipantException.instrumentWithoutSkillId();
+                    // Custom instruments: skillId có thể null nếu CUSTOMER_SELF + CUSTOMER_SIDE
+                    boolean isCustomInstrument = participant.getPerformerSource() == PerformerSource.CUSTOMER_SELF
+                        && participant.getInstrumentSource() == InstrumentSource.CUSTOMER_SIDE
+                        && (participant.getSkillId() == null || participant.getSkillId().isBlank());
+                    
+                    if (!isCustomInstrument) {
+                        // Non-custom instruments: skillId bắt buộc
+                        if (participant.getSkillId() == null || participant.getSkillId().isBlank()) {
+                            throw InvalidParticipantException.instrumentWithoutSkillId();
+                        }
+                    } else {
+                        // Custom instruments: skillName bắt buộc
+                        if (participant.getSkillName() == null || participant.getSkillName().isBlank()) {
+                            throw InvalidParticipantException.customInstrumentWithoutSkillName();
+                        }
                     }
+                    
                     // Validate INTERNAL_ARTIST có specialistId
                     if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST) {
                         if (participant.getSpecialistId() == null || participant.getSpecialistId().isBlank()) {
                             throw InvalidParticipantException.internalArtistWithoutSpecialistId();
                         }
                     }
-                    // Validate STUDIO_SIDE có equipmentId
+                    
+                    // Validate STUDIO_SIDE có equipmentId (custom instruments không thể STUDIO_SIDE)
                     if (participant.getInstrumentSource() == InstrumentSource.STUDIO_SIDE) {
+                        if (isCustomInstrument) {
+                            throw InvalidParticipantException.customInstrumentCannotRentFromStudio();
+                        }
                         if (participant.getEquipmentId() == null || participant.getEquipmentId().isBlank()) {
                             throw InvalidParticipantException.studioSideWithoutEquipmentId();
                         }
@@ -747,39 +755,29 @@ public class StudioBookingService {
                 // Check work slots (BẮT BUỘC) - Grid system
                 // Logic: Nếu specialist không đăng ký slot → không available
                 //         Chỉ available khi có TẤT CẢ slots liên tiếp đều AVAILABLE
-                for (String specialistId : specialistIds) {
-                    try {
-                        // Format date và time cho API call
-                        String dateStr = request.getBookingDate().toString();
-                        String startTimeStr = request.getStartTime().toString();
-                        String endTimeStr = request.getEndTime().toString();
-                        
-                        ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
-                            .checkSpecialistAvailability(specialistId, dateStr, startTimeStr, endTimeStr);
-                        
-                        // Check availability (bắt buộc)
-                        if (availabilityResponse != null && 
-                            "success".equals(availabilityResponse.getStatus()) &&
-                            availabilityResponse.getData() != null) {
-                            boolean isAvailable = availabilityResponse.getData();
-                            if (!isAvailable) {
-                                log.warn("Artist {} is not available for date={}, time={}-{} (no registered slots or missing slots)",
-                                    specialistId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
-                                throw ArtistBookingConflictException.artistNotAvailable(specialistId);
-                            }
-                        } else {
-                            // Nếu không check được (API error), log warning nhưng vẫn cho phép booking
-                            // (fallback để tránh block booking khi service unavailable)
-                            log.warn("Failed to check availability for artist {}: response={}", 
-                                specialistId, availabilityResponse);
+                // Batch check availability cho tất cả specialists cùng lúc (tối ưu hiệu suất)
+                if (!specialistIds.isEmpty()) {
+                    String dateStr = request.getBookingDate().toString();
+                    String startTimeStr = request.getStartTime().toString();
+                    String endTimeStr = request.getEndTime().toString();
+                    
+                    ApiResponse<Map<String, Boolean>> batchAvailabilityResponse = specialistServiceFeignClient
+                        .batchCheckAvailability(dateStr, startTimeStr, endTimeStr, specialistIds);
+                    
+                    if (batchAvailabilityResponse == null || 
+                        !"success".equals(batchAvailabilityResponse.getStatus()) ||
+                        batchAvailabilityResponse.getData() == null) {
+                        throw new RuntimeException("Failed to check specialist availability");
+                    }
+                    
+                    Map<String, Boolean> availabilityMap = batchAvailabilityResponse.getData();
+                    
+                    // Check từng specialist và throw exception nếu không available
+                    for (String specialistId : specialistIds) {
+                        Boolean isAvailable = availabilityMap.get(specialistId);
+                        if (isAvailable == null || !isAvailable) {
+                            throw ArtistBookingConflictException.artistNotAvailable(specialistId);
                         }
-                    } catch (ArtistBookingConflictException e) {
-                        // Re-throw để block booking
-                        throw e;
-                    } catch (Exception e) {
-                        // Log warning nhưng không block booking nếu API error
-                        // (fallback để tránh block booking khi service unavailable)
-                        log.warn("Failed to check work slots for artist {}: {}", specialistId, e.getMessage());
                     }
                 }
             }
@@ -854,19 +852,27 @@ public class StudioBookingService {
         // 10. Tạo booking_participants
         if (request.getParticipants() != null && !request.getParticipants().isEmpty()) {
             for (ParticipantRequest participantRequest : request.getParticipants()) {
+                // Lưu skillName vào notes nếu là custom instrument (skillId = null)
+                String notes = participantRequest.getNotes();
+                if ((participantRequest.getSkillId() == null || participantRequest.getSkillId().isBlank())
+                    && participantRequest.getSkillName() != null && !participantRequest.getSkillName().isBlank()) {
+                    // Custom instrument: lưu skillName vào notes
+                    notes = participantRequest.getSkillName();
+                }
+                
                 BookingParticipant participant = BookingParticipant.builder()
                     .booking(saved)
                     .roleType(participantRequest.getRoleType())
                     .performerSource(participantRequest.getPerformerSource())
                     .specialistId(participantRequest.getSpecialistId())
-                    .skillId(participantRequest.getSkillId())
+                    .skillId(participantRequest.getSkillId()) // null cho custom instruments
                     .instrumentSource(participantRequest.getInstrumentSource())
                     .equipmentId(participantRequest.getEquipmentId())
                     .participantFee(participantRequest.getParticipantFee() != null 
                         ? participantRequest.getParticipantFee() 
                         : BigDecimal.ZERO)
                     .isPrimary(participantRequest.getIsPrimary() != null ? participantRequest.getIsPrimary() : false)
-                    .notes(participantRequest.getNotes())
+                    .notes(notes) // Lưu skillName cho custom instruments
                     .build();
                 
                 bookingParticipantRepository.save(participant);
@@ -975,6 +981,13 @@ public class StudioBookingService {
                 } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
                     // Fallback nếu không fetch được
                         specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
+                }
+                
+                // Custom instruments: skillId = null, skillName lưu trong notes
+                if (p.getRoleType() == SessionRoleType.INSTRUMENT 
+                    && (p.getSkillId() == null || p.getSkillId().isBlank())
+                    && p.getNotes() != null && !p.getNotes().isBlank()) {
+                    skillName = p.getNotes(); // Lấy skillName từ notes cho custom instruments
                 }
                 
                 return StudioBookingResponse.BookingParticipantInfo.builder()
@@ -1365,6 +1378,14 @@ public class StudioBookingService {
             // Lấy các thông tin khác từ vocalist
             String email = (String) vocalist.getOrDefault("email", null);
             String avatarUrl = (String) vocalist.getOrDefault("avatarUrl", null);
+            String mainDemoPreviewUrl = (String) vocalist.getOrDefault("mainDemoPreviewUrl", null);
+            String gender = vocalist.get("gender") != null 
+                ? vocalist.get("gender").toString() 
+                : null;
+            String bio = (String) vocalist.getOrDefault("bio", null);
+            Integer reviews = vocalist.get("reviews") != null
+                ? ((Number) vocalist.get("reviews")).intValue()
+                : null;
             Integer experienceYears = vocalist.get("experienceYears") != null 
                 ? ((Number) vocalist.get("experienceYears")).intValue() 
                 : null;
@@ -1394,11 +1415,23 @@ public class StudioBookingService {
                 ? (List<String>) vocalist.get("genres")
                 : null;
             
+            // Lấy credits (có thể từ demos hoặc credits field)
+            @SuppressWarnings("unchecked")
+            List<String> credits = vocalist.get("credits") != null
+                ? (List<String>) vocalist.get("credits")
+                : null;
+            
             artists.add(AvailableArtistResponse.builder()
                 .specialistId(specialistId)
                 .name(artistName)
+                .fullName(artistName)  // Set fullName = name để tương thích với frontend
                 .email(email)
                 .avatarUrl(avatarUrl)
+                .mainDemoPreviewUrl(mainDemoPreviewUrl)
+                .gender(gender)
+                .bio(bio)
+                .reviews(reviews)
+                .credits(credits)
                 .role(role)
                 .genres(artistGenres)
                 .experienceYears(experienceYears)
@@ -1577,7 +1610,33 @@ public class StudioBookingService {
             .filter(id -> id != null && !id.isBlank())
             .toList();
         
-        // 5. Tạo response
+        // 5. Batch check slot availability cho tất cả specialists không busy (tối ưu hiệu suất)
+        Map<String, Boolean> availabilityMap = new java.util.HashMap<>();
+        List<String> specialistsToCheck = allSpecialistIds.stream()
+            .filter(id -> !allConflictingIds.contains(id)) // Chỉ check những specialist không busy
+            .collect(java.util.stream.Collectors.toList());
+        
+        if (!specialistsToCheck.isEmpty()) {
+            String dateStr = bookingDate.toString();
+            String startTimeStr = startTime.toString();
+            String endTimeStr = endTime.toString();
+            
+            ApiResponse<Map<String, Boolean>> batchAvailabilityResponse = specialistServiceFeignClient
+                .batchCheckAvailability(dateStr, startTimeStr, endTimeStr, specialistsToCheck);
+            
+            if (batchAvailabilityResponse != null && 
+                "success".equals(batchAvailabilityResponse.getStatus()) &&
+                batchAvailabilityResponse.getData() != null) {
+                availabilityMap = batchAvailabilityResponse.getData();
+            } else {
+                // Nếu batch check fail, set tất cả là false để an toàn
+                for (String id : specialistsToCheck) {
+                    availabilityMap.put(id, false);
+                }
+            }
+        }
+        
+        // 6. Tạo response
         List<AvailableArtistResponse> artists = new java.util.ArrayList<>();
         
         for (Map<String, Object> artist : allArtists) {
@@ -1605,34 +1664,8 @@ public class StudioBookingService {
                 conflictEndTime = participantConflict.getBooking().getEndTime();
             }
             
-            // Check slot availability (BẮT BUỘC) - Grid system
-            // Nếu không có slot AVAILABLE → không available
-            boolean hasAvailableSlots = true;
-            if (!isBusy) { // Chỉ check nếu không busy (tránh gọi API không cần thiết)
-                try {
-                    String dateStr = bookingDate.toString();
-                    String startTimeStr = startTime.toString();
-                    String endTimeStr = endTime.toString();
-                    
-                    ApiResponse<Boolean> availabilityResponse = specialistServiceFeignClient
-                        .checkSpecialistAvailability(specialistId, dateStr, startTimeStr, endTimeStr);
-                    
-                    if (availabilityResponse != null && 
-                        "success".equals(availabilityResponse.getStatus()) &&
-                        availabilityResponse.getData() != null) {
-                        hasAvailableSlots = availabilityResponse.getData();
-                    } else {
-                        // Nếu không check được (API error), giả sử không available để an toàn
-                        log.warn("Failed to check slot availability for artist {}: response={}", 
-                            specialistId, availabilityResponse);
-                        hasAvailableSlots = false;
-                    }
-                } catch (Exception e) {
-                    // Nếu API error, giả sử không available để an toàn
-                    log.warn("Failed to check slot availability for artist {}: {}", specialistId, e.getMessage());
-                    hasAvailableSlots = false;
-                }
-            }
+            // Get slot availability từ batch check result
+            boolean hasAvailableSlots = availabilityMap.getOrDefault(specialistId, false);
             
             // Artist chỉ available nếu không busy VÀ có slot AVAILABLE
             boolean isAvailable = !isBusy && hasAvailableSlots;
@@ -1685,6 +1718,14 @@ public class StudioBookingService {
             // Lấy các thông tin khác
             String email = (String) artist.getOrDefault("email", null);
             String avatarUrl = (String) artist.getOrDefault("avatarUrl", null);
+            String mainDemoPreviewUrl = (String) artist.getOrDefault("mainDemoPreviewUrl", null);
+            String gender = artist.get("gender") != null 
+                ? artist.get("gender").toString() 
+                : null;
+            String bio = (String) artist.getOrDefault("bio", null);
+            Integer reviews = artist.get("reviews") != null
+                ? ((Number) artist.get("reviews")).intValue()
+                : null;
             Integer experienceYears = artist.get("experienceYears") != null 
                 ? ((Number) artist.get("experienceYears")).intValue() 
                 : null;
@@ -1713,11 +1754,23 @@ public class StudioBookingService {
                 ? (List<String>) artist.get("genres")
                 : null;
             
+            // Lấy credits (có thể từ demos hoặc credits field)
+            @SuppressWarnings("unchecked")
+            List<String> credits = artist.get("credits") != null
+                ? (List<String>) artist.get("credits")
+                : null;
+            
             artists.add(AvailableArtistResponse.builder()
                 .specialistId(specialistId)
                 .name(artistName)
+                .fullName(artistName)  // Set fullName = name để tương thích với frontend
                 .email(email)
                 .avatarUrl(avatarUrl)
+                .mainDemoPreviewUrl(mainDemoPreviewUrl)
+                .gender(gender)
+                .bio(bio)
+                .reviews(reviews)
+                .credits(credits)
                 .role(role)
                 .genres(artistGenres)
                 .experienceYears(experienceYears)

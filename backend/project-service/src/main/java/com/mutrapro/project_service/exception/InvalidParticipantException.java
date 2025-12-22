@@ -41,5 +41,13 @@ public class InvalidParticipantException extends BusinessException {
             String.format("Equipment %s does not match skill_id %s. Equipment must be mapped to this skill in skill_equipment_mapping.", 
                 equipmentId, skillId));
     }
+
+    public static InvalidParticipantException customInstrumentWithoutSkillName() {
+        return new InvalidParticipantException("Custom instrument must have skillName when skillId is null");
+    }
+
+    public static InvalidParticipantException customInstrumentCannotRentFromStudio() {
+        return new InvalidParticipantException("Custom instruments cannot rent equipment from studio. They must be brought by customer (CUSTOMER_SIDE)");
+    }
 }
 

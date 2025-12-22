@@ -4,6 +4,8 @@ import com.mutrapro.shared.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -73,5 +75,19 @@ public interface SpecialistServiceFeignClient {
         @RequestParam String date,
         @RequestParam String startTime,
         @RequestParam String endTime);
+    
+    /**
+     * Batch check availability cho nhiều specialists cùng lúc (public endpoint)
+     * POST /public/specialists/batch-availability?date={date}&startTime={startTime}&endTime={endTime}
+     * Body: List<String> specialistIds
+     * Public endpoint - không cần authentication
+     * Dùng để tối ưu hiệu suất khi check nhiều specialists
+     */
+    @PostMapping("/public/specialists/batch-availability")
+    ApiResponse<Map<String, Boolean>> batchCheckAvailability(
+        @RequestParam String date,
+        @RequestParam String startTime,
+        @RequestParam String endTime,
+        @RequestBody List<String> specialistIds);
 }
 

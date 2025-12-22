@@ -33,17 +33,36 @@ function VocalistSelectionCard({
     if (onViewDetail) {
       onViewDetail(specialist.specialistId);
     } else {
+      // Get current flow data to preserve context
+      const flowDataStr = sessionStorage.getItem('recordingFlowData');
+      const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+      const currentStep = flowData.currentStep || 2;
+      
+      // Determine returnTo based on current step
+      let returnTo = '/recording-flow/vocalist-selection';
+      let returnState = {
+        fromFlow: true,
+        step: currentStep,
+        returnFromSelection: true,
+        timestamp: Date.now(),
+      };
+      
+      // If we're in vocalist selection page, return there
+      // Otherwise, return to the recording flow at the appropriate step
+      if (window.location.pathname.includes('/recording-flow/vocalist-selection')) {
+        returnTo = '/recording-flow/vocalist-selection';
+      } else {
+        returnTo = '/recording-flow';
+        returnState.step = currentStep;
+      }
+      
       // Default: navigate to detail page with flow context
       navigate(`/pros/singer/${specialist.specialistId}`, {
         state: {
           specialistData: specialist,
           fromFlow: true,
-          returnTo: '/recording-flow/vocalist-selection',
-          returnState: {
-            fromFlow: true,
-            step: 1,
-            selectedVocalist: selectedId || null,
-          },
+          returnTo,
+          returnState,
         },
       });
     }
