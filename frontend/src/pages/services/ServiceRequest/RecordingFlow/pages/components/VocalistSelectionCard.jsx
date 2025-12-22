@@ -37,7 +37,7 @@ function VocalistSelectionCard({
       const flowDataStr = sessionStorage.getItem('recordingFlowData');
       const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
       const currentStep = flowData.currentStep || 2;
-      
+
       // Determine returnTo based on current step
       let returnTo = '/recording-flow/vocalist-selection';
       let returnState = {
@@ -46,16 +46,18 @@ function VocalistSelectionCard({
         returnFromSelection: true,
         timestamp: Date.now(),
       };
-      
+
       // If we're in vocalist selection page, return there
       // Otherwise, return to the recording flow at the appropriate step
-      if (window.location.pathname.includes('/recording-flow/vocalist-selection')) {
+      if (
+        window.location.pathname.includes('/recording-flow/vocalist-selection')
+      ) {
         returnTo = '/recording-flow/vocalist-selection';
       } else {
         returnTo = '/recording-flow';
         returnState.step = currentStep;
       }
-      
+
       // Default: navigate to detail page with flow context
       navigate(`/pros/singer/${specialist.specialistId}`, {
         state: {

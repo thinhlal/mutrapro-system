@@ -76,10 +76,10 @@ export default function RecordingFlowController() {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         const updated = JSON.parse(stored);
-        
+
         // Always update flowData to ensure it's in sync with sessionStorage
         setFlowData(updated);
-        
+
         // Update step if it's explicitly provided in URL state
         if (stepFromUrl !== undefined && stepFromUrl !== currentStep) {
           setCurrentStep(stepFromUrl);

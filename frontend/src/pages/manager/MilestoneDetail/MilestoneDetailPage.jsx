@@ -560,9 +560,17 @@ const MilestoneDetailPage = () => {
                 </Text>
                 <Tag color="blue" style={{ margin: 0 }}>
                   {REQUEST_TYPE_LABELS[
-                    (request.serviceType || request.requestType || '').toLowerCase()
+                    (
+                      request.serviceType ||
+                      request.requestType ||
+                      ''
+                    ).toLowerCase()
                   ] ||
-                    (request.serviceType || request.requestType || 'N/A').toUpperCase()}
+                    (
+                      request.serviceType ||
+                      request.requestType ||
+                      'N/A'
+                    ).toUpperCase()}
                 </Tag>
               </div>
               {request.requestType === 'transcription' &&
@@ -683,7 +691,9 @@ const MilestoneDetailPage = () => {
                   size="small"
                   type="primary"
                   onClick={() =>
-                    navigate(`/manager/studio-bookings/${bookingData.bookingId}`)
+                    navigate(
+                      `/manager/studio-bookings/${bookingData.bookingId}`
+                    )
                   }
                 >
                   View full booking
@@ -830,7 +840,9 @@ const MilestoneDetailPage = () => {
                                 <>
                                   {isOverdue && <Tag color="red">Overdue</Tag>}
                                   {isFirstSubmissionLate && (
-                                    <Tag color="red">Late submission (first submission)</Tag>
+                                    <Tag color="red">
+                                      Late submission (first submission)
+                                    </Tag>
                                   )}
                                   {isFirstSubmissionOnTime && (
                                     <Tag color="green">

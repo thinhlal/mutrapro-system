@@ -713,7 +713,8 @@ export default function TaskAssignmentWorkspace() {
     } catch (error) {
       console.error('Error assigning task:', error);
       message.error(
-        error?.message || (isEditMode ? 'Cannot update task' : 'Cannot assign task')
+        error?.message ||
+          (isEditMode ? 'Cannot update task' : 'Cannot assign task')
       );
     } finally {
       setAssigning(false);
@@ -943,7 +944,10 @@ export default function TaskAssignmentWorkspace() {
                     <div>
                       <Space
                         direction="horizontal"
-                        style={{ width: '100%', justifyContent: 'space-between' }}
+                        style={{
+                          width: '100%',
+                          justifyContent: 'space-between',
+                        }}
                       >
                         <div>
                           <Text strong>Studio Booking:</Text>
@@ -1335,9 +1339,7 @@ export default function TaskAssignmentWorkspace() {
           <Card
             className={`${styles.assignmentCard} ${styles.fixedHeightCard}`}
           >
-            <Title level={4}>
-              {isEditMode ? 'Edit Task' : 'Setup Task'}
-            </Title>
+            <Title level={4}>{isEditMode ? 'Edit Task' : 'Setup Task'}</Title>
             <Row gutter={16}>
               <Col xs={24} md={10}>
                 <Form layout="vertical">
@@ -1385,7 +1387,8 @@ export default function TaskAssignmentWorkspace() {
                           )}
                           <Space wrap size="small">
                             <Tag color="blue">
-                              {selectedSpecialist.experienceYears || 0} years exp
+                              {selectedSpecialist.experienceYears || 0} years
+                              exp
                             </Tag>
                             <Tag color="green">
                               Load: {selectedSpecialist.totalOpenTasks ?? 0}/
@@ -1396,7 +1399,9 @@ export default function TaskAssignmentWorkspace() {
                               {selectedSpecialist.tasksInSlaWindow ?? 0}
                             </Tag>
                             {selectedSlaFull && (
-                              <Tag color="red">SLA Full (cannot assign task)</Tag>
+                              <Tag color="red">
+                                SLA Full (cannot assign task)
+                              </Tag>
                             )}
                           </Space>
                         </Space>
@@ -1409,7 +1414,9 @@ export default function TaskAssignmentWorkspace() {
                     <Text type="secondary">Task Type</Text>
                     <div className={styles.summaryBox}>
                       <Tag color="blue">
-                        {taskType ? TASK_TYPE_LABELS[taskType] : 'No task type selected'}
+                        {taskType
+                          ? TASK_TYPE_LABELS[taskType]
+                          : 'No task type selected'}
                       </Tag>
                     </div>
                   </div>

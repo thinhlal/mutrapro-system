@@ -872,9 +872,7 @@ export default function ServiceRequestContracts() {
                           ? 'Self'
                           : p.specialistName || 'Internal artist';
 
-                      const skillLabel = p.skillName
-                        ? ` (${p.skillName})`
-                        : '';
+                      const skillLabel = p.skillName ? ` (${p.skillName})` : '';
 
                       const feeNumber =
                         typeof p.participantFee === 'number'

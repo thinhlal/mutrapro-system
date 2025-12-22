@@ -50,11 +50,14 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
       // Always sync from data props to ensure we have the latest data
       if (data.selectedVocalists && Array.isArray(data.selectedVocalists)) {
         setSelectedVocalists(data.selectedVocalists);
-      } else if (data.selectedVocalists === undefined || data.selectedVocalists === null) {
+      } else if (
+        data.selectedVocalists === undefined ||
+        data.selectedVocalists === null
+      ) {
         // Only reset if explicitly undefined/null (not if it's an empty array)
         // Empty array means no vocalists selected, which is valid
       }
-      
+
       if (data.vocalChoice) {
         setVocalChoice(data.vocalChoice);
       }

@@ -916,15 +916,29 @@ const ContractBuilder = () => {
                 newPartyInfo.partyBEmail = request.contactEmail;
 
               // Load booking data for recording contracts
-              if (contract.contractType === 'recording' || request.requestType === 'recording') {
+              if (
+                contract.contractType === 'recording' ||
+                request.requestType === 'recording'
+              ) {
                 try {
-                  const bookingResponse = await getBookingByRequestId(contract.requestId);
-                  if (bookingResponse?.status === 'success' && bookingResponse.data) {
+                  const bookingResponse = await getBookingByRequestId(
+                    contract.requestId
+                  );
+                  if (
+                    bookingResponse?.status === 'success' &&
+                    bookingResponse.data
+                  ) {
                     setBookingData(bookingResponse.data);
-                    console.log('Loaded booking data for recording contract in edit mode:', bookingResponse.data);
+                    console.log(
+                      'Loaded booking data for recording contract in edit mode:',
+                      bookingResponse.data
+                    );
                   }
                 } catch (error) {
-                  console.warn('Failed to fetch booking for recording contract:', error);
+                  console.warn(
+                    'Failed to fetch booking for recording contract:',
+                    error
+                  );
                 }
               }
             }
@@ -1713,7 +1727,8 @@ const ContractBuilder = () => {
               {/* Studio Booking Info - for recording requests (both create and edit mode) */}
               {bookingData &&
                 (serviceRequest?.requestType === 'recording' ||
-                  (isEditMode && existingContract?.contractType === 'recording')) && (
+                  (isEditMode &&
+                    existingContract?.contractType === 'recording')) && (
                   <Collapse
                     defaultActiveKey={['booking']}
                     style={{ marginBottom: 16 }}
@@ -1772,7 +1787,8 @@ const ContractBuilder = () => {
                                       const performerLabel =
                                         p.performerSource === 'CUSTOMER_SELF'
                                           ? 'Self'
-                                          : p.specialistName || 'Internal artist';
+                                          : p.specialistName ||
+                                            'Internal artist';
 
                                       const skillLabel = p.skillName
                                         ? ` (${p.skillName})`
@@ -2571,7 +2587,8 @@ const ContractBuilder = () => {
 
                       {/* Recording-specific fields: Studio Booking Summary */}
                       {(serviceRequest?.requestType === 'recording' ||
-                        (isEditMode && existingContract?.contractType === 'recording')) &&
+                        (isEditMode &&
+                          existingContract?.contractType === 'recording')) &&
                         bookingData && (
                           <>
                             <h4
@@ -2618,7 +2635,8 @@ const ContractBuilder = () => {
                       serviceRequest.requestType ===
                         'arrangement_with_recording')) ||
                   ((serviceRequest?.requestType === 'recording' ||
-                    (isEditMode && existingContract?.contractType === 'recording')) &&
+                    (isEditMode &&
+                      existingContract?.contractType === 'recording')) &&
                     bookingData)) && (
                   <div
                     style={{
@@ -2746,7 +2764,8 @@ const ContractBuilder = () => {
 
                         {/* Recording: Participants (breakdown by performer) */}
                         {(serviceRequest?.requestType === 'recording' ||
-                          (isEditMode && existingContract?.contractType === 'recording')) &&
+                          (isEditMode &&
+                            existingContract?.contractType === 'recording')) &&
                           bookingData?.participants &&
                           bookingData.participants.length > 0 && (
                             <>
@@ -2862,7 +2881,8 @@ const ContractBuilder = () => {
 
                         {/* Recording: Equipment (breakdown by item) */}
                         {(serviceRequest?.requestType === 'recording' ||
-                          (isEditMode && existingContract?.contractType === 'recording')) &&
+                          (isEditMode &&
+                            existingContract?.contractType === 'recording')) &&
                           bookingData?.requiredEquipment &&
                           bookingData.requiredEquipment.length > 0 && (
                             <>
@@ -2958,7 +2978,8 @@ const ContractBuilder = () => {
 
                         {/* Recording: Fee summary (Studio / Guest) */}
                         {(serviceRequest?.requestType === 'recording' ||
-                          (isEditMode && existingContract?.contractType === 'recording')) &&
+                          (isEditMode &&
+                            existingContract?.contractType === 'recording')) &&
                           bookingData && (
                             <>
                               <tr>
@@ -2999,9 +3020,7 @@ const ContractBuilder = () => {
                                           ? bookingData.durationHours
                                           : 1;
                                       const hourlyRate =
-                                        duration > 0
-                                          ? studioFee / duration
-                                          : 0;
+                                        duration > 0 ? studioFee / duration : 0;
                                       return `(${hourlyRate.toLocaleString(
                                         'vi-VN'
                                       )} VND/hour × ${duration}h)`;
@@ -3051,8 +3070,8 @@ const ContractBuilder = () => {
                                         ? bookingData.externalGuestCount
                                         : 0;
                                     const freeLimit =
-                                      typeof bookingData
-                                        .freeExternalGuestsLimit === 'number'
+                                      typeof bookingData.freeExternalGuestsLimit ===
+                                      'number'
                                         ? bookingData.freeExternalGuestsLimit
                                         : 0;
                                     const paidGuests = Math.max(

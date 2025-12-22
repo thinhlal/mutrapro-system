@@ -2459,8 +2459,8 @@ const ManagerContractDetailPage = () => {
                                         backgroundColor: '#fff',
                                       }}
                                     >
-                                      {equipment.equipmentName || 'Unnamed'} (Qty:{' '}
-                                      {equipment.quantity})
+                                      {equipment.equipmentName || 'Unnamed'}{' '}
+                                      (Qty: {equipment.quantity})
                                       <div
                                         style={{
                                           color: '#666',
@@ -2520,24 +2520,61 @@ const ManagerContractDetailPage = () => {
                         )}
 
                       {/* Recording: Fee summary (Studio / Guest) */}
-                      {contract?.contractType === 'recording' && bookingData && (
-                        <>
-                          <tr>
-                            <td
-                              style={{
-                                border: '1px solid #000',
-                                padding: '8px',
-                                fontWeight: 'bold',
-                                backgroundColor: '#e8e8e8',
-                              }}
-                            >
-                              Studio Fee
-                              <div
+                      {contract?.contractType === 'recording' &&
+                        bookingData && (
+                          <>
+                            <tr>
+                              <td
                                 style={{
-                                  color: '#666',
-                                  fontSize: '12px',
-                                  marginTop: '4px',
-                                  fontWeight: 'normal',
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                Studio Fee
+                                <div
+                                  style={{
+                                    color: '#666',
+                                    fontSize: '12px',
+                                    marginTop: '4px',
+                                    fontWeight: 'normal',
+                                  }}
+                                >
+                                  {(() => {
+                                    const artistFee =
+                                      bookingData.artistFee || 0;
+                                    const equipmentFee =
+                                      bookingData.equipmentRentalFee || 0;
+                                    const guestFee =
+                                      bookingData.externalGuestFee || 0;
+                                    const rawStudioFee =
+                                      (bookingData.totalCost || 0) -
+                                      artistFee -
+                                      equipmentFee -
+                                      guestFee;
+                                    const studioFee =
+                                      rawStudioFee > 0 ? rawStudioFee : 0;
+                                    const duration =
+                                      bookingData.durationHours &&
+                                      bookingData.durationHours > 0
+                                        ? bookingData.durationHours
+                                        : 1;
+                                    const hourlyRate =
+                                      duration > 0 ? studioFee / duration : 0;
+                                    return `(${hourlyRate.toLocaleString(
+                                      'vi-VN'
+                                    )} VND/hour × ${duration}h)`;
+                                  })()}
+                                </div>
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
                                 }}
                               >
                                 {(() => {
@@ -2553,114 +2590,79 @@ const ManagerContractDetailPage = () => {
                                     guestFee;
                                   const studioFee =
                                     rawStudioFee > 0 ? rawStudioFee : 0;
-                                  const duration =
-                                    bookingData.durationHours &&
-                                    bookingData.durationHours > 0
-                                      ? bookingData.durationHours
-                                      : 1;
-                                  const hourlyRate =
-                                    duration > 0 ? studioFee / duration : 0;
-                                  return `(${hourlyRate.toLocaleString(
-                                    'vi-VN'
-                                  )} VND/hour × ${duration}h)`;
+                                  return studioFee.toLocaleString('vi-VN');
                                 })()}
-                              </div>
-                            </td>
-                            <td
-                              style={{
-                                border: '1px solid #000',
-                                padding: '8px',
-                                textAlign: 'right',
-                                fontWeight: 'bold',
-                                backgroundColor: '#fff',
-                              }}
-                            >
-                              {(() => {
-                                const artistFee = bookingData.artistFee || 0;
-                                const equipmentFee =
-                                  bookingData.equipmentRentalFee || 0;
-                                const guestFee =
-                                  bookingData.externalGuestFee || 0;
-                                const rawStudioFee =
-                                  (bookingData.totalCost || 0) -
-                                  artistFee -
-                                  equipmentFee -
-                                  guestFee;
-                                const studioFee =
-                                  rawStudioFee > 0 ? rawStudioFee : 0;
-                                return studioFee.toLocaleString('vi-VN');
-                              })()}
-                            </td>
-                          </tr>
-                          {bookingData.externalGuestFee !== undefined && (
-                            <tr>
-                              <td
-                                style={{
-                                  border: '1px solid #000',
-                                  padding: '8px',
-                                  fontWeight: 'bold',
-                                  backgroundColor: '#fff',
-                                }}
-                              >
-                                {(() => {
-                                  const count =
-                                    typeof bookingData.externalGuestCount ===
-                                    'number'
-                                      ? bookingData.externalGuestCount
-                                      : 0;
-                                  const freeLimit =
-                                    typeof bookingData
-                                      .freeExternalGuestsLimit === 'number'
-                                      ? bookingData.freeExternalGuestsLimit
-                                      : 0;
-                                  const paidGuests = Math.max(
-                                    0,
-                                    count - freeLimit
-                                  );
-                                  const freeGuests = Math.max(
-                                    0,
-                                    count - paidGuests
-                                  );
-
-                                  if (count === 0) {
-                                    return 'Guest Fee (0 guests)';
-                                  }
-
-                                  if (paidGuests > 0 && freeLimit > 0) {
-                                    return `Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
-                                  }
-
-                                  if (paidGuests > 0) {
-                                    return `Guest Fee (${count} paid guest${
-                                      count === 1 ? '' : 's'
-                                    })`;
-                                  }
-
-                                  return `Guest Fee (${count} free guest${
-                                    count === 1 ? '' : 's'
-                                  })`;
-                                })()}
-                              </td>
-                              <td
-                                style={{
-                                  border: '1px solid #000',
-                                  padding: '8px',
-                                  textAlign: 'right',
-                                  fontWeight: 'bold',
-                                  backgroundColor: '#fff',
-                                }}
-                              >
-                                {bookingData.externalGuestFee &&
-                                bookingData.externalGuestFee > 0
-                                  ? bookingData.externalGuestFee.toLocaleString(
-                                      'vi-VN'
-                                    )
-                                  : '0'}
                               </td>
                             </tr>
-                          )}
-                        </>
-                      )}
+                            {bookingData.externalGuestFee !== undefined && (
+                              <tr>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  {(() => {
+                                    const count =
+                                      typeof bookingData.externalGuestCount ===
+                                      'number'
+                                        ? bookingData.externalGuestCount
+                                        : 0;
+                                    const freeLimit =
+                                      typeof bookingData.freeExternalGuestsLimit ===
+                                      'number'
+                                        ? bookingData.freeExternalGuestsLimit
+                                        : 0;
+                                    const paidGuests = Math.max(
+                                      0,
+                                      count - freeLimit
+                                    );
+                                    const freeGuests = Math.max(
+                                      0,
+                                      count - paidGuests
+                                    );
+
+                                    if (count === 0) {
+                                      return 'Guest Fee (0 guests)';
+                                    }
+
+                                    if (paidGuests > 0 && freeLimit > 0) {
+                                      return `Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
+                                    }
+
+                                    if (paidGuests > 0) {
+                                      return `Guest Fee (${count} paid guest${
+                                        count === 1 ? '' : 's'
+                                      })`;
+                                    }
+
+                                    return `Guest Fee (${count} free guest${
+                                      count === 1 ? '' : 's'
+                                    })`;
+                                  })()}
+                                </td>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    textAlign: 'right',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  {bookingData.externalGuestFee &&
+                                  bookingData.externalGuestFee > 0
+                                    ? bookingData.externalGuestFee.toLocaleString(
+                                        'vi-VN'
+                                      )
+                                    : '0'}
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        )}
 
                       {/* Instruments */}
                       {pricingBreakdown.instruments.length > 0 && (

@@ -34,9 +34,7 @@ export default function RecordingStep1({ data, onComplete }) {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [externalGuestCount, setExternalGuestCount] = useState(
-    typeof data?.externalGuestCount === 'number'
-      ? data.externalGuestCount
-      : 0
+    typeof data?.externalGuestCount === 'number' ? data.externalGuestCount : 0
   );
 
   // Fetch available slots from backend when date is selected

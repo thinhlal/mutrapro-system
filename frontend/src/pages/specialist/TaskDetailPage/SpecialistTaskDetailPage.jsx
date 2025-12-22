@@ -1339,7 +1339,7 @@ const SpecialistTaskDetailPage = () => {
                                 : p.roleType === 'INSTRUMENT'
                                   ? 'Instrument'
                                   : p.roleType || 'Participant';
-                            
+
                             // Xác định performer label với tên
                             let performerLabel = '';
                             if (p.performerSource === 'CUSTOMER_SELF') {
@@ -1347,8 +1347,11 @@ const SpecialistTaskDetailPage = () => {
                               performerLabel = customerName
                                 ? `Customer (self) (${customerName})`
                                 : 'Customer (self)';
-                            } else if (p.performerSource === 'INTERNAL_ARTIST') {
-                              performerLabel = p.specialistName || 'Internal artist';
+                            } else if (
+                              p.performerSource === 'INTERNAL_ARTIST'
+                            ) {
+                              performerLabel =
+                                p.specialistName || 'Internal artist';
                             } else if (p.performerSource === 'EXTERNAL_GUEST') {
                               const guestName = p.name;
                               performerLabel = guestName
@@ -1357,7 +1360,7 @@ const SpecialistTaskDetailPage = () => {
                             } else {
                               performerLabel = p.performerSource || 'Unknown';
                             }
-                            
+
                             const skillLabel = p.skillName
                               ? ` (${p.skillName})`
                               : '';
@@ -1640,7 +1643,9 @@ const SpecialistTaskDetailPage = () => {
                                 <>
                                   {isOverdue && <Tag color="red">Overdue</Tag>}
                                   {isFirstSubmissionLate && (
-                                    <Tag color="red">Late submission (first version)</Tag>
+                                    <Tag color="red">
+                                      Late submission (first version)
+                                    </Tag>
                                   )}
                                   {isFirstSubmissionOnTime && (
                                     <Tag color="green">
@@ -1720,7 +1725,8 @@ const SpecialistTaskDetailPage = () => {
                                 type="secondary"
                                 style={{ fontSize: '12px' }}
                               >
-                                Manager has been notified. Please wait for the decision from Manager.
+                                Manager has been notified. Please wait for the
+                                decision from Manager.
                               </Text>
                             </div>
                           </div>
@@ -2062,8 +2068,8 @@ const SpecialistTaskDetailPage = () => {
                                       fontWeight: 500,
                                     }}
                                   >
-                                    Task has been cancelled after reporting issue.
-                                    issue.
+                                    Task has been cancelled after reporting
+                                    issue. issue.
                                   </Text>
                                 </div>
                               ) : task.hasIssue ? (
@@ -2072,7 +2078,8 @@ const SpecialistTaskDetailPage = () => {
                                     type="secondary"
                                     style={{ fontSize: '12px' }}
                                   >
-                                    Manager has been notified. Please wait for the decision from Manager.
+                                    Manager has been notified. Please wait for
+                                    the decision from Manager.
                                   </Text>
                                 </div>
                               ) : null}
@@ -2986,7 +2993,10 @@ const SpecialistTaskDetailPage = () => {
             label="Reason for reporting issue (required)"
             name="reason"
             rules={[
-              { required: true, message: 'Please enter the reason for reporting issue' },
+              {
+                required: true,
+                message: 'Please enter the reason for reporting issue',
+              },
               { min: 10, message: 'Reason must be at least 10 characters' },
             ]}
           >
@@ -3018,8 +3028,8 @@ const SpecialistTaskDetailPage = () => {
         confirmLoading={deletingFile}
       >
         <Text>
-          Are you sure you want to delete this file? File will be deleted and cannot be
-          submit.
+          Are you sure you want to delete this file? File will be deleted and
+          cannot be submit.
         </Text>
       </Modal>
       {/* Modal xem lý do reject */}

@@ -363,9 +363,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       startTime: step1.bookingStartTime,
       endTime: step1.bookingEndTime,
       durationHours: step1.durationHours,
-      externalGuestCount: typeof step1.externalGuestCount === 'number'
-        ? step1.externalGuestCount
-        : 0,
+      externalGuestCount:
+        typeof step1.externalGuestCount === 'number'
+          ? step1.externalGuestCount
+          : 0,
       participants,
       requiredEquipment,
     };
@@ -435,17 +436,29 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       }
     } catch (error) {
       console.error('Submit error:', error);
-      
+
       // Parse error message to provide better user feedback
-      let errorMessage = error?.message || error?.data?.message || 'Failed to create request and booking';
-      
+      let errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        'Failed to create request and booking';
+
       // Check for artist availability errors
-      if (errorMessage.includes('not available') || errorMessage.includes('no registered slots') || errorMessage.includes('missing slots')) {
-        errorMessage = 'One or more selected artists are no longer available for the requested time slot. Please go back and select different artists or choose a different time slot.';
-      } else if (errorMessage.includes('Artist') && errorMessage.includes('conflict')) {
-        errorMessage = 'One or more selected artists have a scheduling conflict. Please go back and select different artists or choose a different time slot.';
+      if (
+        errorMessage.includes('not available') ||
+        errorMessage.includes('no registered slots') ||
+        errorMessage.includes('missing slots')
+      ) {
+        errorMessage =
+          'One or more selected artists are no longer available for the requested time slot. Please go back and select different artists or choose a different time slot.';
+      } else if (
+        errorMessage.includes('Artist') &&
+        errorMessage.includes('conflict')
+      ) {
+        errorMessage =
+          'One or more selected artists have a scheduling conflict. Please go back and select different artists or choose a different time slot.';
       }
-      
+
       toast.error(errorMessage, { duration: 6000 });
     } finally {
       setSubmitting(false);
@@ -737,14 +750,16 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
           </Row>
 
-          {fees.studioFee === 0 && fees.participantFee === 0 && fees.equipmentRentalFee === 0 && (
-            <Alert
-              message="Total fee = Studio fee only"
-              description="Studio fee is always included. You are self-performing (self vocal, self instruments, self equipment)."
-              type="info"
-              style={{ marginTop: 16 }}
-            />
-          )}
+          {fees.studioFee === 0 &&
+            fees.participantFee === 0 &&
+            fees.equipmentRentalFee === 0 && (
+              <Alert
+                message="Total fee = Studio fee only"
+                description="Studio fee is always included. You are self-performing (self vocal, self instruments, self equipment)."
+                type="info"
+                style={{ marginTop: 16 }}
+              />
+            )}
 
           {/* Breakdown details */}
           <div style={{ marginTop: 24 }}>
@@ -767,10 +782,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                         {item.type === 'studio'
                           ? '🏢 Studio'
                           : item.type === 'vocalist'
-                          ? '🎤 Vocalist'
-                          : item.type === 'instrumentalist'
-                            ? '🎸 Instrumentalist'
-                            : '🔧 Equipment'}
+                            ? '🎤 Vocalist'
+                            : item.type === 'instrumentalist'
+                              ? '🎸 Instrumentalist'
+                              : '🔧 Equipment'}
                       </Text>
                       <Text type="secondary">({item.name})</Text>
                     </Space>
@@ -816,11 +831,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label={
-                    <span>
-                      Title
-                    </span>
-                  }
+                  label={<span>Title</span>}
                   name="title"
                   rules={[{ required: true, message: 'Please enter a title' }]}
                 >
@@ -829,11 +840,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </Col>
               <Col xs={24}>
                 <Form.Item
-                  label={
-                    <span>
-                      Description
-                    </span>
-                  }
+                  label={<span>Description</span>}
                   name="description"
                   rules={[
                     { required: true, message: 'Please enter a description' },
@@ -853,11 +860,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label={
-                    <span>
-                      Contact name
-                    </span>
-                  }
+                  label={<span>Contact name</span>}
                   name="contactName"
                   rules={[{ required: true, message: 'Please enter a name' }]}
                 >
@@ -866,11 +869,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label={
-                    <span>
-                      Phone number 
-                    </span>
-                  }
+                  label={<span>Phone number</span>}
                   name="contactPhone"
                   rules={[
                     { required: true, message: 'Please enter a phone number' },
@@ -883,11 +882,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label={
-                    <span>
-                      Contact email
-                    </span>
-                  }
+                  label={<span>Contact email</span>}
                   name="contactEmail"
                   rules={[
                     { required: true, message: 'Please enter an email' },

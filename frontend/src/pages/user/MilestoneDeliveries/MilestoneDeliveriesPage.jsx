@@ -699,7 +699,9 @@ const MilestoneDeliveriesPage = () => {
                         marginTop: 4,
                       }}
                     >
-                      Used {revisionStats.freeRevisionsUsed} times for free revision, {revisionStats.paidRevisionsUsed} times for paid revision
+                      Used {revisionStats.freeRevisionsUsed} times for free
+                      revision, {revisionStats.paidRevisionsUsed} times for paid
+                      revision
                     </Text>
                   </Descriptions.Item>
                 </>
@@ -1017,7 +1019,7 @@ const MilestoneDeliveriesPage = () => {
                               : p.roleType === 'INSTRUMENT'
                                 ? 'Instrument'
                                 : p.roleType || 'Participant';
-                          
+
                           // Xác định performer label với tên
                           let performerLabel = '';
                           if (p.performerSource === 'CUSTOMER_SELF') {
@@ -1026,7 +1028,8 @@ const MilestoneDeliveriesPage = () => {
                               ? `Customer (self) (${customerName})`
                               : 'Customer (self)';
                           } else if (p.performerSource === 'INTERNAL_ARTIST') {
-                            performerLabel = p.specialistName || 'Internal artist';
+                            performerLabel =
+                              p.specialistName || 'Internal artist';
                           } else if (p.performerSource === 'EXTERNAL_GUEST') {
                             const guestName = p.name;
                             performerLabel = guestName
@@ -1035,7 +1038,7 @@ const MilestoneDeliveriesPage = () => {
                           } else {
                             performerLabel = p.performerSource || 'Unknown';
                           }
-                          
+
                           const skillLabel = p.skillName
                             ? ` (${p.skillName})`
                             : '';
@@ -1654,7 +1657,8 @@ const MilestoneDeliveriesPage = () => {
                                         marginTop: 4,
                                       }}
                                     >
-                                      (This submission is not in the current list)
+                                      (This submission is not in the current
+                                      list)
                                     </Text>
                                   </>
                                 )}
@@ -1689,7 +1693,8 @@ const MilestoneDeliveriesPage = () => {
                                         marginTop: 4,
                                       }}
                                     >
-                                      (This submission is not in the current list)
+                                      (This submission is not in the current
+                                      list)
                                     </Text>
                                   </>
                                 )}
@@ -1700,7 +1705,8 @@ const MilestoneDeliveriesPage = () => {
                             !revision.revisedSubmissionId && (
                               <Descriptions.Item label="Note">
                                 <Tag color="warning">
-                                  This revision request is not linked to any submission
+                                  This revision request is not linked to any
+                                  submission
                                 </Tag>
                               </Descriptions.Item>
                             )}

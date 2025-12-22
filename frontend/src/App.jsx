@@ -137,8 +137,8 @@ function RecordingFlowStorageWatcher() {
 
   useEffect(() => {
     const isRecordingFlowPath = location.pathname.startsWith('/recording-flow');
-    const isDetailPageFromFlow = location.pathname.startsWith('/pros/singer/') && 
-                                  location.state?.fromFlow;
+    const isDetailPageFromFlow =
+      location.pathname.startsWith('/pros/singer/') && location.state?.fromFlow;
 
     // Don't clear if still in flow or viewing detail page from flow
     if (!isRecordingFlowPath && !isDetailPageFromFlow) {

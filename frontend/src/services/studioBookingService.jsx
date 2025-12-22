@@ -222,7 +222,7 @@ export const getAvailableArtistsForRequest = async (
 ) => {
   try {
     // Normalize time format: ensure HH:mm:ss format for backend (ISO TIME format)
-    const normalizeTime = (time) => {
+    const normalizeTime = time => {
       if (!time) return time;
       // If format is HH:mm, convert to HH:mm:ss
       if (time.match(/^\d{2}:\d{2}$/)) {
@@ -238,8 +238,14 @@ export const getAvailableArtistsForRequest = async (
     const normalizedStartTime = normalizeTime(startTime);
     const normalizedEndTime = normalizeTime(endTime);
 
-    console.log('getAvailableArtistsForRequest - Original times:', { startTime, endTime });
-    console.log('getAvailableArtistsForRequest - Normalized times:', { normalizedStartTime, normalizedEndTime });
+    console.log('getAvailableArtistsForRequest - Original times:', {
+      startTime,
+      endTime,
+    });
+    console.log('getAvailableArtistsForRequest - Normalized times:', {
+      normalizedStartTime,
+      normalizedEndTime,
+    });
 
     const response = await axiosInstance.get(
       API_ENDPOINTS.STUDIO_BOOKINGS.GET_AVAILABLE_ARTISTS_FOR_REQUEST(

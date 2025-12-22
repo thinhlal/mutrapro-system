@@ -176,7 +176,8 @@ export default function SingerDetailPage() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { specialistData, fromFlow, returnTo, returnState } = location.state || {};
+  const { specialistData, fromFlow, returnTo, returnState } =
+    location.state || {};
 
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);

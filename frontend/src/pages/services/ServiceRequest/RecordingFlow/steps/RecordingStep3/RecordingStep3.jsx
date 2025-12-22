@@ -98,7 +98,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
           setCustomInstrumentName('');
         }
       }
-      
+
       // Sync hasLiveInstruments
       if (data.hasLiveInstruments !== undefined) {
         setHasLiveInstruments(data.hasLiveInstruments);
@@ -111,13 +111,20 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
     try {
       const flowDataStr = sessionStorage.getItem('recordingFlowData');
       const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
-      
+
       // Only save if we have instruments or if hasLiveInstruments is set
-      if (flowData.step3 || selectedInstruments.length > 0 || hasLiveInstruments !== null) {
+      if (
+        flowData.step3 ||
+        selectedInstruments.length > 0 ||
+        hasLiveInstruments !== null
+      ) {
         flowData.step3 = {
           ...flowData.step3,
           instruments: selectedInstruments,
-          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+          hasLiveInstruments:
+            hasLiveInstruments !== null
+              ? hasLiveInstruments
+              : flowData.step3?.hasLiveInstruments,
         };
         sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
       }
@@ -197,7 +204,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       };
       const updated = [...selectedInstruments, newInstrument];
       setSelectedInstruments(updated);
-      
+
       // Save to sessionStorage immediately
       try {
         const flowDataStr = sessionStorage.getItem('recordingFlowData');
@@ -205,7 +212,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         flowData.step3 = {
           ...flowData.step3,
           instruments: updated,
-          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+          hasLiveInstruments:
+            hasLiveInstruments !== null
+              ? hasLiveInstruments
+              : flowData.step3?.hasLiveInstruments,
         };
         sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
       } catch (error) {
@@ -213,9 +223,11 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       }
     } else {
       // Remove instrument
-      const updated = selectedInstruments.filter(inst => inst.skillId !== skill.skillId);
+      const updated = selectedInstruments.filter(
+        inst => inst.skillId !== skill.skillId
+      );
       setSelectedInstruments(updated);
-      
+
       // Save to sessionStorage immediately
       try {
         const flowDataStr = sessionStorage.getItem('recordingFlowData');
@@ -223,7 +235,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         flowData.step3 = {
           ...flowData.step3,
           instruments: updated,
-          hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+          hasLiveInstruments:
+            hasLiveInstruments !== null
+              ? hasLiveInstruments
+              : flowData.step3?.hasLiveInstruments,
         };
         sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
       } catch (error) {
@@ -243,9 +258,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         return inst.skillId === identifier ? { ...inst, ...updates } : inst;
       }
     });
-    
+
     setSelectedInstruments(updated);
-    
+
     // Save to sessionStorage immediately
     try {
       const flowDataStr = sessionStorage.getItem('recordingFlowData');
@@ -253,7 +268,10 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       flowData.step3 = {
         ...flowData.step3,
         instruments: updated,
-        hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+        hasLiveInstruments:
+          hasLiveInstruments !== null
+            ? hasLiveInstruments
+            : flowData.step3?.hasLiveInstruments,
       };
       sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
     } catch (error) {
@@ -496,10 +514,16 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                           onClick={() => {
                             // For custom instruments, skillId is null, so use skillName to identify
                             const updated = selectedInstruments.filter(i => {
-                              if (i.isCustomInstrument && inst.isCustomInstrument) {
+                              if (
+                                i.isCustomInstrument &&
+                                inst.isCustomInstrument
+                              ) {
                                 // Both are custom: compare by skillName
                                 return i.skillName !== inst.skillName;
-                              } else if (!i.isCustomInstrument && !inst.isCustomInstrument) {
+                              } else if (
+                                !i.isCustomInstrument &&
+                                !inst.isCustomInstrument
+                              ) {
                                 // Both are regular: compare by skillId
                                 return i.skillId !== inst.skillId;
                               } else {
@@ -508,19 +532,31 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                               }
                             });
                             setSelectedInstruments(updated);
-                            
+
                             // Save to sessionStorage immediately
                             try {
-                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
-                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              const flowDataStr =
+                                sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr
+                                ? JSON.parse(flowDataStr)
+                                : {};
                               flowData.step3 = {
                                 ...flowData.step3,
                                 instruments: updated,
-                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                                hasLiveInstruments:
+                                  hasLiveInstruments !== null
+                                    ? hasLiveInstruments
+                                    : flowData.step3?.hasLiveInstruments,
                               };
-                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                              sessionStorage.setItem(
+                                'recordingFlowData',
+                                JSON.stringify(flowData)
+                              );
                             } catch (error) {
-                              console.error('Error saving custom instrument removal:', error);
+                              console.error(
+                                'Error saving custom instrument removal:',
+                                error
+                              );
                             }
                           }}
                         />
@@ -566,25 +602,40 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                               rentalFee: 0,
                             };
 
-                            const updated = [...selectedInstruments, customInstrument];
+                            const updated = [
+                              ...selectedInstruments,
+                              customInstrument,
+                            ];
                             setSelectedInstruments(updated);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
-                            
+
                             // Save to sessionStorage immediately
                             try {
-                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
-                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              const flowDataStr =
+                                sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr
+                                ? JSON.parse(flowDataStr)
+                                : {};
                               flowData.step3 = {
                                 ...flowData.step3,
                                 instruments: updated,
-                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                                hasLiveInstruments:
+                                  hasLiveInstruments !== null
+                                    ? hasLiveInstruments
+                                    : flowData.step3?.hasLiveInstruments,
                               };
-                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                              sessionStorage.setItem(
+                                'recordingFlowData',
+                                JSON.stringify(flowData)
+                              );
                             } catch (error) {
-                              console.error('Error saving custom instrument:', error);
+                              console.error(
+                                'Error saving custom instrument:',
+                                error
+                              );
                             }
-                            
+
                             message.success(
                               `Added "${name}" as custom instrument`
                             );
@@ -627,25 +678,40 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                               rentalFee: 0,
                             };
 
-                            const updated = [...selectedInstruments, customInstrument];
+                            const updated = [
+                              ...selectedInstruments,
+                              customInstrument,
+                            ];
                             setSelectedInstruments(updated);
                             setCustomInstrumentName('');
                             setShowCustomInstrumentInput(false);
-                            
+
                             // Save to sessionStorage immediately
                             try {
-                              const flowDataStr = sessionStorage.getItem('recordingFlowData');
-                              const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
+                              const flowDataStr =
+                                sessionStorage.getItem('recordingFlowData');
+                              const flowData = flowDataStr
+                                ? JSON.parse(flowDataStr)
+                                : {};
                               flowData.step3 = {
                                 ...flowData.step3,
                                 instruments: updated,
-                                hasLiveInstruments: hasLiveInstruments !== null ? hasLiveInstruments : flowData.step3?.hasLiveInstruments,
+                                hasLiveInstruments:
+                                  hasLiveInstruments !== null
+                                    ? hasLiveInstruments
+                                    : flowData.step3?.hasLiveInstruments,
                               };
-                              sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
+                              sessionStorage.setItem(
+                                'recordingFlowData',
+                                JSON.stringify(flowData)
+                              );
                             } catch (error) {
-                              console.error('Error saving custom instrument:', error);
+                              console.error(
+                                'Error saving custom instrument:',
+                                error
+                              );
                             }
-                            
+
                             message.success(
                               `Added "${name}" as custom instrument`
                             );
@@ -788,7 +854,7 @@ function InstrumentConfig({
     const fetchInstrumentalists = async () => {
       try {
         setLoadingInstrumentalists(true);
-        
+
         // Debug: Log parameters
         console.log('Fetching instrumentalists with params:', {
           bookingDate,
@@ -798,7 +864,7 @@ function InstrumentConfig({
           roleType: 'INSTRUMENT',
           instrumentName: instrument.skillName,
         });
-        
+
         const response = await getAvailableArtistsForRequest(
           bookingDate,
           bookingStartTime,

@@ -73,8 +73,10 @@ export default function VocalistSelectionPage() {
 
   // Get booking info from sessionStorage if not in location.state
   const [effectiveBookingDate, setEffectiveBookingDate] = useState(bookingDate);
-  const [effectiveBookingStartTime, setEffectiveBookingStartTime] = useState(bookingStartTime);
-  const [effectiveBookingEndTime, setEffectiveBookingEndTime] = useState(bookingEndTime);
+  const [effectiveBookingStartTime, setEffectiveBookingStartTime] =
+    useState(bookingStartTime);
+  const [effectiveBookingEndTime, setEffectiveBookingEndTime] =
+    useState(bookingEndTime);
   const [bookingInfoLoaded, setBookingInfoLoaded] = useState(false);
 
   useEffect(() => {
@@ -112,7 +114,14 @@ export default function VocalistSelectionPage() {
     if (bookingInfoLoaded) {
       fetchVocalists();
     }
-  }, [genderFilter, selectedGenres, effectiveBookingDate, effectiveBookingStartTime, effectiveBookingEndTime, bookingInfoLoaded]);
+  }, [
+    genderFilter,
+    selectedGenres,
+    effectiveBookingDate,
+    effectiveBookingStartTime,
+    effectiveBookingEndTime,
+    bookingInfoLoaded,
+  ]);
 
   const fetchVocalists = async () => {
     setLoading(true);
@@ -122,7 +131,12 @@ export default function VocalistSelectionPage() {
       const genres = selectedGenres.length > 0 ? selectedGenres : null;
 
       // If we have booking date/time, use getAvailableArtistsForRequest to filter by availability
-      if (fromFlow && effectiveBookingDate && effectiveBookingStartTime && effectiveBookingEndTime) {
+      if (
+        fromFlow &&
+        effectiveBookingDate &&
+        effectiveBookingStartTime &&
+        effectiveBookingEndTime
+      ) {
         const response = await getAvailableArtistsForRequest(
           effectiveBookingDate,
           effectiveBookingStartTime,
@@ -131,17 +145,17 @@ export default function VocalistSelectionPage() {
           'VOCAL', // roleType
           genres // genres filter
         );
-        
+
         if (response?.status === 'success' && response?.data) {
           let filteredVocalists = response.data;
-          
+
           // Apply gender filter if needed
           if (gender) {
             filteredVocalists = filteredVocalists.filter(
               v => v.gender === gender
             );
           }
-          
+
           setVocalists(filteredVocalists);
         } else {
           setVocalists([]);
@@ -276,12 +290,12 @@ export default function VocalistSelectionPage() {
         message.success(
           `Selected ${allowMultiple ? selectedIds.length : 1} vocalist${allowMultiple && selectedIds.length > 1 ? 's' : ''} successfully`
         );
-        navigate('/recording-flow', { 
-          state: { 
+        navigate('/recording-flow', {
+          state: {
             step: 2,
             returnFromSelection: true,
-            timestamp: Date.now() // Force re-render
-          } 
+            timestamp: Date.now(), // Force re-render
+          },
         });
       }
     } catch (error) {
@@ -367,12 +381,12 @@ export default function VocalistSelectionPage() {
     if (fromArrangement) {
       navigate(-1);
     } else {
-      navigate('/recording-flow', { 
-        state: { 
+      navigate('/recording-flow', {
+        state: {
           step: 2,
           returnFromSelection: true,
-          timestamp: Date.now() // Force re-render
-        } 
+          timestamp: Date.now(), // Force re-render
+        },
       });
     }
   };
@@ -461,11 +475,17 @@ export default function VocalistSelectionPage() {
               </Space>
               <Text type="secondary">
                 ({vocalists.length} vocalist{vocalists.length !== 1 ? 's' : ''})
-                {fromFlow && effectiveBookingDate && effectiveBookingStartTime && effectiveBookingEndTime && (
-                  <span style={{ marginLeft: 8, display: 'block', marginTop: 4 }}>
-                    Available for {effectiveBookingDate} ({effectiveBookingStartTime} - {effectiveBookingEndTime})
-                  </span>
-                )}
+                {fromFlow &&
+                  effectiveBookingDate &&
+                  effectiveBookingStartTime &&
+                  effectiveBookingEndTime && (
+                    <span
+                      style={{ marginLeft: 8, display: 'block', marginTop: 4 }}
+                    >
+                      Available for {effectiveBookingDate} (
+                      {effectiveBookingStartTime} - {effectiveBookingEndTime})
+                    </span>
+                  )}
               </Text>
             </Space>
           </div>

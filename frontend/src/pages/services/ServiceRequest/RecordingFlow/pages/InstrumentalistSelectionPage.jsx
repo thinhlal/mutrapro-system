@@ -64,7 +64,7 @@ export default function InstrumentalistSelectionPage() {
         skillName,
         roleType: 'INSTRUMENT',
       });
-      
+
       const response = await getAvailableArtistsForRequest(
         bookingDate,
         bookingStartTime,
@@ -176,12 +176,12 @@ export default function InstrumentalistSelectionPage() {
       }
 
       message.success('Selected instrumentalist successfully');
-      navigate('/recording-flow', { 
-        state: { 
+      navigate('/recording-flow', {
+        state: {
           step: 3,
           returnFromSelection: true,
-          timestamp: Date.now() // Force re-render
-        } 
+          timestamp: Date.now(), // Force re-render
+        },
       });
     } catch (error) {
       console.error('Error saving instrumentalist selection:', error);
@@ -251,12 +251,12 @@ export default function InstrumentalistSelectionPage() {
       }
     }
 
-    navigate('/recording-flow', { 
-      state: { 
+    navigate('/recording-flow', {
+      state: {
         step: 3,
         returnFromSelection: true,
-        timestamp: Date.now() // Force re-render
-      } 
+        timestamp: Date.now(), // Force re-render
+      },
     });
   };
 
@@ -338,7 +338,8 @@ export default function InstrumentalistSelectionPage() {
                     specialist={{
                       ...instrumentalist,
                       // Ensure fullName is set (use name as fallback if fullName is not available)
-                      fullName: instrumentalist.fullName || instrumentalist.name,
+                      fullName:
+                        instrumentalist.fullName || instrumentalist.name,
                       // Ensure all required fields are present
                       avatarUrl: instrumentalist.avatarUrl,
                       bio: instrumentalist.bio || '',

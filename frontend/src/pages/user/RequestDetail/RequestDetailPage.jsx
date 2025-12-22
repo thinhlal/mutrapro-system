@@ -160,7 +160,7 @@ const RequestDetailPage = () => {
 
     loadContracts();
   }, [requestId]);
-  
+
   const getStatusConfig = status => {
     const hasManager = !!request?.managerUserId;
     const configs = {
@@ -579,7 +579,6 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-
             {/* Show genres and purpose for arrangement requests */}
             {(request.requestType === 'arrangement' ||
               request.requestType === 'arrangement_with_recording') && (
@@ -696,9 +695,7 @@ const RequestDetailPage = () => {
                 {booking.status && (
                   <Descriptions.Item label="Status">
                     <Tag
-                      color={
-                        BOOKING_STATUS_COLORS[booking.status] || 'default'
-                      }
+                      color={BOOKING_STATUS_COLORS[booking.status] || 'default'}
                     >
                       {BOOKING_STATUS_LABELS[booking.status] || booking.status}
                     </Tag>
@@ -739,9 +736,7 @@ const RequestDetailPage = () => {
                         return (
                           <div key={index}>
                             <Tag
-                              color={
-                                p.roleType === 'VOCAL' ? 'blue' : 'purple'
-                              }
+                              color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
                               style={{ marginRight: 8 }}
                             >
                               {roleLabel}
@@ -790,7 +785,8 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
 
                 <Descriptions.Item label="🔧 Equipment Fee">
-                  {(booking.equipmentRentalFee || 0).toLocaleString('vi-VN')} VND
+                  {(booking.equipmentRentalFee || 0).toLocaleString('vi-VN')}{' '}
+                  VND
                 </Descriptions.Item>
 
                 {booking.externalGuestFee !== undefined && (
@@ -841,9 +837,11 @@ const RequestDetailPage = () => {
                         const equipmentFee = booking.equipmentRentalFee || 0;
                         const guestFee = booking.externalGuestFee || 0;
                         const rawStudioFee =
-                          booking.totalCost - artistFee - equipmentFee - guestFee;
-                        const studioFee =
-                          rawStudioFee > 0 ? rawStudioFee : 0;
+                          booking.totalCost -
+                          artistFee -
+                          equipmentFee -
+                          guestFee;
+                        const studioFee = rawStudioFee > 0 ? rawStudioFee : 0;
                         return `${studioFee.toLocaleString('vi-VN')} VND`;
                       })()}
                     </Descriptions.Item>
