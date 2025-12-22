@@ -22,6 +22,7 @@ import ServiceRequestScreen from "../screens/Services/ServiceRequestScreen";
 import ServiceQuoteScreen from "../screens/Services/ServiceQuoteScreen";
 import VocalistSelectionScreen from "../screens/Services/VocalistSelectionScreen";
 import VocalistDetailScreen from "../screens/Services/VocalistDetailScreen";
+import InstrumentalistSelectionScreen from "../screens/Services/InstrumentalistSelectionScreen";
 import RecordingFlowController from "../screens/Booking/RecordingFlowController";
 // import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
 // import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
@@ -65,6 +66,11 @@ const HomeStack = ({ navigation }) => {
         name="VocalistDetail"
         component={VocalistDetailScreen}
         options={{ title: "Singer details" }}
+      />
+      <Stack.Screen
+        name="InstrumentalistSelection"
+        component={InstrumentalistSelectionScreen}
+        options={{ title: "Select Instrumentalist" }}
       />
       <Stack.Screen
         name="ServiceQuote"

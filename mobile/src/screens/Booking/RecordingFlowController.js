@@ -1,5 +1,6 @@
 // RecordingFlowController.js - Controller for multi-step recording flow
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../config/constants';
@@ -51,9 +52,15 @@ const RecordingFlowController = ({ navigation }) => {
         if (stored) {
           setFlowData(stored);
           setCurrentStep(stored.currentStep || 0);
+        } else {
+          // If no stored data, reset to initial state
+          setFlowData({});
+          setCurrentStep(0);
         }
       } catch (error) {
         console.error('Error loading flow data:', error);
+        setFlowData({});
+        setCurrentStep(0);
       } finally {
         setLoading(false);
       }
@@ -61,6 +68,30 @@ const RecordingFlowController = ({ navigation }) => {
 
     loadFlowData();
   }, []);
+
+  // Reload data when screen comes into focus (to check if storage was cleared)
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadFlowData = async () => {
+        try {
+          const stored = await getItem(STORAGE_KEY);
+          if (stored) {
+            setFlowData(stored);
+            setCurrentStep(stored.currentStep || 0);
+          } else {
+            // If storage was cleared, reset to initial state
+            setFlowData({});
+            setCurrentStep(0);
+          }
+        } catch (error) {
+          console.error('Error loading flow data on focus:', error);
+          setFlowData({});
+          setCurrentStep(0);
+        }
+      };
+      loadFlowData();
+    }, [])
+  );
 
   // Save flow data to storage
   const updateFlowData = async (newData, stepOverride = null) => {
@@ -167,6 +198,9 @@ const RecordingFlowController = ({ navigation }) => {
             onSubmit={async () => {
               // Clear storage after successful submit
               await removeItem(STORAGE_KEY);
+              // Reset state to initial values
+              setFlowData({});
+              setCurrentStep(0);
             }}
             navigation={navigation}
           />

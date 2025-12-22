@@ -140,6 +140,16 @@ const RecordingStep1 = ({ data, onComplete }) => {
       return;
     }
 
+    // If clicking on already selected slot, deselect it
+    if (
+      selectedTimeRange &&
+      selectedTimeRange.start === start &&
+      selectedTimeRange.end === end
+    ) {
+      setSelectedTimeRange(null);
+      return;
+    }
+
     setSelectedTimeRange({ start, end });
   };
 
@@ -275,7 +285,11 @@ const RecordingStep1 = ({ data, onComplete }) => {
               {!loadingSlots && availableSlots.length > 0 && (
                 <View style={styles.quickSlots}>
                   <Text style={styles.slotsTitle}>Available Time Slots:</Text>
-                  <View style={styles.slotsContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.slotsContainer}
+                  >
                     {availableSlots.map((slot, idx) => {
                       // Normalize slot times to ensure format consistency (HH:mm)
                       const normalizeTime = time => {
@@ -339,6 +353,30 @@ const RecordingStep1 = ({ data, onComplete }) => {
                         </TouchableOpacity>
                       );
                     })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {selectedTimeRange && (
+                <View style={styles.selectedInfo}>
+                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                  <View style={styles.selectedContent}>
+                    <View style={styles.selectedRow}>
+                      <Text style={styles.selectedLabel}>Time:</Text>
+                      <Text style={styles.selectedValue}>
+                        {selectedTimeRange.start} - {selectedTimeRange.end}
+                      </Text>
+                    </View>
+                    <View style={styles.selectedRow}>
+                      <Text style={styles.selectedLabel}>Duration:</Text>
+                      <Text style={styles.selectedValue}>
+                        {dayjs(selectedTimeRange.end, 'HH:mm').diff(
+                          dayjs(selectedTimeRange.start, 'HH:mm'),
+                          'hour'
+                        )}{' '}
+                        hours
+                      </Text>
+                    </View>
                   </View>
                 </View>
               )}
@@ -365,25 +403,6 @@ const RecordingStep1 = ({ data, onComplete }) => {
                   />
                 </View>
               </View>
-
-              {selectedTimeRange && (
-                <View style={styles.selectedInfo}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-                  <Text style={styles.selectedText}>
-                    Selected: {selectedTimeRange.start} - {selectedTimeRange.end}
-                  </Text>
-                  <View style={styles.durationTag}>
-                    <Text style={styles.durationText}>
-                      Duration:{' '}
-                      {dayjs(selectedTimeRange.end, 'HH:mm').diff(
-                        dayjs(selectedTimeRange.start, 'HH:mm'),
-                        'hour'
-                      )}{' '}
-                      hours
-                    </Text>
-                  </View>
-                </View>
-              )}
             </View>
           ) : (
             <View style={styles.timeSelectionSection}>
@@ -479,8 +498,8 @@ const styles = StyleSheet.create({
   alertContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.info + '15',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.info,
+    // borderLeftWidth: 3,
+    // borderLeftColor: COLORS.info,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     marginBottom: SPACING.md,
@@ -527,8 +546,8 @@ const styles = StyleSheet.create({
   },
   slotsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingRight: SPACING.md,
   },
   slotButton: {
     flexDirection: 'row',
@@ -540,7 +559,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     marginRight: SPACING.sm,
-    marginBottom: SPACING.sm,
   },
   slotButtonSelected: {
     backgroundColor: COLORS.primary,
@@ -600,7 +618,6 @@ const styles = StyleSheet.create({
   },
   guestsInput: {
     flex: 1,
-    maxWidth: 100,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
@@ -611,29 +628,33 @@ const styles = StyleSheet.create({
   },
   selectedInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: COLORS.success + '15',
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     marginTop: SPACING.md,
   },
-  selectedText: {
+  selectedContent: {
+    flex: 1,
     marginLeft: SPACING.sm,
+  },
+  selectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  selectedLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 80,
+  },
+  selectedValue: {
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     flex: 1,
-  },
-  durationTag: {
-    backgroundColor: COLORS.success,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  durationText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
