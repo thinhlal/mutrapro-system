@@ -35,6 +35,7 @@ import {
   getServiceRequestById,
   getNotationInstrumentsByIds,
 } from '../../../services/serviceRequestService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import { getAllSpecialists } from '../../../services/specialistService';
 import {
   createTaskAssignment,
@@ -159,6 +160,7 @@ export default function TaskAssignmentWorkspace() {
   const [assigning, setAssigning] = useState(false);
   const [contract, setContract] = useState(null);
   const [requestData, setRequestData] = useState(null);
+  const [bookingData, setBookingData] = useState(null);
   const [specialists, setSpecialists] = useState([]);
   const [specialistSearch, setSpecialistSearch] = useState('');
   const [selectedSpecialist, setSelectedSpecialist] = useState(null);
@@ -190,6 +192,30 @@ export default function TaskAssignmentWorkspace() {
         const promises = [];
         if (requestId) {
           promises.push(fetchRequestDetail(requestId));
+          // Nếu là recording request/contract thì load booking để hỗ trợ assign
+          if (
+            response.data.contractType === 'recording' ||
+            response.data.requestType === 'recording'
+          ) {
+            promises.push(
+              (async () => {
+                try {
+                  const bookingRes = await getBookingByRequestId(requestId);
+                  if (bookingRes?.status === 'success' && bookingRes.data) {
+                    setBookingData(bookingRes.data);
+                  } else {
+                    setBookingData(null);
+                  }
+                } catch (err) {
+                  console.warn(
+                    'Failed to load booking for TaskAssignmentWorkspace:',
+                    err
+                  );
+                  setBookingData(null);
+                }
+              })()
+            );
+          }
         }
         promises.push(fetchTaskStats(contractId));
 
@@ -476,7 +502,7 @@ export default function TaskAssignmentWorkspace() {
           if (suggestedSpecialist) {
             setSelectedSpecialist(suggestedSpecialist);
             message.info(
-              `Đã tự động chọn arrangement specialist: ${suggestedSpecialist.fullName || suggestedSpecialist.email}`
+              `Automatically selected arrangement specialist: ${suggestedSpecialist.fullName || suggestedSpecialist.email}`
             );
           }
         }
@@ -626,16 +652,16 @@ export default function TaskAssignmentWorkspace() {
 
   const handleAssign = async () => {
     if (!selectedMilestoneId) {
-      message.warning('Vui lòng chọn milestone');
+      message.warning('Please select a milestone');
       return;
     }
     if (!selectedSpecialist) {
-      message.warning('Vui lòng chọn specialist');
+      message.warning('Please select a specialist');
       return;
     }
     if (isSlaWindowFull(selectedSpecialist)) {
       message.error(
-        'Specialist đang Full trong SLA window, vui lòng chọn specialist khác'
+        'Specialist is full in SLA window, please select a different specialist'
       );
       return;
     }
@@ -650,8 +676,8 @@ export default function TaskAssignmentWorkspace() {
         workStatus !== 'IN_PROGRESS'
       ) {
         message.error(
-          `Không thể tạo task: Milestone phải ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS. ` +
-            `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
+          `Cannot create task: Milestone must be in the state PLANNED, WAITING_ASSIGNMENT, READY_TO_START or IN_PROGRESS. ` +
+            `Current status: ${selectedMilestone.workStatus}`
         );
         return;
       }
@@ -679,16 +705,15 @@ export default function TaskAssignmentWorkspace() {
       if (response?.status === 'success') {
         message.success(
           isEditMode
-            ? 'Cập nhật task assignment thành công'
-            : 'Gán task thành công'
+            ? 'Update task assignment successfully'
+            : 'Assign task successfully'
         );
         navigate('/manager/milestone-assignments');
       }
     } catch (error) {
       console.error('Error assigning task:', error);
       message.error(
-        error?.message ||
-          (isEditMode ? 'Không thể cập nhật task' : 'Không thể gán task')
+        error?.message || (isEditMode ? 'Cannot update task' : 'Cannot assign task')
       );
     } finally {
       setAssigning(false);
@@ -698,7 +723,7 @@ export default function TaskAssignmentWorkspace() {
   if (loading) {
     return (
       <div className={styles.loadingWrapper}>
-        <Spin tip="Đang tải workspace..." />
+        <Spin tip="Loading workspace..." />
       </div>
     );
   }
@@ -706,14 +731,14 @@ export default function TaskAssignmentWorkspace() {
   if (!contract) {
     return (
       <div className={styles.loadingWrapper}>
-        <Alert type="error" message="Không tìm thấy contract" />
+        <Alert type="error" message="Contract not found" />
         <Button
           type="primary"
           icon={<ArrowLeftOutlined />}
           style={{ marginTop: 16 }}
           onClick={() => navigate('/manager/milestone-assignments')}
         >
-          Quay lại danh sách
+          Back to list
         </Button>
       </div>
     );
@@ -726,16 +751,16 @@ export default function TaskAssignmentWorkspace() {
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/manager/milestone-assignments')}
         >
-          Quay lại
+          Back
         </Button>
         <Title level={3} style={{ margin: 0 }}>
-          {isEditMode ? 'Chỉnh sửa Task Assignment' : 'Assign Task Workspace'}
+          {isEditMode ? 'Edit Task Assignment' : 'Assign Task Workspace'}
         </Title>
       </div>
 
       <Row gutter={[16, 16]} className={styles.topRow}>
         <Col xs={24} lg={6}>
-          <Card title="Contract Overview" className={styles.fixedHeightCard}>
+          <Card title="Contract Details" className={styles.fixedHeightCard}>
             <Space direction="vertical">
               <div>
                 <Text strong>Contract Number: </Text>
@@ -871,7 +896,7 @@ export default function TaskAssignmentWorkspace() {
                         <div>
                           <Text strong>Duration: </Text>
                           <Tag color="cyan">
-                            {requestData.durationMinutes} phút
+                            {requestData.durationMinutes} minutes
                           </Tag>
                         </div>
                       )}
@@ -889,7 +914,8 @@ export default function TaskAssignmentWorkspace() {
                             (specialist, idx) => (
                               <Tag key={idx} color="pink">
                                 {specialist.name ||
-                                  `Vocalist ${specialist.specialistId}`}
+                                  `Vocalist ${specialist.specialistId || 'N/A'}` ||
+                                  'N/A'}
                               </Tag>
                             )
                           )}
@@ -911,9 +937,70 @@ export default function TaskAssignmentWorkspace() {
                       )
                     );
                   })()}
+
+                  {/* Studio Booking (recording only) – simple date/time for assigning tasks */}
+                  {requestData.requestType === 'recording' && bookingData && (
+                    <div>
+                      <Space
+                        direction="horizontal"
+                        style={{ width: '100%', justifyContent: 'space-between' }}
+                      >
+                        <div>
+                          <Text strong>Studio Booking:</Text>
+                          <div style={{ fontSize: 12, marginTop: 4 }}>
+                            <div>
+                              <Text type="secondary">Date:&nbsp;</Text>
+                              <Text>{bookingData.bookingDate || 'N/A'}</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Time:&nbsp;</Text>
+                              <Text>
+                                {bookingData.startTime && bookingData.endTime
+                                  ? `${bookingData.startTime} - ${bookingData.endTime}`
+                                  : 'N/A'}{' '}
+                                {bookingData.durationHours
+                                  ? `(${bookingData.durationHours}h)`
+                                  : ''}
+                              </Text>
+                            </div>
+                            {bookingData.status && (
+                              <div>
+                                <Text type="secondary">Status:&nbsp;</Text>
+                                <Tag
+                                  color={
+                                    bookingData.status === 'CONFIRMED'
+                                      ? 'green'
+                                      : bookingData.status === 'PENDING'
+                                        ? 'orange'
+                                        : 'default'
+                                  }
+                                  style={{ marginLeft: 4 }}
+                                >
+                                  {bookingData.status}
+                                </Tag>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {bookingData.bookingId && (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() =>
+                              navigate(
+                                `/manager/studio-bookings/${bookingData.bookingId}`
+                              )
+                            }
+                          >
+                            View full booking
+                          </Button>
+                        )}
+                      </Space>
+                    </div>
+                  )}
                 </Space>
               ) : (
-                <Text type="secondary">Không tìm thấy thông tin request</Text>
+                <Text type="secondary">Request not found</Text>
               )}
             </div>
           </Card>
@@ -994,17 +1081,17 @@ export default function TaskAssignmentWorkspace() {
                         } else {
                           // Hiển thị thông báo nếu milestone không thể chọn
                           const reason = isCompleted
-                            ? 'Milestone đã hoàn thành'
+                            ? 'Milestone completed'
                             : isCancelled
-                              ? 'Milestone đã bị hủy'
+                              ? 'Milestone cancelled'
                               : hasActiveTask
-                                ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
+                                ? 'This milestone has an active task. Please complete or cancel the task before creating a new task.'
                                 : workStatus === 'WAITING_SPECIALIST_ACCEPT'
-                                  ? 'Milestone đang chờ specialist accept task. Vui lòng đợi specialist accept hoặc hủy task hiện tại.'
+                                  ? 'Milestone is waiting for specialist accept task. Please wait for specialist accept or cancel the current task.'
                                   : workStatus ===
                                       'TASK_ACCEPTED_WAITING_ACTIVATION'
-                                    ? 'Milestone đã có task được accept, đang chờ activate. Không thể tạo task mới.'
-                                    : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS';
+                                    ? 'Milestone has a task accepted, waiting for activate. Cannot create a new task.'
+                                    : 'Can only create task for milestone in the state PLANNED, WAITING_ASSIGNMENT, READY_TO_START or IN_PROGRESS';
                           message.warning(reason);
                         }
                       }}
@@ -1035,21 +1122,21 @@ export default function TaskAssignmentWorkspace() {
                         {hasActiveTask && (
                           <div style={{ marginTop: 8 }}>
                             <Tag color="magenta">
-                              {activeTaskCount} task đang hoạt động
+                              {activeTaskCount} active tasks
                             </Tag>
                             {stats.assigned > 0 && (
                               <Tag color="orange">
-                                Assigned: {stats.assigned}
+                                Assigned: {stats.assigned || 0}
                               </Tag>
                             )}
                             {stats.inProgress > 0 && (
                               <Tag color="processing">
-                                In Progress: {stats.inProgress}
+                                In Progress: {stats.inProgress || 0}
                               </Tag>
                             )}
                             {stats.completed > 0 && (
                               <Tag color="success">
-                                Completed: {stats.completed}
+                                Completed: {stats.completed || 0}
                               </Tag>
                             )}
                           </div>
@@ -1079,7 +1166,7 @@ export default function TaskAssignmentWorkspace() {
                           {item.milestoneSlaDays && (
                             <span>
                               <Text type="secondary">SLA: </Text>
-                              {item.milestoneSlaDays} ngày
+                              {item.milestoneSlaDays} days
                             </span>
                           )}
                         </div>
@@ -1089,7 +1176,7 @@ export default function TaskAssignmentWorkspace() {
                 }}
               />
             ) : (
-              <Empty description="Chưa có milestone" />
+              <Empty description="No milestone found" />
             )}
           </Card>
         </Col>
@@ -1102,7 +1189,7 @@ export default function TaskAssignmentWorkspace() {
             className={styles.fixedHeightCard}
             extra={
               <Input
-                placeholder="Tìm specialist..."
+                placeholder="Search specialist..."
                 allowClear
                 value={specialistSearch}
                 onChange={e => setSpecialistSearch(e.target.value)}
@@ -1113,7 +1200,7 @@ export default function TaskAssignmentWorkspace() {
           >
             <Spin
               spinning={loadingSpecialists}
-              tip="Đang tải danh sách specialists..."
+              tip="Loading specialist list..."
             >
               <div className={styles.specialistList}>
                 {filteredSpecialists.length > 0 ? (
@@ -1178,7 +1265,7 @@ export default function TaskAssignmentWorkspace() {
                             // Cho phép bỏ chọn nếu đã chọn rồi
                             if (!active && slaFull) {
                               message.warning(
-                                'Specialist đang Full trong SLA window, không thể chọn'
+                                'Specialist is full in SLA window, cannot select'
                               );
                               return;
                             }
@@ -1192,7 +1279,7 @@ export default function TaskAssignmentWorkspace() {
                             <div className={styles.specialistMeta}>
                               <Tag>{item.specialization || 'Generalist'}</Tag>
                               <Tag color="blue">
-                                {item.experienceYears || 0} yrs exp
+                                {item.experienceYears || 0} years exp
                               </Tag>
                               <Tag color={loadTagBadge.color}>
                                 {loadTagBadge.text}
@@ -1225,10 +1312,10 @@ export default function TaskAssignmentWorkspace() {
                             disabled={!active && slaFull}
                           >
                             {!active && slaFull
-                              ? 'Không thể chọn'
+                              ? 'Cannot select specialist'
                               : active
-                                ? 'Đang chọn'
-                                : 'Chọn'}
+                                ? 'Selecting specialist'
+                                : 'Select specialist'}
                           </Button>
                         </List.Item>
                       );
@@ -1236,7 +1323,7 @@ export default function TaskAssignmentWorkspace() {
                   />
                 ) : (
                   <Empty
-                    description="Không tìm thấy specialist phù hợp"
+                    description="No suitable specialist found"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
@@ -1249,7 +1336,7 @@ export default function TaskAssignmentWorkspace() {
             className={`${styles.assignmentCard} ${styles.fixedHeightCard}`}
           >
             <Title level={4}>
-              {isEditMode ? 'Chỉnh sửa Task' : 'Thiết lập Task'}
+              {isEditMode ? 'Edit Task' : 'Setup Task'}
             </Title>
             <Row gutter={16}>
               <Col xs={24} md={10}>
@@ -1257,7 +1344,7 @@ export default function TaskAssignmentWorkspace() {
                   <Form.Item label="Ghi chú (optional)">
                     <TextArea
                       rows={4}
-                      placeholder="Thêm ghi chú cho specialist"
+                      placeholder="Add notes for specialist"
                       value={notes}
                       onChange={e => setNotes(e.target.value)}
                     />
@@ -1267,15 +1354,15 @@ export default function TaskAssignmentWorkspace() {
               <Col xs={24} md={14}>
                 <div className={styles.assignmentSummary}>
                   <div>
-                    <Text type="secondary">Milestone đã chọn</Text>
+                    <Text type="secondary">Selected Milestone</Text>
                     <div className={styles.summaryBox}>
                       <Text>
-                        {selectedMilestone?.name || 'Chưa chọn milestone'}
+                        {selectedMilestone?.name || 'No milestone selected'}
                       </Text>
                     </div>
                   </div>
                   <div>
-                    <Text type="secondary">Specialist đã chọn</Text>
+                    <Text type="secondary">Selected Specialist</Text>
                     <div className={styles.summaryBox}>
                       {selectedSpecialist ? (
                         <Space direction="vertical" size={2}>
@@ -1298,7 +1385,7 @@ export default function TaskAssignmentWorkspace() {
                           )}
                           <Space wrap size="small">
                             <Tag color="blue">
-                              {selectedSpecialist.experienceYears || 0} yrs exp
+                              {selectedSpecialist.experienceYears || 0} years exp
                             </Tag>
                             <Tag color="green">
                               Load: {selectedSpecialist.totalOpenTasks ?? 0}/
@@ -1309,12 +1396,12 @@ export default function TaskAssignmentWorkspace() {
                               {selectedSpecialist.tasksInSlaWindow ?? 0}
                             </Tag>
                             {selectedSlaFull && (
-                              <Tag color="red">SLA Full (không thể gán)</Tag>
+                              <Tag color="red">SLA Full (cannot assign task)</Tag>
                             )}
                           </Space>
                         </Space>
                       ) : (
-                        <Text>Chưa chọn specialist</Text>
+                        <Text>No specialist selected</Text>
                       )}
                     </div>
                   </div>
@@ -1322,7 +1409,7 @@ export default function TaskAssignmentWorkspace() {
                     <Text type="secondary">Task Type</Text>
                     <div className={styles.summaryBox}>
                       <Tag color="blue">
-                        {taskType ? TASK_TYPE_LABELS[taskType] : 'Chưa chọn'}
+                        {taskType ? TASK_TYPE_LABELS[taskType] : 'No task type selected'}
                       </Tag>
                     </div>
                   </div>
@@ -1341,8 +1428,8 @@ export default function TaskAssignmentWorkspace() {
                   block
                 >
                   {isEditMode
-                    ? 'Cập nhật task assignment'
-                    : 'Xác nhận gán task'}
+                    ? 'Update task assignment'
+                    : 'Confirm assign task'}
                 </Button>
               </Col>
             </Row>

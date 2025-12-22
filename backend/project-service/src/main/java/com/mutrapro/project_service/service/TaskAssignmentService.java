@@ -1030,10 +1030,13 @@ public class TaskAssignmentService {
                 if (bookingsByMilestoneId != null) {
                     StudioBooking booking = bookingsByMilestoneId.get(milestone.getMilestoneId());
                     if (booking != null) {
-                        List<BookingStatus> activeStatuses = List.of(
+                        // Với recording milestone, chấp nhận cả COMPLETED status để tính deadline
+                        // (vì deadline là để hoàn thành task sau khi recording session đã xong)
+                        List<BookingStatus> validStatuses = List.of(
                             BookingStatus.TENTATIVE, BookingStatus.PENDING,
-                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
-                        if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS,
+                            BookingStatus.COMPLETED);
+                        if (validStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
                             LocalTime startTime = booking.getStartTime() != null
                                 ? booking.getStartTime()
                                 : LocalTime.of(8, 0);
@@ -1106,6 +1109,7 @@ public class TaskAssignmentService {
             }
 
             // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
+            // Nếu arrangement chưa paid, fallback sang booking date
             if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
                 try {
                     long arrangementFetchStart = System.currentTimeMillis();
@@ -1135,7 +1139,7 @@ public class TaskAssignmentService {
                     log.error("Error calculating recording target deadline for arrangement_with_recording: milestoneId={}, error={}",
                         milestone.getMilestoneId(), e.getMessage());
                 }
-                // If arrangement not paid yet => fallback to planned
+                // If arrangement not paid yet => fallback to booking date (sẽ được xử lý ở phần sau)
             } else if (contract != null && contract.getContractType() == ContractType.recording) {
                 // Workflow 4 (recording-only): prefer booking date if active
                 try {
@@ -1151,10 +1155,13 @@ public class TaskAssignmentService {
                     
                     if (bookingOpt.isPresent()) {
                         StudioBooking booking = bookingOpt.get();
-                        List<BookingStatus> activeStatuses = List.of(
+                        // Với recording milestone, chấp nhận cả COMPLETED status để tính deadline
+                        // (vì deadline là để hoàn thành task sau khi recording session đã xong)
+                        List<BookingStatus> validStatuses = List.of(
                             BookingStatus.TENTATIVE, BookingStatus.PENDING,
-                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
-                        if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS,
+                            BookingStatus.COMPLETED);
+                        if (validStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
                             LocalTime startTime = booking.getStartTime() != null
                                 ? booking.getStartTime()
                                 : LocalTime.of(8, 0);
@@ -1165,10 +1172,15 @@ public class TaskAssignmentService {
                                     totalTime, milestone.getMilestoneId());
                             }
                             return startAt.plusDays(slaDays);
+                        } else {
+                            log.debug("Recording milestone booking not valid or missing date: milestoneId={}, bookingStatus={}, bookingDate={}", 
+                                milestone.getMilestoneId(), booking.getStatus(), booking.getBookingDate());
                         }
+                    } else {
+                        log.debug("No booking found for recording milestone: milestoneId={}", milestone.getMilestoneId());
                     }
                 } catch (Exception e) {
-                    log.error("Error fetching booking for recording target deadline: milestoneId={}, error={}",
+                    log.error("Error fetching booking for recording target deadline: milestoneId={}, error={}", 
                         milestone.getMilestoneId(), e.getMessage());
                 }
             }
@@ -1568,6 +1580,20 @@ public class TaskAssignmentService {
         log.info("[Performance] Step 4 - Batch fetch all milestones for contracts: {}ms ({} contracts, {} with arrangements)", 
             System.currentTimeMillis() - step4Start, contractIds.size(), lastArrangementMilestoneByContractId.size());
 
+        // Step 4.5: Batch fetch bookings cho recording milestones để tính deadline
+        long step4_5Start = System.currentTimeMillis();
+        List<String> recordingMilestoneIds = milestones.stream()
+            .filter(m -> m.getMilestoneType() == MilestoneType.recording)
+            .map(ContractMilestone::getMilestoneId)
+            .collect(Collectors.toList());
+        Map<String, StudioBooking> bookingsByMilestoneId = new HashMap<>();
+        if (!recordingMilestoneIds.isEmpty()) {
+            List<StudioBooking> bookings = studioBookingRepository.findByMilestoneIdIn(recordingMilestoneIds);
+            bookings.forEach(b -> bookingsByMilestoneId.put(b.getMilestoneId(), b));
+        }
+        log.info("[Performance] Step 4.5 - Batch fetch bookings for recording milestones: {}ms (found {} bookings for {} recording milestones)", 
+            System.currentTimeMillis() - step4_5Start, bookingsByMilestoneId.size(), recordingMilestoneIds.size());
+
         // Cache LocalDateTime.now() để tránh gọi nhiều lần trong loop
         final LocalDateTime now = LocalDateTime.now();
 
@@ -1645,7 +1671,7 @@ public class TaskAssignmentService {
             LocalDateTime targetDeadline = resolveMilestoneTargetDeadlineWithCache(
                 milestone,
                 contractMap,
-                null, // bookingsByMilestoneId - không cần cho list view, có thể null
+                bookingsByMilestoneId, // Batch fetch bookings để tính deadline cho recording milestones
                 allMilestonesByContractId,
                 lastArrangementMilestoneByContractId); // Cache đã filter sẵn
             long deadlineEnd = System.currentTimeMillis();

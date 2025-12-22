@@ -48,6 +48,25 @@ import { useDocumentTitle } from '../../../hooks';
 
 const { TextArea } = Input;
 
+// Booking Status
+const BOOKING_STATUS_COLORS = {
+  TENTATIVE: 'default',
+  PENDING: 'processing',
+  CONFIRMED: 'success',
+  IN_PROGRESS: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'error',
+};
+
+const BOOKING_STATUS_LABELS = {
+  TENTATIVE: 'Tentative',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+};
+
 const RequestDetailPage = () => {
   useDocumentTitle('Request Details');
   const { requestId } = useParams();
@@ -678,14 +697,10 @@ const RequestDetailPage = () => {
                   <Descriptions.Item label="Status">
                     <Tag
                       color={
-                        booking.status === 'CONFIRMED'
-                          ? 'green'
-                          : booking.status === 'TENTATIVE'
-                            ? 'orange'
-                            : 'default'
+                        BOOKING_STATUS_COLORS[booking.status] || 'default'
                       }
                     >
-                      {booking.status}
+                      {BOOKING_STATUS_LABELS[booking.status] || booking.status}
                     </Tag>
                   </Descriptions.Item>
                 )}

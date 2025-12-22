@@ -75,6 +75,56 @@ import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
+// Contract Status
+const CONTRACT_STATUS_COLORS = {
+  draft: 'default',
+  sent: 'geekblue',
+  approved: 'green',
+  signed: 'orange',
+  active_pending_assignment: 'gold',
+  active: 'green',
+  completed: 'success',
+  rejected_by_customer: 'red',
+  need_revision: 'orange',
+  canceled_by_customer: 'default',
+  canceled_by_manager: 'volcano',
+  expired: 'volcano',
+};
+
+const CONTRACT_STATUS_LABELS = {
+  draft: 'Draft',
+  sent: 'Sent to Customer',
+  approved: 'Approved - Waiting for Signature',
+  signed: 'Signed - Pending Deposit Payment',
+  active_pending_assignment: 'Deposit Paid - Pending Assignment',
+  active: 'Active - Deposit Paid',
+  completed: 'Completed - All Milestones Paid',
+  rejected_by_customer: 'Rejected by Customer',
+  need_revision: 'Needs Revision',
+  canceled_by_customer: 'Canceled by Customer',
+  canceled_by_manager: 'Canceled by Manager',
+  expired: 'Expired',
+};
+
+// Booking Status
+const BOOKING_STATUS_COLORS = {
+  TENTATIVE: 'default',
+  PENDING: 'processing',
+  CONFIRMED: 'success',
+  IN_PROGRESS: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'error',
+};
+
+const BOOKING_STATUS_LABELS = {
+  TENTATIVE: 'Tentative',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+};
+
 // Helper function to format date
 const formatDate = date => {
   if (!date) return 'N/A';
@@ -1626,24 +1676,11 @@ const ContractDetailPage = () => {
 
   // Status config
   const getStatusConfig = status => {
-    const configs = {
-      draft: { color: 'default', text: 'Draft' },
-      sent: { color: 'blue', text: 'Sent to Customer' },
-      approved: { color: 'cyan', text: 'Approved - Waiting for Signature' },
-      signed: { color: 'orange', text: 'Signed - Pending Deposit Payment' },
-      active_pending_assignment: {
-        color: 'gold',
-        text: 'Deposit Paid - Pending Assignment',
-      },
-      active: { color: 'green', text: 'Active - Deposit Paid' },
-      completed: { color: 'success', text: 'Completed - All Milestones Paid' },
-      rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
-      need_revision: { color: 'orange', text: 'Needs Revision' },
-      canceled_by_customer: { color: 'red', text: 'Canceled by Customer' },
-      canceled_by_manager: { color: 'volcano', text: 'Canceled by Manager' },
-      expired: { color: 'default', text: 'Expired' },
+    const statusLower = status?.toLowerCase();
+    return {
+      color: CONTRACT_STATUS_COLORS[statusLower] || 'default',
+      text: CONTRACT_STATUS_LABELS[statusLower] || status || 'Unknown',
     };
-    return configs[status] || { color: 'default', text: status };
   };
 
   // Preview header

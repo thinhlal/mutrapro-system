@@ -34,6 +34,7 @@ import {
   getDeliveredSubmissionsByMilestone,
   customerReviewSubmission,
 } from '../../../services/fileSubmissionService';
+import { getStudioBookings } from '../../../services/studioBookingService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractRevisionStats } from '../../../services/revisionRequestService';
 import axiosInstance from '../../../utils/axiosInstance';
@@ -59,6 +60,71 @@ const SUBMISSION_STATUS_LABELS = {
   customer_rejected: 'Đã từ chối - Yêu cầu chỉnh sửa',
 };
 
+// Contract Status
+const CONTRACT_STATUS_COLORS = {
+  draft: 'default',
+  sent: 'geekblue',
+  approved: 'green',
+  signed: 'orange',
+  active_pending_assignment: 'gold',
+  active: 'green',
+  completed: 'success',
+  rejected_by_customer: 'red',
+  need_revision: 'orange',
+  canceled_by_customer: 'default',
+  canceled_by_manager: 'volcano',
+  expired: 'volcano',
+};
+
+const CONTRACT_STATUS_LABELS = {
+  draft: 'Draft',
+  sent: 'Sent',
+  approved: 'Approved',
+  signed: 'Signed - Pending deposit payment',
+  active_pending_assignment: 'Deposit paid - Pending assignment',
+  active: 'Active',
+  completed: 'Completed',
+  rejected_by_customer: 'Rejected by customer',
+  need_revision: 'Needs revision',
+  canceled_by_customer: 'Canceled by customer',
+  canceled_by_manager: 'Canceled by manager',
+  expired: 'Expired',
+};
+
+// Booking Status
+const BOOKING_STATUS_COLORS = {
+  TENTATIVE: 'default',
+  PENDING: 'processing',
+  CONFIRMED: 'success',
+  IN_PROGRESS: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'error',
+};
+
+const BOOKING_STATUS_LABELS = {
+  TENTATIVE: 'Tentative',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+};
+
+// Installment Status
+const INSTALLMENT_STATUS_COLORS = {
+  PENDING: 'default',
+  DUE: 'orange',
+  PAID: 'success',
+  OVERDUE: 'error',
+};
+
+const INSTALLMENT_STATUS_LABELS = {
+  PENDING: 'Pending',
+  DUE: 'Due',
+  PAID: 'Paid',
+  OVERDUE: 'Overdue',
+};
+
 const MilestoneDeliveriesPage = () => {
   useDocumentTitle('Milestone Deliveries');
   const { contractId, milestoneId } = useParams();
@@ -70,6 +136,8 @@ const MilestoneDeliveriesPage = () => {
   const [milestoneInfo, setMilestoneInfo] = useState(null);
   const [requestInfo, setRequestInfo] = useState(null);
   const [requestInfoLoading, setRequestInfoLoading] = useState(false);
+  const [studioBooking, setStudioBooking] = useState(null);
+  const [studioBookingLoading, setStudioBookingLoading] = useState(false);
   const [submissions, setSubmissions] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -145,6 +213,34 @@ const MilestoneDeliveriesPage = () => {
           setRequestInfo(null);
         }
 
+        // Load studio booking cho recording milestone (nếu có)
+        if (data.milestone?.milestoneType === 'recording') {
+          try {
+            setStudioBookingLoading(true);
+            const bookingResp = await getStudioBookings(
+              data.contract?.contractId || contractId,
+              data.milestone.milestoneId,
+              null
+            );
+            if (
+              bookingResp?.status === 'success' &&
+              Array.isArray(bookingResp.data) &&
+              bookingResp.data.length > 0
+            ) {
+              setStudioBooking(bookingResp.data[0]);
+            } else {
+              setStudioBooking(null);
+            }
+          } catch (e) {
+            console.error('Error loading studio booking for deliveries:', e);
+            setStudioBooking(null);
+          } finally {
+            setStudioBookingLoading(false);
+          }
+        } else {
+          setStudioBooking(null);
+        }
+
         // Load revision stats của contract (để tính free/paid revisions chính xác)
         loadRevisionStats(contractId);
 
@@ -164,6 +260,7 @@ const MilestoneDeliveriesPage = () => {
         setContractInfo(null);
         setMilestoneInfo(null);
         setRequestInfo(null);
+        setStudioBooking(null);
         setSubmissions([]);
         setRevisionRequests([]);
       }
@@ -175,6 +272,7 @@ const MilestoneDeliveriesPage = () => {
       setContractInfo(null);
       setMilestoneInfo(null);
       setRequestInfo(null);
+      setStudioBooking(null);
       setSubmissions([]);
       setRevisionRequests([]);
     } finally {
@@ -200,7 +298,7 @@ const MilestoneDeliveriesPage = () => {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Error downloading file:', error);
-      message.error('Lỗi khi tải file');
+      message.error('Error downloading file');
     }
   };
 
@@ -310,25 +408,25 @@ const MilestoneDeliveriesPage = () => {
               onClick={() => navigate(`/contracts/${contractId}`)}
               style={{ marginBottom: 16 }}
             >
-              Quay lại Contract
+              Back to Contract
             </Button>
             <Button
               type="primary"
               onClick={() => navigate(`/contracts/${contractId}`)}
               style={{ marginBottom: 16 }}
             >
-              Xem Contract Detail
+              View Contract Detail
             </Button>
           </Space>
           <Title level={3} style={{ margin: 0 }}>
-            Deliveries - {milestoneName}
+            Deliveries for {milestoneName}
           </Title>
         </div>
 
         {/* Contract & Milestone Info */}
         {contractInfo && milestoneInfo && (
           <Card
-            title="Thông tin Contract & Milestone"
+            title="Contract & Milestone Information"
             style={{ marginBottom: 24 }}
           >
             <Descriptions bordered column={2} size="small">
@@ -382,24 +480,24 @@ const MilestoneDeliveriesPage = () => {
                     }
                   >
                     {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                      ? 'Chờ khách hàng phản hồi'
+                      ? 'Waiting customer response'
                       : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
-                        ? 'Sẵn sàng thanh toán'
+                        ? 'Ready to pay'
                         : milestoneInfo.workStatus === 'COMPLETED'
-                          ? 'Hoàn thành'
+                          ? 'Completed'
                           : milestoneInfo.workStatus === 'IN_PROGRESS'
-                            ? 'Đang thực hiện'
+                            ? 'In progress'
                             : milestoneInfo.workStatus === 'WAITING_ASSIGNMENT'
-                              ? 'Chờ assign task'
+                              ? 'Waiting assign task'
                               : milestoneInfo.workStatus ===
                                   'WAITING_SPECIALIST_ACCEPT'
-                                ? 'Chờ specialist accept'
+                                ? 'Waiting specialist accept'
                                 : milestoneInfo.workStatus ===
                                     'TASK_ACCEPTED_WAITING_ACTIVATION'
-                                  ? 'Đã accept, chờ activate'
+                                  ? 'Accepted, waiting activate'
                                   : milestoneInfo.workStatus ===
                                       'READY_TO_START'
-                                    ? 'Sẵn sàng bắt đầu'
+                                    ? 'Ready to start'
                                     : milestoneInfo.workStatus || 'N/A'}
                   </Tag>
                   {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
@@ -419,12 +517,22 @@ const MilestoneDeliveriesPage = () => {
                           })
                         }
                       >
-                        Thanh toán
+                        Pay
                       </Button>
                     )}
                   {/* Hiển thị tag "Đã thanh toán" nếu installment đã PAID */}
-                  {milestoneInfo.installmentStatus === 'PAID' && (
-                    <Tag color="success">Đã thanh toán</Tag>
+                  {milestoneInfo.installmentStatus && (
+                    <Tag
+                      color={
+                        INSTALLMENT_STATUS_COLORS[
+                          milestoneInfo.installmentStatus
+                        ] || 'default'
+                      }
+                    >
+                      {INSTALLMENT_STATUS_LABELS[
+                        milestoneInfo.installmentStatus
+                      ] || milestoneInfo.installmentStatus}
+                    </Tag>
                   )}
                 </Space>
               </Descriptions.Item>
@@ -439,19 +547,19 @@ const MilestoneDeliveriesPage = () => {
                   {/* Planned Dates */}
                   <div>
                     <Text strong type="secondary" style={{ fontSize: 12 }}>
-                      Thời gian dự kiến:
+                      Planned Date:
                     </Text>
                     <div style={{ marginTop: 4 }}>
                       {milestoneInfo.targetDeadline ? (
                         <Text>
-                          Hoàn thành:{' '}
+                          Completed:{' '}
                           {dayjs(milestoneInfo.targetDeadline).format(
                             'DD/MM/YYYY'
                           )}
                         </Text>
                       ) : (
                         <Text type="secondary" italic>
-                          Chưa có
+                          No planned date
                         </Text>
                       )}
                     </div>
@@ -467,13 +575,13 @@ const MilestoneDeliveriesPage = () => {
                             }
                           >
                             {milestoneInfo.firstSubmissionLate
-                              ? 'Nộp trễ (bản đầu)'
-                              : 'Nộp đúng hạn (bản đầu)'}
+                              ? 'Late submission (first version)'
+                              : 'On time submission (first version)'}
                           </Tag>
                         )}
                       {!milestoneInfo.firstSubmissionAt &&
                         milestoneInfo.overdueNow === true && (
-                          <Tag color="red">Quá hạn (chưa nộp)</Tag>
+                          <Tag color="red">Overdue (not submitted)</Tag>
                         )}
                     </div>
                   </div>
@@ -484,13 +592,13 @@ const MilestoneDeliveriesPage = () => {
                     milestoneInfo.actualEndAt) && (
                     <div>
                       <Text strong style={{ fontSize: 12 }}>
-                        Thời gian thực tế:
+                        Actual Time:
                       </Text>
                       <div style={{ marginTop: 4 }}>
                         {milestoneInfo.actualStartAt && (
                           <div>
                             <Text>
-                              Bắt đầu:{' '}
+                              Start:{' '}
                               {dayjs(milestoneInfo.actualStartAt).format(
                                 'DD/MM/YYYY HH:mm'
                               )}
@@ -500,7 +608,7 @@ const MilestoneDeliveriesPage = () => {
                         {milestoneInfo.firstSubmissionAt && (
                           <div>
                             <Text>
-                              Nộp bản đầu tiên:{' '}
+                              First submission:{' '}
                               {dayjs(milestoneInfo.firstSubmissionAt).format(
                                 'DD/MM/YYYY HH:mm'
                               )}
@@ -513,7 +621,7 @@ const MilestoneDeliveriesPage = () => {
                                 marginTop: 2,
                               }}
                             >
-                              (Lần đầu specialist giao work)
+                              (First time specialist assigned work)
                             </Text>
                           </div>
                         )}
@@ -533,7 +641,7 @@ const MilestoneDeliveriesPage = () => {
                                 marginTop: 2,
                               }}
                             >
-                              (Customer đã chấp nhận work)
+                              (Customer accepted work)
                             </Text>
                           </div>
                         )}
@@ -553,7 +661,7 @@ const MilestoneDeliveriesPage = () => {
                                 marginTop: 2,
                               }}
                             >
-                              (Milestone đã được thanh toán)
+                              (Milestone paid)
                             </Text>
                           </div>
                         )}
@@ -591,9 +699,7 @@ const MilestoneDeliveriesPage = () => {
                         marginTop: 4,
                       }}
                     >
-                      Đã dùng {revisionStats.freeRevisionsUsed} lần revision
-                      free, {revisionStats.paidRevisionsUsed} lần revision có
-                      phí
+                      Used {revisionStats.freeRevisionsUsed} times for free revision, {revisionStats.paidRevisionsUsed} times for paid revision
                     </Text>
                   </Descriptions.Item>
                 </>
@@ -605,13 +711,13 @@ const MilestoneDeliveriesPage = () => {
         {/* Request Info */}
         {contractInfo?.requestId && (
           <Card
-            title="Thông tin Request"
+            title="Request Information"
             extra={
               <Button
                 type="link"
                 onClick={() => navigate(`/contracts/${contractId}`)}
               >
-                Xem Contract Detail
+                View Contract Detail
               </Button>
             }
             style={{ marginBottom: 24 }}
@@ -706,7 +812,7 @@ const MilestoneDeliveriesPage = () => {
 
                     return (
                       <div style={{ marginTop: 16 }}>
-                        <Divider orientation="left">Files đã upload</Divider>
+                        <Divider orientation="left">Uploaded Files</Divider>
                         <List
                           size="small"
                           dataSource={customerFiles}
@@ -787,12 +893,12 @@ const MilestoneDeliveriesPage = () => {
                                         );
                                         message.error(
                                           error?.response?.data?.message ||
-                                            'Lỗi khi xem file'
+                                            'Error previewing file'
                                         );
                                       }
                                     }}
                                   >
-                                    Xem
+                                    Preview
                                   </Button>,
                                   <Button
                                     key="download"
@@ -816,7 +922,7 @@ const MilestoneDeliveriesPage = () => {
                                       }
                                     }}
                                   >
-                                    Tải xuống
+                                    Download
                                   </Button>,
                                 ]}
                               >
@@ -840,7 +946,131 @@ const MilestoneDeliveriesPage = () => {
                   })()}
               </>
             ) : (
-              <Empty description="Không thể tải thông tin request" />
+              <Empty description="Cannot load request information" />
+            )}
+          </Card>
+        )}
+
+        {/* Studio Booking Info - Cho recording milestone */}
+        {milestoneInfo?.milestoneType === 'recording' && (
+          <Card
+            title="Studio Booking Information"
+            style={{ marginBottom: 24 }}
+            loading={studioBookingLoading}
+          >
+            {studioBooking ? (
+              <Descriptions bordered column={2} size="small">
+                <Descriptions.Item label="Booking ID">
+                  <Text
+                    copyable
+                    type="secondary"
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                    }}
+                  >
+                    {studioBooking.bookingId}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Studio">
+                  <Text>{studioBooking.studioName || 'N/A'}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Date">
+                  {studioBooking.bookingDate
+                    ? dayjs(studioBooking.bookingDate).format('DD/MM/YYYY')
+                    : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Time">
+                  {studioBooking.startTime && studioBooking.endTime
+                    ? `${studioBooking.startTime} - ${studioBooking.endTime}`
+                    : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag
+                    color={
+                      BOOKING_STATUS_COLORS[studioBooking.status] || 'default'
+                    }
+                  >
+                    {BOOKING_STATUS_LABELS[studioBooking.status] ||
+                      studioBooking.status ||
+                      'N/A'}
+                  </Tag>
+                </Descriptions.Item>
+                {studioBooking.sessionType && (
+                  <Descriptions.Item label="Session Type">
+                    <Tag color="blue">{studioBooking.sessionType}</Tag>
+                  </Descriptions.Item>
+                )}
+                {/* Participants summary */}
+                {studioBooking.participants &&
+                  studioBooking.participants.length > 0 && (
+                    <Descriptions.Item label="Participants" span={2}>
+                      <Space
+                        direction="vertical"
+                        size={2}
+                        style={{ width: '100%' }}
+                      >
+                        {studioBooking.participants.map((p, idx) => {
+                          const roleLabel =
+                            p.roleType === 'VOCAL'
+                              ? 'Vocal'
+                              : p.roleType === 'INSTRUMENT'
+                                ? 'Instrument'
+                                : p.roleType || 'Participant';
+                          
+                          // Xác định performer label với tên
+                          let performerLabel = '';
+                          if (p.performerSource === 'CUSTOMER_SELF') {
+                            const customerName = p.name || p.customerName;
+                            performerLabel = customerName
+                              ? `Customer (self) (${customerName})`
+                              : 'Customer (self)';
+                          } else if (p.performerSource === 'INTERNAL_ARTIST') {
+                            performerLabel = p.specialistName || 'Internal artist';
+                          } else if (p.performerSource === 'EXTERNAL_GUEST') {
+                            const guestName = p.name;
+                            performerLabel = guestName
+                              ? `External guest (${guestName})`
+                              : 'External guest';
+                          } else {
+                            performerLabel = p.performerSource || 'Unknown';
+                          }
+                          
+                          const skillLabel = p.skillName
+                            ? ` (${p.skillName})`
+                            : '';
+                          return (
+                            <Text key={idx} style={{ fontSize: 12 }}>
+                              • {roleLabel} – {performerLabel}
+                              {skillLabel}
+                            </Text>
+                          );
+                        })}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+                {/* Equipment summary */}
+                {studioBooking.requiredEquipment &&
+                  studioBooking.requiredEquipment.length > 0 && (
+                    <Descriptions.Item label="Equipment" span={2}>
+                      <Space
+                        direction="vertical"
+                        size={2}
+                        style={{ width: '100%' }}
+                      >
+                        {studioBooking.requiredEquipment.map((eq, idx) => (
+                          <Text key={idx} style={{ fontSize: 12 }}>
+                            • {eq.equipmentName} × {eq.quantity}
+                          </Text>
+                        ))}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+              </Descriptions>
+            ) : (
+              <Text type="secondary">
+                No studio booking information available
+              </Text>
             )}
           </Card>
         )}
@@ -854,13 +1084,13 @@ const MilestoneDeliveriesPage = () => {
               loading={loading}
               size="small"
             >
-              Làm mới
+              Reload
             </Button>
           }
         >
           <Spin spinning={loading}>
             {submissions.length === 0 ? (
-              <Empty description="Chưa có submissions nào được gửi cho milestone này" />
+              <Empty description="No submissions delivered for this milestone" />
             ) : (
               <Space
                 direction="vertical"
@@ -958,7 +1188,7 @@ const MilestoneDeliveriesPage = () => {
                                 if (isOriginal) {
                                   return (
                                     <Tag color="orange">
-                                      Đã yêu cầu chỉnh sửa - Đang chờ xử lý
+                                      Request revision - Pending review
                                     </Tag>
                                   );
                                 }
@@ -988,13 +1218,13 @@ const MilestoneDeliveriesPage = () => {
                                 <Popconfirm
                                   title={
                                     !hasFreeRevisionsLeft
-                                      ? 'Xác nhận yêu cầu revision có phí'
-                                      : 'Xác nhận yêu cầu revision'
+                                      ? 'Confirm request revision with fee'
+                                      : 'Confirm request revision'
                                   }
                                   description={
                                     !hasFreeRevisionsLeft
-                                      ? `Bạn đã dùng hết ${revisionStats?.freeRevisionsIncluded || contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
-                                      : `Bạn còn ${revisionStats?.freeRevisionsRemaining || 0} lượt revision miễn phí.`
+                                      ? `You have used all ${revisionStats?.freeRevisionsIncluded || contractInfo?.freeRevisionsIncluded || 0} free revisions. This revision will cost ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
+                                      : `You have ${revisionStats?.freeRevisionsRemaining || 0} free revisions remaining.`
                                   }
                                   onConfirm={() => {
                                     if (!hasFreeRevisionsLeft) {
@@ -1026,21 +1256,21 @@ const MilestoneDeliveriesPage = () => {
                                       );
                                     }
                                   }}
-                                  okText="Xác nhận"
-                                  cancelText="Hủy"
+                                  okText="Confirm"
+                                  cancelText="Cancel"
                                 >
                                   <Button
                                     icon={<CloseCircleOutlined />}
                                     size="small"
                                     danger={!hasFreeRevisionsLeft}
                                   >
-                                    Request Revision
+                                    Request revision
                                     {!hasFreeRevisionsLeft && (
                                       <Tag
                                         color="orange"
                                         style={{ marginLeft: 4 }}
                                       >
-                                        (Có phí)
+                                        (With fee)
                                       </Tag>
                                     )}
                                   </Button>
@@ -1086,7 +1316,7 @@ const MilestoneDeliveriesPage = () => {
                                     type="secondary"
                                     style={{ fontSize: 12 }}
                                   >
-                                    Loại: {file.contentType} • Dung lượng:{' '}
+                                    Type: {file.contentType} • Size:{' '}
                                     {file.fileSize
                                       ? (file.fileSize / 1024 / 1024).toFixed(
                                           2
@@ -1131,7 +1361,7 @@ const MilestoneDeliveriesPage = () => {
                       return (
                         <div style={{ marginTop: 16 }}>
                           <Divider orientation="left">
-                            <Text strong>Revision Requests liên quan</Text>
+                            <Text strong>Related Revision Requests</Text>
                           </Divider>
 
                           {/* Hiển thị revision requests cho originalSubmissionId - chỉ tên thôi */}
@@ -1171,7 +1401,7 @@ const MilestoneDeliveriesPage = () => {
                                         Revision Round #{revision.revisionRound}
                                       </Text>
                                       <Tag color="green">
-                                        Submission này là bản đã chỉnh sửa
+                                        This submission is the revised version
                                       </Tag>
                                       {revision.isFreeRevision && (
                                         <Tag color="green">Free Revision</Tag>
@@ -1215,24 +1445,24 @@ const MilestoneDeliveriesPage = () => {
                                                 {
                                                   revision.revisionDeadlineDays
                                                 }{' '}
-                                                ngày SLA)
+                                                days SLA)
                                               </Text>
                                             )}
                                           </Text>
                                           {dayjs(
                                             revision.revisionDueAt
                                           ).isBefore(dayjs()) && (
-                                            <Tag color="red">Quá hạn</Tag>
+                                            <Tag color="red">Overdue</Tag>
                                           )}
                                           {!dayjs(
                                             revision.revisionDueAt
                                           ).isBefore(dayjs()) && (
                                             <Tag color="blue">
-                                              Còn{' '}
+                                              Remaining{' '}
                                               {dayjs(
                                                 revision.revisionDueAt
                                               ).diff(dayjs(), 'day')}{' '}
-                                              ngày
+                                              days
                                             </Tag>
                                           )}
                                         </Space>
@@ -1290,7 +1520,7 @@ const MilestoneDeliveriesPage = () => {
               <Card
                 title={
                   <Space>
-                    <Text strong>Revision Requests Tổng hợp</Text>
+                    <Text strong>Summary of Revision Requests</Text>
                     <Tag color="orange">{revisionRequests.length}</Tag>
                   </Space>
                 }
@@ -1310,14 +1540,14 @@ const MilestoneDeliveriesPage = () => {
                       canceled: 'default',
                     };
                     const statusLabels = {
-                      pending_manager_review: 'Chờ Manager duyệt',
-                      in_revision: 'Đang chỉnh sửa',
-                      waiting_manager_review: 'Chờ Manager review',
-                      approved_pending_delivery: 'Đã duyệt, chờ deliver',
-                      waiting_customer_confirm: 'Chờ Customer xác nhận',
-                      completed: 'Hoàn thành',
-                      rejected: 'Từ chối',
-                      canceled: 'Đã hủy',
+                      pending_manager_review: 'Waiting Manager review',
+                      in_revision: 'In revision',
+                      waiting_manager_review: 'Waiting Manager review',
+                      approved_pending_delivery: 'Approved, waiting delivery',
+                      waiting_customer_confirm: 'Waiting Customer confirm',
+                      completed: 'Completed',
+                      rejected: 'Rejected',
+                      canceled: 'Canceled',
                     };
 
                     const isOrphan = orphanRevisions.includes(revision);
@@ -1338,7 +1568,7 @@ const MilestoneDeliveriesPage = () => {
                             </Text>
                             {isOrphan && (
                               <Tag color="warning">
-                                Chưa liên kết với submission
+                                Not linked to any submission
                               </Tag>
                             )}
                             {revision.isFreeRevision && (
@@ -1393,7 +1623,7 @@ const MilestoneDeliveriesPage = () => {
                             {revision.isFreeRevision ? (
                               <Tag color="green">Yes</Tag>
                             ) : (
-                              <Tag color="orange">No (Có phí)</Tag>
+                              <Tag color="orange">No (With fee)</Tag>
                             )}
                           </Descriptions.Item>
                           {revision.originalSubmissionId && (
@@ -1424,8 +1654,7 @@ const MilestoneDeliveriesPage = () => {
                                         marginTop: 4,
                                       }}
                                     >
-                                      (Submission này không có trong danh sách
-                                      hiện tại)
+                                      (This submission is not in the current list)
                                     </Text>
                                   </>
                                 )}
@@ -1460,8 +1689,7 @@ const MilestoneDeliveriesPage = () => {
                                         marginTop: 4,
                                       }}
                                     >
-                                      (Submission này không có trong danh sách
-                                      hiện tại)
+                                      (This submission is not in the current list)
                                     </Text>
                                   </>
                                 )}
@@ -1470,10 +1698,9 @@ const MilestoneDeliveriesPage = () => {
                           )}
                           {!revision.originalSubmissionId &&
                             !revision.revisedSubmissionId && (
-                              <Descriptions.Item label="Lưu ý">
+                              <Descriptions.Item label="Note">
                                 <Tag color="warning">
-                                  Revision request này chưa liên kết với
-                                  submission nào
+                                  This revision request is not linked to any submission
                                 </Tag>
                               </Descriptions.Item>
                             )}
@@ -1522,24 +1749,24 @@ const MilestoneDeliveriesPage = () => {
                                       type="secondary"
                                       style={{ fontSize: 11, marginLeft: 4 }}
                                     >
-                                      (+{revision.revisionDeadlineDays} ngày
+                                      (+{revision.revisionDeadlineDays} days
                                       SLA)
                                     </Text>
                                   )}
                                 </Text>
                                 {dayjs(revision.revisionDueAt).isBefore(
                                   dayjs()
-                                ) && <Tag color="red">Quá hạn</Tag>}
+                                ) && <Tag color="red">Overdue</Tag>}
                                 {!dayjs(revision.revisionDueAt).isBefore(
                                   dayjs()
                                 ) && (
                                   <Tag color="blue">
-                                    Còn{' '}
+                                    Remaining{' '}
                                     {dayjs(revision.revisionDueAt).diff(
                                       dayjs(),
                                       'day'
                                     )}{' '}
-                                    ngày
+                                    days
                                   </Tag>
                                 )}
                               </Space>
@@ -1579,26 +1806,26 @@ const MilestoneDeliveriesPage = () => {
               setRevisionDescription('');
             }}
           >
-            Hủy
+            Cancel
           </Button>,
           <Popconfirm
             key="confirm"
-            title="Xác nhận?"
+            title="Confirm?"
             description={
               reviewAction === 'accept'
-                ? 'Bạn có chắc chắn muốn chấp nhận submission này?'
-                : 'Bạn có chắc chắn muốn yêu cầu chỉnh sửa submission này?'
+                ? 'Are you sure you want to accept this submission?'
+                : 'Are you sure you want to request a revision for this submission?'
             }
             onConfirm={handleReviewSubmission}
-            okText="Xác nhận"
-            cancelText="Hủy"
+            okText="Confirm"
+            cancelText="Cancel"
           >
             <Button
               type="primary"
               loading={actionLoading}
               danger={reviewAction === 'request_revision'}
             >
-              {reviewAction === 'accept' ? 'Chấp nhận' : 'Yêu cầu chỉnh sửa'}
+              {reviewAction === 'accept' ? 'Accept' : 'Request revision'}
             </Button>
           </Popconfirm>,
         ]}
@@ -1607,29 +1834,29 @@ const MilestoneDeliveriesPage = () => {
         {reviewAction === 'request_revision' && (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
-              message="Yêu cầu chỉnh sửa"
-              description="Vui lòng nhập tiêu đề và mô tả chi tiết yêu cầu chỉnh sửa. Manager sẽ xem xét và gửi cho specialist thực hiện."
+              message="Request revision"
+              description="Please enter the title and detailed description of the request revision. Manager will review and send to specialist to perform."
               type="warning"
               showIcon
             />
             <div>
-              <Text strong>Tiêu đề yêu cầu chỉnh sửa:</Text>
+              <Text strong>Request revision title:</Text>
               <Input
                 value={revisionTitle}
                 onChange={e => setRevisionTitle(e.target.value)}
-                placeholder="Nhập tiêu đề ngắn gọn (ví dụ: Cần chỉnh sửa tempo, Cần thêm phần intro...)"
+                placeholder="Enter a short title (e.g., Need to adjust tempo, Need to add intro...)"
                 style={{ marginTop: 8 }}
                 maxLength={255}
                 showCount
               />
             </div>
             <div>
-              <Text strong>Mô tả chi tiết:</Text>
+              <Text strong>Detailed description:</Text>
               <TextArea
                 rows={6}
                 value={revisionDescription}
                 onChange={e => setRevisionDescription(e.target.value)}
-                placeholder="Nhập mô tả chi tiết yêu cầu chỉnh sửa..."
+                placeholder="Enter detailed description of the request revision..."
                 style={{ marginTop: 8 }}
                 maxLength={2000}
                 showCount
@@ -1639,8 +1866,8 @@ const MilestoneDeliveriesPage = () => {
         )}
         {reviewAction === 'accept' && (
           <Alert
-            message="Chấp nhận submission"
-            description="Bạn đang chấp nhận submission này. Submission sẽ được đánh dấu là đã được chấp nhận."
+            message="Accept submission"
+            description="You are accepting this submission. The submission will be marked as accepted."
             type="success"
             showIcon
           />

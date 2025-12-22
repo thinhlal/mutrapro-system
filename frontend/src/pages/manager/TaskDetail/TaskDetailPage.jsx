@@ -772,8 +772,8 @@ const TaskDetailPage = () => {
   if (!task) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Empty description="Không tìm thấy task" />
-        <Button onClick={() => navigate(-1)}>Quay lại</Button>
+        <Empty description="Task not found" />
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
       </div>
     );
   }
@@ -783,7 +783,7 @@ const TaskDetailPage = () => {
       <div className={styles.header}>
         <div className={styles.backRow}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-            Quay lại
+            Go Back
           </Button>
           <Space size="small" wrap className={styles.headerMeta}>
             {contract?.contractNumber && <Tag>{contract.contractNumber}</Tag>}
@@ -797,14 +797,14 @@ const TaskDetailPage = () => {
         </div>
         <div className={styles.headerInfo}>
           <Title level={3} style={{ margin: 0 }}>
-            Chi tiết Task
+            Task Details
           </Title>
           <Space>
             <Button
               icon={<EyeOutlined />}
               onClick={() => navigate(`/manager/contracts/${contractId}`)}
             >
-              Xem contract
+              View Contract
             </Button>
             {task.milestoneId && (
               <Button
@@ -814,7 +814,7 @@ const TaskDetailPage = () => {
                   )
                 }
               >
-                Xem milestone
+                View Milestone
               </Button>
             )}
           </Space>
@@ -825,7 +825,7 @@ const TaskDetailPage = () => {
         {/* Request Info */}
         {(request || task?.request || contract?.requestId) && (
           <Card
-            title="Thông tin Request"
+            title="Request Information"
             extra={requestLoading && <Spin size="small" />}
           >
             <Spin spinning={requestLoading}>
@@ -977,7 +977,7 @@ const TaskDetailPage = () => {
 
         {/* Task Info */}
         <Card
-          title="Thông tin Task"
+          title="Task Information"
           extra={
             task.hasIssue && (
               <Space>
@@ -990,11 +990,11 @@ const TaskDetailPage = () => {
                   Resolve Issue
                 </Button>
                 <Popconfirm
-                  title="Xác nhận hủy task và tạo task mới?"
-                  description="Task hiện tại sẽ bị hủy và bạn sẽ được chuyển đến trang tạo task mới với thông tin tương tự (milestone, task type). Bạn chỉ cần chọn specialist mới."
+                  title="Confirm cancel task and create new task?"
+                  description="The current task will be cancelled and you will be redirected to the new task creation page with similar information (milestone, task type). You only need to select a new specialist."
                   onConfirm={handleCancelTaskByManager}
-                  okText="Xác nhận"
-                  cancelText="Hủy"
+                  okText="Confirm"
+                  cancelText="Cancel"
                   okButtonProps={{ danger: true }}
                 >
                   <Button
@@ -1002,7 +1002,7 @@ const TaskDetailPage = () => {
                     icon={<CloseCircleOutlined />}
                     loading={actionLoading}
                   >
-                    Cancel Task
+                    Cancel Task and Create New Task
                   </Button>
                 </Popconfirm>
               </Space>
@@ -1010,6 +1010,9 @@ const TaskDetailPage = () => {
           }
         >
           <Descriptions bordered column={2}>
+            <Descriptions.Item label="Task ID">
+              <Text copyable>{assignmentId}</Text>
+            </Descriptions.Item>
             <Descriptions.Item label="Task Type">
               <Tag color="cyan">
                 {TASK_TYPE_LABELS[task.taskType] || task.taskType}
@@ -1025,7 +1028,7 @@ const TaskDetailPage = () => {
                   icon={<ExclamationCircleOutlined />}
                   style={{ marginLeft: 8 }}
                 >
-                  Issue
+                  Has Issue
                 </Tag>
               )}
             </Descriptions.Item>
@@ -1403,7 +1406,7 @@ const TaskDetailPage = () => {
             {task.hasIssue && task.issueReason && (
               <Descriptions.Item label="Issue Reason" span={2}>
                 <Alert
-                  message="Lý do báo issue"
+                  message="Issue Reason"
                   description={task.issueReason}
                   type="warning"
                   showIcon
@@ -1440,19 +1443,19 @@ const TaskDetailPage = () => {
                           )
                         }
                       >
-                        Xem chi tiết
+                        View Details
                       </Button>
                     </Space>
                   </Descriptions.Item>
                   <Descriptions.Item label="Studio">
                     <Text>{studioBooking.studioName || 'N/A'}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Ngày">
+                  <Descriptions.Item label="Date">
                     {studioBooking.bookingDate
                       ? dayjs(studioBooking.bookingDate).format('DD/MM/YYYY')
                       : 'N/A'}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Thời gian">
+                  <Descriptions.Item label="Time">
                     {studioBooking.startTime && studioBooking.endTime
                       ? `${studioBooking.startTime} - ${studioBooking.endTime}`
                       : 'N/A'}
@@ -1474,15 +1477,15 @@ const TaskDetailPage = () => {
                       }
                     >
                       {studioBooking.status === 'CONFIRMED'
-                        ? 'Đã xác nhận'
+                        ? 'Confirmed'
                         : studioBooking.status === 'IN_PROGRESS'
-                          ? 'Đang thực hiện'
+                          ? 'In Progress'
                           : studioBooking.status === 'PENDING'
-                            ? 'Đang chờ'
+                            ? 'Pending'
                             : studioBooking.status === 'COMPLETED'
-                              ? 'Hoàn thành'
+                              ? 'Completed'
                               : studioBooking.status === 'CANCELLED'
-                                ? 'Đã hủy'
+                                ? 'Cancelled'
                                 : studioBooking.status || 'N/A'}
                     </Tag>
                   </Descriptions.Item>
@@ -1636,7 +1639,7 @@ const TaskDetailPage = () => {
                   )}
                 </Descriptions>
               ) : (
-                <Empty description="Không tìm thấy thông tin booking" />
+                <Empty description="No booking information found" />
               )}
             </Card>
           )}
@@ -1657,7 +1660,7 @@ const TaskDetailPage = () => {
                 loading={loadingRevisionRequests}
                 size="small"
               >
-                Làm mới
+                Reload
               </Button>
             }
           >
@@ -1676,7 +1679,7 @@ const TaskDetailPage = () => {
                     canceled: 'default',
                   };
                   const statusLabels = {
-                    pending_manager_review: 'Chờ Manager duyệt',
+                    pending_manager_review: 'Waiting for Manager approval',
                     in_revision: 'Đang chỉnh sửa',
                     waiting_manager_review: 'Chờ Manager review',
                     approved_pending_delivery: 'Đã duyệt, chờ deliver',
@@ -1800,7 +1803,7 @@ const TaskDetailPage = () => {
                                 marginTop: 4,
                               }}
                             >
-                              (Submission bị request revision)
+                              (Submission requested revision)
                             </Text>
                           </Descriptions.Item>
                         )}
@@ -1822,7 +1825,7 @@ const TaskDetailPage = () => {
                                 marginTop: 4,
                               }}
                             >
-                              (Submission sau khi chỉnh sửa)
+                              (Submission after revision)
                             </Text>
                           </Descriptions.Item>
                         )}
@@ -1852,23 +1855,23 @@ const TaskDetailPage = () => {
                                     type="secondary"
                                     style={{ fontSize: 11, marginLeft: 4 }}
                                   >
-                                    (+{revision.revisionDeadlineDays} ngày SLA)
+                                    (+{revision.revisionDeadlineDays} days SLA)
                                   </Text>
                                 )}
                               </Text>
                               {dayjs(revision.revisionDueAt).isBefore(
                                 dayjs()
-                              ) && <Tag color="red">Quá hạn</Tag>}
+                              ) && <Tag color="red">Overdue</Tag>}
                               {!dayjs(revision.revisionDueAt).isBefore(
                                 dayjs()
                               ) && (
                                 <Tag color="blue">
-                                  Còn{' '}
+                                  Remaining{' '}
                                   {dayjs(revision.revisionDueAt).diff(
                                     dayjs(),
                                     'day'
                                   )}{' '}
-                                  ngày
+                                  days
                                 </Tag>
                               )}
                             </Space>
@@ -1933,7 +1936,7 @@ const TaskDetailPage = () => {
                   loading={filesLoading}
                   size="small"
                 >
-                  Làm mới
+                  Reload
                 </Button>
                 {/* 👉 Thêm nút Xem lý do nếu submission bị reject */}
                 {currentSubmission.status?.toLowerCase() === 'rejected' &&
@@ -1950,7 +1953,7 @@ const TaskDetailPage = () => {
                         setRejectionReasonModalVisible(true);
                       }}
                     >
-                      Xem lý do
+                      View Reason
                     </Button>
                   )}
                 {currentSubmission.submittedAt && (
@@ -1965,13 +1968,13 @@ const TaskDetailPage = () => {
                   'pending_review' && (
                   <>
                     <Popconfirm
-                      title="Xác nhận duyệt submission?"
-                      description="Tất cả files trong submission này sẽ được đánh dấu là đã duyệt"
+                      title="Confirm approve submission?"
+                      description="All files in this submission will be marked as approved"
                       onConfirm={() =>
                         handleApproveSubmission(currentSubmission.submissionId)
                       }
-                      okText="Duyệt"
-                      cancelText="Hủy"
+                      okText="Approve"
+                      cancelText="Cancel"
                     >
                       <Button
                         size="small"
@@ -1998,13 +2001,13 @@ const TaskDetailPage = () => {
                 )}
                 {currentSubmission.status?.toLowerCase() === 'approved' && (
                   <Popconfirm
-                    title="Xác nhận gửi submission cho khách hàng?"
-                    description="Tất cả files trong submission này sẽ được gửi cho khách hàng"
+                    title="Confirm deliver submission to customer?"
+                    description="All files in this submission will be delivered to the customer"
                     onConfirm={() =>
                       handleDeliverSubmission(currentSubmission.submissionId)
                     }
-                    okText="Gửi"
-                    cancelText="Hủy"
+                    okText="Deliver"
+                    cancelText="Cancel"
                   >
                     <Button
                       size="small"
@@ -2103,7 +2106,7 @@ const TaskDetailPage = () => {
                   }}
                 />
               ) : (
-                <Empty description="Không có files trong submission này" />
+                <Empty description="No files in this submission" />
               )}
             </Spin>
           </Card>
@@ -2120,7 +2123,7 @@ const TaskDetailPage = () => {
                 loading={filesLoading}
                 size="small"
               >
-                Làm mới
+                Reload
               </Button>
             }
           >
@@ -2185,7 +2188,7 @@ const TaskDetailPage = () => {
                                   setRejectionReasonModalVisible(true);
                                 }}
                               >
-                                Xem lý do
+                                View Reason
                               </Button>
                             )}
                         </Space>
@@ -2311,14 +2314,14 @@ const TaskDetailPage = () => {
                                 }}
                               >
                                 {showAll
-                                  ? `Thu gọn (hiển thị ${MAX_FILES_PREVIEW} file đầu)`
-                                  : `Xem thêm ${files.length - MAX_FILES_PREVIEW} file nữa`}
+                                  ? `Collapse (display ${MAX_FILES_PREVIEW} files)`
+                                  : `View more ${files.length - MAX_FILES_PREVIEW} files`}
                               </Button>
                             </div>
                           )}
                         </>
                       ) : (
-                        <Empty description="Không có files trong submission này" />
+                        <Empty description="No files in this submission" />
                       )}
                     </Collapse.Panel>
                   );
@@ -2339,12 +2342,12 @@ const TaskDetailPage = () => {
                 loading={filesLoading}
                 size="small"
               >
-                Làm mới
+                Reload
               </Button>
             }
           >
             <Spin spinning={filesLoading}>
-              <Empty description="Chưa có submissions nào" />
+              <Empty description="No submissions yet" />
             </Spin>
           </Card>
         )}
@@ -2352,7 +2355,7 @@ const TaskDetailPage = () => {
 
       {/* Request Revision Modal */}
       <Modal
-        title="Yêu cầu chỉnh sửa File"
+        title="Request File Revision"
         open={revisionModalVisible}
         onOk={handleRequestRevision}
         onCancel={() => {
@@ -2361,8 +2364,8 @@ const TaskDetailPage = () => {
           setRevisionReason('');
         }}
         confirmLoading={actionLoading}
-        okText="Gửi yêu cầu"
-        cancelText="Hủy"
+        okText="Send Request"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
       >
         {selectedFileForRevision && (
@@ -2372,12 +2375,12 @@ const TaskDetailPage = () => {
               <Text>{selectedFileForRevision.fileName}</Text>
             </div>
             <div>
-              <Text strong>Lý do yêu cầu chỉnh sửa: </Text>
+              <Text strong>Request Revision Reason: </Text>
               <TextArea
                 rows={4}
                 value={revisionReason}
                 onChange={e => setRevisionReason(e.target.value)}
-                placeholder="Nhập lý do yêu cầu chỉnh sửa file (ví dụ: cần điều chỉnh tempo, thêm instrument, sửa notation...)..."
+                placeholder="Enter reason for requesting file revision (e.g. need to adjust tempo, add instrument, fix notation...)..."
               />
             </div>
           </Space>
@@ -2391,8 +2394,8 @@ const TaskDetailPage = () => {
             <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
             <span>
               {selectedSubmissionForReject
-                ? 'Từ chối Submission'
-                : 'Lý do từ chối file'}
+                ? 'Reject Submission'
+                : 'Reject File Reason'}
             </span>
           </Space>
         }
@@ -2415,7 +2418,7 @@ const TaskDetailPage = () => {
                     setSubmissionRejectReason('');
                   }}
                 >
-                  Hủy
+                  Cancel
                 </Button>,
                 <Button
                   key="reject"
@@ -2423,7 +2426,7 @@ const TaskDetailPage = () => {
                   onClick={handleRejectSubmission}
                   loading={actionLoading}
                 >
-                  Từ chối
+                  Reject
                 </Button>,
               ]
             : [
@@ -2434,7 +2437,7 @@ const TaskDetailPage = () => {
                     setSelectedRejectionReason(null);
                   }}
                 >
-                  Đóng
+                  Close
                 </Button>,
               ]
         }
@@ -2450,18 +2453,18 @@ const TaskDetailPage = () => {
               </Text>
             </div>
             <div>
-              <Text strong>Lý do từ chối: </Text>
+              <Text strong>Reject Reason: </Text>
               <TextArea
                 rows={4}
                 value={submissionRejectReason}
                 onChange={e => setSubmissionRejectReason(e.target.value)}
-                placeholder="Nhập lý do từ chối submission này..."
+                placeholder="Enter reason for rejecting this submission..."
               />
             </div>
           </Space>
         ) : (
           <Alert
-            message="File đã bị từ chối"
+            message="File rejected"
             description={
               <Paragraph
                 style={{
@@ -2484,8 +2487,8 @@ const TaskDetailPage = () => {
       <Modal
         title={
           reviewRevisionAction === 'approve'
-            ? 'Duyệt Revision Request'
-            : 'Từ chối Revision Request'
+            ? 'Approve Revision Request'
+            : 'Reject Revision Request'
         }
         open={reviewRevisionModalVisible}
         onOk={handleReviewRevisionRequest}
@@ -2496,8 +2499,8 @@ const TaskDetailPage = () => {
           setReviewRevisionNote('');
         }}
         confirmLoading={actionLoading}
-        okText={reviewRevisionAction === 'approve' ? 'Duyệt' : 'Từ chối'}
-        cancelText="Hủy"
+        okText={reviewRevisionAction === 'approve' ? 'Approve' : 'Reject'}
+        cancelText="Cancel"
         okButtonProps={
           reviewRevisionAction === 'reject' ? { danger: true } : {}
         }
@@ -2518,24 +2521,24 @@ const TaskDetailPage = () => {
             </Descriptions>
             {reviewRevisionAction === 'reject' && (
               <div>
-                <Text strong>Lý do từ chối (bắt buộc):</Text>
+                <Text strong>Reject Reason (required):</Text>
                 <TextArea
                   rows={4}
                   value={reviewRevisionNote}
                   onChange={e => setReviewRevisionNote(e.target.value)}
-                  placeholder="Nhập lý do từ chối revision request này..."
+                  placeholder="Enter reason for rejecting this revision request..."
                   style={{ marginTop: 8 }}
                 />
               </div>
             )}
             {reviewRevisionAction === 'approve' && (
               <div>
-                <Text strong>Ghi chú (tùy chọn):</Text>
+                <Text strong>Note (optional):</Text>
                 <TextArea
                   rows={4}
                   value={reviewRevisionNote}
                   onChange={e => setReviewRevisionNote(e.target.value)}
-                  placeholder="Nhập ghi chú cho specialist..."
+                  placeholder="Enter note for specialist..."
                   style={{ marginTop: 8 }}
                 />
               </div>
@@ -2566,7 +2569,7 @@ const TaskDetailPage = () => {
               }
             }}
           >
-            Tải file
+            Download
           </Button>,
           <Button
             key="close"
@@ -2579,7 +2582,7 @@ const TaskDetailPage = () => {
               setPreviewFile(null);
             }}
           >
-            Đóng
+            Close
           </Button>,
         ]}
         width={900}
@@ -2609,7 +2612,7 @@ const TaskDetailPage = () => {
                       src={previewFile.previewUrl}
                       type={previewFile.mimeType}
                     />
-                    Trình duyệt không hỗ trợ audio player
+                    Browser does not support audio player
                   </audio>
                 </div>
               ) : previewFile.mimeType?.startsWith('video/') ? (
@@ -2622,12 +2625,12 @@ const TaskDetailPage = () => {
                     src={previewFile.previewUrl}
                     type={previewFile.mimeType}
                   />
-                  Trình duyệt không hỗ trợ video player
+                  Browser does not support video player
                 </video>
               ) : (
                 <Alert
-                  message="Không thể preview file này"
-                  description="Vui lòng tải file để xem"
+                  message="Cannot preview this file"
+                  description="Please download the file to view"
                   type="info"
                 />
               )}

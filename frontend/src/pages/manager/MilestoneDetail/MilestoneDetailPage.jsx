@@ -29,6 +29,7 @@ import {
   getMilestoneById,
 } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
@@ -52,6 +53,13 @@ const MILESTONE_TYPE_LABELS = {
   recording: 'Recording',
 };
 
+const REQUEST_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+  arrangement_with_recording: 'Arrangement + Recording',
+};
+
 const STATUS_COLORS = {
   assigned: 'blue',
   accepted_waiting: 'gold',
@@ -66,16 +74,16 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-  assigned: 'Đã gán',
-  accepted_waiting: 'Đã nhận - Chờ',
-  ready_to_start: 'Sẵn sàng làm',
-  in_progress: 'Đang thực hiện',
-  in_revision: 'Đang chỉnh sửa',
-  waiting_customer_review: 'Chờ khách hàng review',
-  ready_for_review: 'Chờ duyệt',
-  revision_requested: 'Yêu cầu chỉnh sửa',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  assigned: 'Assigned',
+  accepted_waiting: 'Accepted - Waiting',
+  ready_to_start: 'Ready to start',
+  in_progress: 'In progress',
+  in_revision: 'In revision',
+  waiting_customer_review: 'Waiting customer review',
+  ready_for_review: 'Ready for review',
+  revision_requested: 'Revision requested',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 const WORK_STATUS_COLORS = {
@@ -92,24 +100,24 @@ const WORK_STATUS_COLORS = {
 };
 
 const WORK_STATUS_LABELS = {
-  planned: 'Chưa bắt đầu',
-  waiting_assignment: 'Chờ assign task',
-  waiting_specialist_accept: 'Chờ specialist accept',
-  task_accepted_waiting_activation: 'Đã accept, chờ activate',
-  ready_to_start: 'Sẵn sàng bắt đầu',
-  in_progress: 'Đang thực hiện',
-  waiting_customer: 'Chờ khách hàng',
-  ready_for_payment: 'Sẵn sàng thanh toán',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  planned: 'Planned',
+  waiting_assignment: 'Waiting assignment',
+  waiting_specialist_accept: 'Waiting specialist accept',
+  task_accepted_waiting_activation: 'Accepted, waiting activation',
+  ready_to_start: 'Ready to start',
+  in_progress: 'In progress',
+  waiting_customer: 'Waiting customer',
+  ready_for_payment: 'Ready for payment',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 const FILE_STATUS_LABELS = {
-  uploaded: 'Đã upload',
-  pending_review: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Đã từ chối',
-  delivered: 'Đã giao',
+  uploaded: 'Uploaded',
+  pending_review: 'Pending review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  delivered: 'Delivered',
 };
 
 const FILE_STATUS_COLORS = {
@@ -159,6 +167,7 @@ const MilestoneDetailPage = () => {
   const [requestLoading, setRequestLoading] = useState(false);
   const [milestoneTasks, setMilestoneTasks] = useState([]);
   const [milestoneTasksLoading, setMilestoneTasksLoading] = useState(false);
+  const [bookingData, setBookingData] = useState(null);
 
   useEffect(() => {
     fetchInstruments();
@@ -177,6 +186,21 @@ const MilestoneDetailPage = () => {
       // Không throw error vì request info không bắt buộc
     } finally {
       setRequestLoading(false);
+    }
+  }, []);
+
+  const fetchBookingInfo = useCallback(async requestId => {
+    if (!requestId) return;
+    try {
+      const response = await getBookingByRequestId(requestId);
+      if (response?.status === 'success' && response?.data) {
+        setBookingData(response.data);
+      } else {
+        setBookingData(null);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch booking info for milestone detail:', error);
+      setBookingData(null);
     }
   }, []);
 
@@ -241,12 +265,18 @@ const MilestoneDetailPage = () => {
       // Load tất cả dữ liệu song song để tối ưu performance
       const promises = [fetchMilestoneTasks(contractId, milestoneId)];
 
-      // Chỉ load request info nếu có requestId
+      // Chỉ load request info (và booking nếu cần) nếu có requestId
       if (
         contractResponse?.status === 'success' &&
         contractResponse?.data?.requestId
       ) {
-        promises.push(fetchRequestInfo(contractResponse.data.requestId));
+        const reqId = contractResponse.data.requestId;
+        promises.push(fetchRequestInfo(reqId));
+
+        // Nếu contract là recording thì load thêm booking (dùng để xem lịch phòng)
+        if (contractResponse.data.contractType === 'recording') {
+          promises.push(fetchBookingInfo(reqId));
+        }
       }
 
       await Promise.all(promises);
@@ -420,7 +450,7 @@ const MilestoneDetailPage = () => {
   if (!milestone) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Empty description="Không tìm thấy milestone" />
+        <Empty description="Milestone not found" />
         <Button onClick={() => navigate(-1)}>Quay lại</Button>
       </div>
     );
@@ -445,14 +475,14 @@ const MilestoneDetailPage = () => {
         </div>
         <div className={styles.headerInfo}>
           <Title level={3} style={{ margin: 0 }}>
-            Chi tiết Milestone
+            Milestone Details
           </Title>
           <Space>
             <Button
               icon={<EyeOutlined />}
               onClick={() => navigate(`/manager/contracts/${contractId}`)}
             >
-              Xem contract
+              View contract
             </Button>
             <Button
               onClick={() =>
@@ -461,7 +491,7 @@ const MilestoneDetailPage = () => {
                 )
               }
             >
-              Mở Task Progress
+              Open Task Progress
             </Button>
             {canShowAssignButton && (
               <Button
@@ -515,7 +545,7 @@ const MilestoneDetailPage = () => {
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
               <div>
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Request code:{' '}
+                  Request ID:{' '}
                 </Text>
                 <Text
                   strong
@@ -526,21 +556,20 @@ const MilestoneDetailPage = () => {
               </div>
               <div>
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Service type:{' '}
+                  Service Type:{' '}
                 </Text>
                 <Tag color="blue" style={{ margin: 0 }}>
-                  {(
-                    request.serviceType ||
-                    request.requestType ||
-                    'N/A'
-                  ).toUpperCase()}
+                  {REQUEST_TYPE_LABELS[
+                    (request.serviceType || request.requestType || '').toLowerCase()
+                  ] ||
+                    (request.serviceType || request.requestType || 'N/A').toUpperCase()}
                 </Tag>
               </div>
               {request.requestType === 'transcription' &&
                 request.durationMinutes && (
                   <div>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Audio duration:{' '}
+                      Audio Duration:{' '}
                     </Text>
                     <Text strong>
                       {formatDurationMMSS(request.durationMinutes)}
@@ -643,10 +672,63 @@ const MilestoneDetailPage = () => {
           </Card>
         )}
 
-        <div className={styles.gridTwoColumn}>
-          <Card title="Milestone chi tiết">
+        {/* Booking info cho recording contracts (tóm tắt ngày/giờ + link sang trang chi tiết) */}
+        {contract?.contractType === 'recording' && bookingData && (
+          <Card
+            title="Studio Booking"
+            style={{ marginBottom: 16 }}
+            extra={
+              bookingData.bookingId && (
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={() =>
+                    navigate(`/manager/studio-bookings/${bookingData.bookingId}`)
+                  }
+                >
+                  View full booking
+                </Button>
+              )
+            }
+          >
             <Descriptions size="small" column={2} bordered>
-              <Descriptions.Item label="Mã milestone">
+              <Descriptions.Item label="Date & Time" span={2}>
+                {bookingData.bookingDate || 'N/A'} |{' '}
+                {bookingData.startTime && bookingData.endTime
+                  ? `${bookingData.startTime} - ${bookingData.endTime}`
+                  : 'N/A'}{' '}
+                {bookingData.durationHours
+                  ? `(${bookingData.durationHours}h)`
+                  : ''}
+              </Descriptions.Item>
+              {bookingData.status && (
+                <Descriptions.Item label="Status">
+                  <Tag
+                    color={
+                      bookingData.status === 'CONFIRMED'
+                        ? 'green'
+                        : bookingData.status === 'PENDING'
+                          ? 'orange'
+                          : 'default'
+                    }
+                  >
+                    {bookingData.status}
+                  </Tag>
+                </Descriptions.Item>
+              )}
+              {bookingData.bookingId && (
+                <Descriptions.Item label="Booking ID">
+                  <Text copyable>{bookingData.bookingId}</Text>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </Card>
+        )}
+
+        <div className={styles.gridTwoColumn}>
+          <Card title="Milestone Details">
+            <Descriptions size="small" column={2} bordered>
+              <Descriptions.Item label="Milestone ID">
                 <Space>
                   <Text strong>{milestone.milestoneId}</Text>
                   <Button
@@ -659,7 +741,7 @@ const MilestoneDetailPage = () => {
                   />
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Thứ tự">
+              <Descriptions.Item label="Order">
                 {milestoneOrder !== null ? `#${milestoneOrder}` : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Type">
@@ -672,7 +754,7 @@ const MilestoneDetailPage = () => {
                   '—'
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Tên milestone" span={2}>
+              <Descriptions.Item label="Milestone Name" span={2}>
                 <Space direction="vertical" size={0}>
                   <Text strong>{milestoneTitle}</Text>
                   {milestone.description && (
@@ -682,7 +764,7 @@ const MilestoneDetailPage = () => {
                   )}
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái công việc">
+              <Descriptions.Item label="Work Status">
                 {workStatus ? (
                   <Tag color={WORK_STATUS_COLORS[workStatus] || 'default'}>
                     {WORK_STATUS_LABELS[workStatus] || milestone.workStatus}
@@ -693,7 +775,7 @@ const MilestoneDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="SLA Days">
                 {milestone.milestoneSlaDays
-                  ? `${milestone.milestoneSlaDays} ngày`
+                  ? `${milestone.milestoneSlaDays} days`
                   : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Deadline" span={2}>
@@ -716,7 +798,7 @@ const MilestoneDetailPage = () => {
                             Deadline: {formatDateTime(actualDeadline)}
                             {milestone.milestoneSlaDays && (
                               <Text type="secondary" style={{ marginLeft: 4 }}>
-                                (+{milestone.milestoneSlaDays} ngày SLA)
+                                (+{milestone.milestoneSlaDays} days SLA)
                               </Text>
                             )}
                           </Text>
@@ -746,13 +828,13 @@ const MilestoneDetailPage = () => {
 
                               return (
                                 <>
-                                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                                  {isOverdue && <Tag color="red">Overdue</Tag>}
                                   {isFirstSubmissionLate && (
-                                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                                    <Tag color="red">Late submission (first submission)</Tag>
                                   )}
                                   {isFirstSubmissionOnTime && (
                                     <Tag color="green">
-                                      Nộp đúng hạn (bản đầu)
+                                      On time submission (first submission)
                                     </Tag>
                                   )}
                                 </>

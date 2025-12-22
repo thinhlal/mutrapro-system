@@ -1995,7 +1995,7 @@ public class StudioBookingService {
                 }
             } catch (Exception e) {
                 log.warn("Failed to enrich studio booking with arrangement submission: bookingId={}, milestoneId={}, error={}",
-                    bookingId, booking.getMilestoneId(), e.getMessage());
+                    bookingId, booking.getMilestoneId(), e.getMessage(), e);
                 // Không throw error, chỉ log warning
             }
         }
