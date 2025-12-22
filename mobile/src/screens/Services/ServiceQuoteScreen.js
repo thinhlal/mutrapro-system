@@ -15,6 +15,7 @@ import { calculatePrice, formatPrice, getPricingDetail } from "../../services/pr
 import { createServiceRequest } from "../../services/serviceRequestService";
 import { createBookingFromServiceRequest } from "../../services/studioBookingService";
 import { getNotationInstrumentsByIds } from "../../services/instrumentService";
+import { getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
 
 const SERVICE_TYPE_LABELS = {
   transcription: "Transcription (Sound → Sheet)",
@@ -33,7 +34,23 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!formData || !formData.durationMinutes) {
+    // Validate formData based on service type
+    if (!formData) {
+      Alert.alert("Error", "Missing required data. Please go back and complete the form.");
+      navigation.goBack();
+      return;
+    }
+
+    // For transcription, durationMinutes is required
+    // For arrangement services, durationMinutes is not required
+    if (serviceType === "transcription" && !formData.durationMinutes) {
+      Alert.alert("Error", "Missing required data. Please go back and complete the form.");
+      navigation.goBack();
+      return;
+    }
+
+    // Check basic required fields for all services
+    if (!formData.title || !formData.description || !formData.contactName || !formData.contactEmail || !formData.contactPhone) {
       Alert.alert("Error", "Missing required data. Please go back and complete the form.");
       navigation.goBack();
       return;
@@ -226,55 +243,144 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
           <Text style={styles.cardTitle}>Service Details</Text>
         </View>
 
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Service Type</Text>
-          <View style={styles.serviceBadge}>
-            <Text style={styles.serviceBadgeText}>
-              {SERVICE_TYPE_LABELS[serviceType] || serviceType}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Title</Text>
-          <Text style={styles.detailValue}>{formData.title}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Description</Text>
-          <Text style={styles.detailValue}>{formData.description}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Duration</Text>
-          <Text style={[styles.detailValue, styles.durationText]}>
-            {formatDuration(formData.durationMinutes)} ({formData.durationMinutes.toFixed(2)} min)
-          </Text>
-        </View>
-
-        {uploadedFile && (
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>File</Text>
-            <Text style={styles.detailValue} numberOfLines={1}>
-              {uploadedFile.name}
-            </Text>
-          </View>
-        )}
-
-        {instruments.length > 0 && (
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Instruments</Text>
-            <View style={styles.instrumentsContainer}>
-              {instruments.map((inst) => (
-                <View key={inst.instrumentId} style={styles.instrumentBadge}>
-                  <Text style={styles.instrumentBadgeText}>
-                    {inst.instrumentName}
-                  </Text>
-                </View>
-              ))}
+        <View style={styles.tableContainer}>
+          {/* Service Type */}
+          <View style={styles.tableRowVertical}>
+            <Text style={styles.tableLabelVertical}>Service Type</Text>
+            <View style={styles.serviceBadge}>
+              <Text style={styles.serviceBadgeText}>
+                {SERVICE_TYPE_LABELS[serviceType] || serviceType}
+              </Text>
             </View>
           </View>
-        )}
+
+          {/* Title */}
+          <View style={styles.tableRowVertical}>
+            <Text style={styles.tableLabelVertical}>Title</Text>
+            <Text style={styles.tableValueVertical}>{formData.title}</Text>
+          </View>
+
+          {/* Description */}
+          <View style={styles.tableRowVertical}>
+            <Text style={styles.tableLabelVertical}>Description</Text>
+            <Text style={styles.tableValueVertical}>{formData.description}</Text>
+          </View>
+
+          {/* Duration - Only for transcription */}
+          {serviceType === "transcription" && formData.durationMinutes && (
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Duration</Text>
+              <Text style={[styles.tableValueVertical, styles.durationText]}>
+                {formatDuration(formData.durationMinutes)} ({formData.durationMinutes.toFixed(2)} min)
+              </Text>
+            </View>
+          )}
+
+          {/* File */}
+          {uploadedFile && (
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>File</Text>
+              <Text style={styles.tableValueVertical} numberOfLines={1}>
+                {uploadedFile.name}
+              </Text>
+            </View>
+          )}
+
+          {/* Genres - Only for arrangement/arrangement_with_recording */}
+          {(serviceType === "arrangement" || serviceType === "arrangement_with_recording") &&
+            formData.genres &&
+            Array.isArray(formData.genres) &&
+            formData.genres.length > 0 && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Music Genres</Text>
+                <View style={styles.genresContainer}>
+                  {formData.genres.map((genre, idx) => (
+                    <View key={idx} style={styles.genreTag}>
+                      <Text style={styles.genreTagText}>
+                        {getGenreLabel(genre) || genre}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+          {/* Purpose - Only for arrangement/arrangement_with_recording */}
+          {(serviceType === "arrangement" || serviceType === "arrangement_with_recording") &&
+            formData.purpose && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Purpose</Text>
+                <View style={styles.purposeBadge}>
+                  <Text style={styles.purposeBadgeText}>
+                    {getPurposeLabel(formData.purpose) || formData.purpose}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+          {/* Instruments */}
+          {instruments.length > 0 && (
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Instruments</Text>
+              <View style={styles.instrumentsContainer}>
+                {instruments.map((inst) => {
+                  const isMain = inst.instrumentId === formData.mainInstrumentId;
+                  const isArrangement = 
+                    serviceType === "arrangement" || 
+                    serviceType === "arrangement_with_recording";
+                  return (
+                    <View
+                      key={inst.instrumentId}
+                      style={[
+                        styles.instrumentBadge,
+                        isMain && isArrangement && styles.mainInstrumentBadge,
+                      ]}
+                    >
+                      {isMain && isArrangement ? (
+                        <Ionicons
+                          name="star"
+                          size={14}
+                          color={COLORS.warning}
+                          style={styles.instrumentIcon}
+                        />
+                      ) : (
+                        <View style={styles.instrumentIconPlaceholder} />
+                      )}
+                      <Text
+                        style={[
+                          styles.instrumentBadgeText,
+                          isMain && isArrangement && styles.mainInstrumentBadgeText,
+                        ]}
+                      >
+                        {inst.instrumentName}
+                        {isMain && isArrangement && " (Main)"}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Preferred Vocalists - Only for arrangement_with_recording */}
+          {serviceType === "arrangement_with_recording" &&
+            formData.preferredSpecialists &&
+            Array.isArray(formData.preferredSpecialists) &&
+            formData.preferredSpecialists.length > 0 && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Preferred Vocalists</Text>
+                <View style={styles.vocalistsContainer}>
+                  {formData.preferredSpecialists.map((specialist, idx) => (
+                    <View key={idx} style={styles.vocalistTag}>
+                      <Text style={styles.vocalistTagText}>
+                        {specialist.name || `Vocalist ${specialist.specialistId}`}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+        </View>
       </View>
 
       {/* Contact Information Card */}
@@ -390,19 +496,26 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
 
           {/* Breakdown */}
           <Text style={styles.sectionLabel}>Breakdown:</Text>
-          <View style={styles.breakdownRow}>
-            <Text style={styles.breakdownLabel}>Base Rate</Text>
-            <Text style={styles.breakdownValue}>
-              {formatPrice(finalPriceData.basePrice, finalPriceData.currency)} / minute
-            </Text>
-          </View>
+          {/* Base Rate and Duration - Only for transcription */}
+          {serviceType === "transcription" && (
+            <>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Base Rate</Text>
+                <Text style={styles.breakdownValue}>
+                  {formatPrice(finalPriceData.basePrice, finalPriceData.currency)} / minute
+                </Text>
+              </View>
 
-          <View style={styles.breakdownRow}>
-            <Text style={styles.breakdownLabel}>Duration</Text>
-            <Text style={styles.breakdownValue}>
-              {formatDuration(formData.durationMinutes)} ({formData.durationMinutes.toFixed(2)} min)
-            </Text>
-          </View>
+              {formData.durationMinutes && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Duration</Text>
+                  <Text style={styles.breakdownValue}>
+                    {formatDuration(formData.durationMinutes)} ({formData.durationMinutes.toFixed(2)} min)
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
 
           <View style={styles.breakdownRow}>
             <Text style={styles.breakdownLabel}>Service Subtotal</Text>
@@ -563,6 +676,31 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginLeft: SPACING.sm,
   },
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
+  },
+  tableRowVertical: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableLabelVertical: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  tableValueVertical: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
   detailRow: {
     marginBottom: SPACING.md,
   },
@@ -596,17 +734,83 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
   },
   instrumentBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.warning + "20",
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.sm,
   },
+  mainInstrumentBadge: {
+    backgroundColor: COLORS.warning + "20",
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+  },
+  instrumentIcon: {
+    marginRight: SPACING.xs / 2,
+  },
+  instrumentIconPlaceholder: {
+    width: 14,
+    marginRight: SPACING.xs / 2,
+  },
   instrumentBadgeText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.warning,
     fontWeight: "500",
+  },
+  mainInstrumentBadgeText: {
+    color: COLORS.warning,
+    fontWeight: "600",
+  },
+  genresContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
+  },
+  genreTag: {
+    backgroundColor: COLORS.primary + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  genreTagText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  purposeBadge: {
+    backgroundColor: COLORS.info + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+    alignSelf: "flex-start",
+    marginTop: SPACING.xs / 2,
+  },
+  purposeBadgeText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.info,
+  },
+  vocalistsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
+  },
+  vocalistTag: {
+    backgroundColor: COLORS.warning + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  vocalistTagText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.warning,
   },
   pricingCard: {
     backgroundColor: COLORS.success + "05",

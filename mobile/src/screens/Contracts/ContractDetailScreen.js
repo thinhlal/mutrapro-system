@@ -816,12 +816,74 @@ const ContractDetailScreen = ({ navigation, route }) => {
             {contract.milestones
               .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
               .map((milestone, index) => {
-                const installment = contract?.installments?.find(
-                  (inst) => inst.milestoneId === milestone.milestoneId
-                );
-                const isPaid = installment?.status === "PAID";
-                const isDue = installment?.status === "DUE";
+                // Find installment for this milestone (only if milestone has payment)
+                const targetInstallment = milestone.hasPayment
+                  ? contract?.installments?.find(
+                      (inst) => inst.milestoneId === milestone.milestoneId
+                    )
+                  : null;
+
                 const workStatus = milestone.workStatus || "PLANNED";
+                const installmentStatus = targetInstallment?.status || "PENDING";
+                const isPaid = installmentStatus === "PAID";
+                const isDue = installmentStatus === "DUE";
+
+                // Get payment amount (use paidAmount if available, otherwise amount)
+                const paymentAmount =
+                  targetInstallment?.paidAmount ?? targetInstallment?.amount;
+                const paymentPercent = targetInstallment?.percent;
+                const paidAt = targetInstallment?.paidAt;
+                const dueDate = targetInstallment?.dueDate;
+
+                // Get milestone type and SLA days
+                const milestoneType = milestone.milestoneType;
+                const slaDays = milestone.milestoneSlaDays || milestone.slaDays;
+
+                // Get work status display text
+                const getWorkStatusText = () => {
+                  switch (workStatus) {
+                    case "PLANNED":
+                      return "Planned";
+                    case "WAITING_ASSIGNMENT":
+                      return "Waiting Assignment";
+                    case "WAITING_SPECIALIST_ACCEPT":
+                      return "Waiting Specialist Accept";
+                    case "TASK_ACCEPTED_WAITING_ACTIVATION":
+                      return "Task Accepted, Waiting Activation";
+                    case "READY_TO_START":
+                      return "Ready to Start";
+                    case "IN_PROGRESS":
+                      return "In Progress";
+                    case "WAITING_CUSTOMER":
+                      return "Waiting Customer";
+                    case "READY_FOR_PAYMENT":
+                      return "Ready for Payment";
+                    case "COMPLETED":
+                      return "Completed";
+                    case "CANCELLED":
+                      return "Cancelled";
+                    default:
+                      return workStatus;
+                  }
+                };
+
+                // Get work status color
+                const getWorkStatusColor = () => {
+                  switch (workStatus) {
+                    case "COMPLETED":
+                      return COLORS.success;
+                    case "IN_PROGRESS":
+                    case "READY_TO_START":
+                    case "READY_FOR_PAYMENT":
+                      return COLORS.primary;
+                    case "WAITING_CUSTOMER":
+                      return COLORS.warning;
+                    case "CANCELLED":
+                      return COLORS.error;
+                    default:
+                      return COLORS.textSecondary;
+                  }
+                };
 
                 return (
                   <View
@@ -837,25 +899,84 @@ const ContractDetailScreen = ({ navigation, route }) => {
                       },
                     ]}
                   >
+                    {/* Milestone Type and SLA Tags */}
+                    {(milestoneType || slaDays) && (
+                      <View style={styles.milestoneTags}>
+                        {milestoneType && (
+                          <View style={[styles.tag, { backgroundColor: COLORS.primary + "15" }]}>
+                            <Text style={[styles.tagText, { color: COLORS.primary }]}>
+                              {milestoneType === "transcription"
+                                ? "Transcription"
+                                : milestoneType === "arrangement"
+                                ? "Arrangement"
+                                : milestoneType === "recording"
+                                ? "Recording"
+                                : milestoneType}
+                            </Text>
+                          </View>
+                        )}
+                        {slaDays && (
+                          <View style={[styles.tag, { backgroundColor: COLORS.primary + "15" }]}>
+                            <Text style={[styles.tagText, { color: COLORS.primary }]}>
+                              SLA: {slaDays} days
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Milestone Header */}
                     <View style={styles.milestoneHeader}>
-                      <Text style={styles.milestoneTitle}>
-                        {milestone.name || `Milestone ${milestone.orderIndex || index + 1}`}
-                      </Text>
+                      {/* Milestone Name - First Row */}
+                      <View style={styles.milestoneNameRow}>
+                        <Text style={styles.milestoneLabel}>Name:</Text>
+                        <Text style={styles.milestoneTitle}>
+                          {milestone.name ||
+                            `Milestone ${milestone.orderIndex || index + 1}`}
+                        </Text>
+                      </View>
+                      {/* Price and Percent - Second Row */}
+                      {targetInstallment && (
+                        <View style={styles.milestonePriceRow}>
+                          <Text style={styles.milestoneLabel}>Price:</Text>
+                          <View style={styles.milestonePriceValueRow}>
+                            <Text style={styles.milestoneAmount}>
+                              {formatCurrency(
+                                paymentAmount,
+                                targetInstallment.currency || contract?.currency || "VND"
+                              )}
+                            </Text>
+                            {paymentPercent && (
+                              <Text style={styles.milestonePercent}>
+                                ({paymentPercent}%)
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      )}
+                      {!targetInstallment && milestone.hasPayment === false && (
+                        <View style={styles.milestonePriceRow}>
+                          <Text style={styles.milestoneLabel}>Price:</Text>
+                          <Text style={[styles.noPaymentText, { marginTop: SPACING.xs / 2 }]}>No payment required</Text>
+                        </View>
+                      )}
                     </View>
-                    {installment && (
-                      <View style={styles.milestonePriceRow}>
-                        <Text style={styles.milestonePriceLabel}>Price:</Text>
-                        <Text style={styles.milestoneAmount}>
-                          {formatCurrency(installment.amount, installment.currency)}
+
+                    {/* Description */}
+                    {milestone.description && (
+                      <View style={styles.milestoneDescriptionRow}>
+                        <Text style={styles.milestoneLabel}>Description:</Text>
+                        <Text style={styles.milestoneDescription}>
+                          {milestone.description}
                         </Text>
                       </View>
                     )}
-                    {milestone.description && (
-                      <Text style={styles.milestoneDescription}>{milestone.description}</Text>
-                    )}
-                    <View style={styles.milestoneFooter}>
+
+                    {/* Status and Dates Row */}
+                    <View style={styles.milestoneStatusRow}>
                       <View style={styles.milestoneTags}>
-                        {installment && (
+                        {/* Payment Status Tag */}
+                        {targetInstallment && (
                           <View
                             style={[
                               styles.tag,
@@ -884,16 +1005,12 @@ const ContractDetailScreen = ({ navigation, route }) => {
                             </Text>
                           </View>
                         )}
+                        {/* Work Status Tag */}
                         <View
                           style={[
                             styles.tag,
                             {
-                              backgroundColor:
-                                workStatus === "COMPLETED"
-                                  ? COLORS.success + "15"
-                                  : workStatus === "IN_PROGRESS"
-                                  ? COLORS.primary + "15"
-                                  : COLORS.border + "50",
+                              backgroundColor: getWorkStatusColor() + "15",
                             },
                           ]}
                         >
@@ -901,41 +1018,113 @@ const ContractDetailScreen = ({ navigation, route }) => {
                             style={[
                               styles.tagText,
                               {
-                                color:
-                                  workStatus === "COMPLETED"
-                                    ? COLORS.success
-                                    : workStatus === "IN_PROGRESS"
-                                    ? COLORS.primary
-                                    : COLORS.textSecondary,
+                                color: getWorkStatusColor(),
                               },
                             ]}
                           >
-                            {workStatus}
+                            Status: {getWorkStatusText()}
                           </Text>
                         </View>
                       </View>
-                      <View style={styles.milestoneActions}>
-                        {/* Pay Button */}
-                        {isDue &&
-                          !isPaid &&
-                          (workStatus === "READY_FOR_PAYMENT" ||
-                            workStatus === "COMPLETED") && (
-                            <TouchableOpacity
-                              style={styles.payButton}
-                              onPress={() =>
-                                navigation.navigate("PaymentMilestone", {
-                                  contractId,
-                                  milestoneId: milestone.milestoneId,
-                                  installmentId: installment?.installmentId,
-                                })
-                              }
-                            >
-                              <Text style={styles.payButtonText}>Pay</Text>
-                            </TouchableOpacity>
-                          )}
-                      </View>
+
+                      {/* Payment Date Info */}
+                      {paidAt && (
+                        <Text style={styles.milestoneDateText}>
+                          Paid: {formatDate(paidAt)}
+                        </Text>
+                      )}
+                      {dueDate && !isPaid && (
+                        <Text style={styles.milestoneDateText}>
+                          Due: {dayjs(dueDate).format("DD/MM/YYYY")}
+                        </Text>
+                      )}
                     </View>
-                    {/* View Deliveries Button - chỉ hiển thị khi milestone có work status WAITING_CUSTOMER, READY_FOR_PAYMENT, hoặc COMPLETED */}
+
+                    {/* Actions Row */}
+                    <View style={styles.milestoneActions}>
+                      {/* Pay Button - Only show when due, not paid, and work status allows payment */}
+                      {isDue &&
+                        !isPaid &&
+                        canPayDeposit &&
+                        targetInstallment &&
+                        (workStatus === "READY_FOR_PAYMENT" ||
+                          workStatus === "COMPLETED") && (
+                          <TouchableOpacity
+                            style={styles.payButton}
+                            onPress={() =>
+                              navigation.navigate("PaymentMilestone", {
+                                contractId,
+                                milestoneId: milestone.milestoneId,
+                                installmentId: targetInstallment?.installmentId,
+                              })
+                            }
+                          >
+                            <Ionicons name="card-outline" size={16} color={COLORS.white} />
+                            <Text style={styles.payButtonText}>Pay Now</Text>
+                          </TouchableOpacity>
+                        )}
+
+                      {/* Waiting messages */}
+                      {isDue && !isPaid && !canPayDeposit && (
+                        <Text style={styles.milestoneWaitingText}>
+                          Waiting for signature
+                        </Text>
+                      )}
+                      {isDue &&
+                        !isPaid &&
+                        canPayDeposit &&
+                        targetInstallment &&
+                        workStatus !== "READY_FOR_PAYMENT" &&
+                        workStatus !== "COMPLETED" && (
+                          <Text style={styles.milestoneWaitingText}>
+                            Waiting for work completion
+                          </Text>
+                        )}
+                      {isPaid && targetInstallment && (
+                        <View
+                          style={[
+                            styles.tag,
+                            {
+                              backgroundColor: COLORS.success + "15",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.tagText,
+                              {
+                                color: COLORS.success,
+                              },
+                            ]}
+                          >
+                            Paid
+                          </Text>
+                        </View>
+                      )}
+                      {!targetInstallment && milestone.hasPayment === false && (
+                        <View
+                          style={[
+                            styles.tag,
+                            {
+                              backgroundColor: COLORS.border + "50",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.tagText,
+                              {
+                                color: COLORS.textSecondary,
+                              },
+                            ]}
+                          >
+                            No payment required
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* View Deliveries Button */}
                     {(workStatus === "WAITING_CUSTOMER" ||
                       workStatus === "READY_FOR_PAYMENT" ||
                       workStatus === "COMPLETED") && (
@@ -953,7 +1142,9 @@ const ContractDetailScreen = ({ navigation, route }) => {
                           }
                         >
                           <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
-                          <Text style={styles.viewDeliveriesButtonText}>View Deliveries</Text>
+                          <Text style={styles.viewDeliveriesButtonText}>
+                            View Deliveries
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -1441,51 +1632,85 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   milestoneHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
     marginBottom: SPACING.xs,
+  },
+  milestoneNameRow: {
+    marginBottom: SPACING.xs,
+  },
+  milestoneLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs / 2,
   },
   milestoneTitle: {
     fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    flex: 1,
   },
   milestonePriceRow: {
+    marginTop: SPACING.xs,
+  },
+  milestonePriceValueRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.xs,
-  },
-  milestonePriceLabel: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-    marginRight: SPACING.xs,
+    gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
   },
   milestoneAmount: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.primary,
+  },
+  milestonePercent: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  noPaymentText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
+  },
+  milestoneDescriptionRow: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   milestoneDescription: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
+    marginTop: SPACING.xs / 2,
   },
-  milestoneFooter: {
+  milestoneStatusRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+    flexWrap: "wrap",
+  },
+  milestoneDateText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
   milestoneActions: {
     flexDirection: "row",
     gap: SPACING.sm,
     alignItems: "center",
+    marginTop: SPACING.xs,
+    flexWrap: "wrap",
+  },
+  milestoneWaitingText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
   },
   milestoneTags: {
     flexDirection: "row",
     gap: SPACING.xs,
+    flexWrap: "wrap",
+    marginBottom: SPACING.xs,
   },
   viewDeliveriesButton: {
     flexDirection: "row",

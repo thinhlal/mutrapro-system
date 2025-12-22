@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -11,7 +12,10 @@ import {
   TextInput,
   RefreshControl,
   Linking,
+  Platform,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
@@ -24,6 +28,8 @@ import { getContractById } from "../../services/contractService";
 import FileItem from "../../components/FileItem";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_CONFIG } from "../../config/apiConfig";
+import { getItem } from "../../utils/storage";
+import { STORAGE_KEYS } from "../../config/constants";
 
 const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const { contractId, milestoneId } = route.params || {};
@@ -49,6 +55,119 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
       loadDeliveries();
     }
   }, [contractId, milestoneId]);
+
+  // Reload deliveries when screen comes into focus with polling for updates
+  useFocusEffect(
+    useCallback(() => {
+      if (!contractId || !milestoneId) return;
+
+      let isCancelled = false;
+      let pollingTimeout = null;
+
+      // Load deliveries first
+      const loadAndPoll = async () => {
+        await loadDeliveries();
+        if (isCancelled) return;
+
+        // Start polling for updates after initial load
+        // This helps detect when payment is completed or new submissions are delivered
+        const pollForUpdates = async () => {
+          // Store initial state to detect changes
+          let initialSubmissionCount = 0;
+          let initialRevisionCount = 0;
+          let initialInstallmentStatus = null;
+          
+          try {
+            const initialResponse = await getDeliveredSubmissionsByMilestone(
+              milestoneId,
+              contractId
+            );
+            if (isCancelled) return;
+            
+            if (initialResponse?.status === "success" && initialResponse?.data) {
+              const initialData = initialResponse.data;
+              initialSubmissionCount = initialData.submissions?.length || 0;
+              initialRevisionCount = initialData.revisionRequests?.length || 0;
+              initialInstallmentStatus = initialData.milestone?.installmentStatus;
+            }
+          } catch (error) {
+            console.error("Error getting initial state:", error);
+            return; // Exit if initial load fails
+          }
+
+          // Poll for max 10 seconds (10 attempts with 1 second delay)
+          const maxRetries = 10;
+          const delay = 1000;
+
+          for (let attempt = 0; attempt < maxRetries && !isCancelled; attempt++) {
+            // Wait before checking (except first attempt)
+            if (attempt > 0) {
+              await new Promise(resolve => setTimeout(resolve, delay));
+              if (isCancelled) return;
+            }
+
+            try {
+              const response = await getDeliveredSubmissionsByMilestone(
+                milestoneId,
+                contractId
+              );
+              if (isCancelled) return;
+              
+              if (response?.status === "success" && response?.data) {
+                const data = response.data;
+                const currentSubmissionCount = data.submissions?.length || 0;
+                const currentRevisionCount = data.revisionRequests?.length || 0;
+                const currentInstallmentStatus = data.milestone?.installmentStatus;
+
+                // Check if there are changes
+                const hasNewSubmissions = currentSubmissionCount > initialSubmissionCount;
+                const hasNewRevisions = currentRevisionCount > initialRevisionCount;
+                const installmentStatusChanged = 
+                  currentInstallmentStatus !== initialInstallmentStatus &&
+                  currentInstallmentStatus === "PAID";
+
+                // If there are changes, reload the data
+                if (hasNewSubmissions || hasNewRevisions || installmentStatusChanged) {
+                  await loadDeliveries();
+                  if (installmentStatusChanged) {
+                    Alert.alert("Success", "Payment has been confirmed!");
+                  }
+                  return; // Stop polling once changes are detected
+                }
+
+                // Update data even if no changes detected (to show latest state)
+                setContractInfo(data.contract);
+                setMilestoneInfo(data.milestone);
+                setRevisionRequests(data.revisionRequests || []);
+                setSubmissions(data.submissions || []);
+              }
+            } catch (error) {
+              console.error("Error polling for updates:", error);
+              // Continue polling even on error
+            }
+          }
+        };
+
+        // Start polling after a short delay to allow initial load to complete
+        pollingTimeout = setTimeout(() => {
+          if (!isCancelled) {
+            pollForUpdates();
+          }
+        }, 1500);
+      };
+      
+      loadAndPoll();
+
+      // Cleanup function
+      return () => {
+        isCancelled = true;
+        if (pollingTimeout) {
+          clearTimeout(pollingTimeout);
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contractId, milestoneId])
+  );
 
   const loadRequestInfo = async (requestId) => {
     if (!requestId) return;
@@ -131,22 +250,50 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
   const handleDownloadFile = async (fileId, fileName) => {
     try {
-      const url = `${API_CONFIG.BASE_URL}/api/v1/projects/files/download/${fileId}`;
-      const response = await axiosInstance.get(url, {
-        responseType: "blob",
-      });
+      // Get download URL
+      const downloadUrl = `${API_CONFIG.BASE_URL}/api/v1/projects/files/download/${fileId}`;
+      
+      // Get auth token from storage
+      const token = await getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      
+      // Sanitize file name
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      
+      // Create file path in document directory
+      const fileUri = `${FileSystem.documentDirectory}${sanitizedFileName}`;
 
-      // For mobile, we'll open the file URL directly
-      const fileUrl = `${API_CONFIG.BASE_URL}/api/v1/projects/files/download/${fileId}`;
-      const supported = await Linking.canOpenURL(fileUrl);
-      if (supported) {
-        await Linking.openURL(fileUrl);
+      // Download file with authentication headers
+      const downloadResult = await FileSystem.downloadAsync(
+        downloadUrl,
+        fileUri,
+        {
+          headers: token ? {
+            'Authorization': `Bearer ${token}`
+          } : {}
+        }
+      );
+
+      if (downloadResult.status === 200) {
+        // Check if sharing is available
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          // Share the file (allows user to save to Downloads or open with other apps)
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/octet-stream',
+            dialogTitle: 'Save File',
+            UTI: 'public.data',
+          });
+          Alert.alert("Success", "File downloaded successfully!");
+        } else {
+          // Fallback: show file location
+          Alert.alert("Success", `File saved to: ${downloadResult.uri}`);
+        }
       } else {
-        Alert.alert("Error", "Cannot open this file type");
+        throw new Error(`Download failed with status: ${downloadResult.status}`);
       }
     } catch (error) {
       console.error("Error downloading file:", error);
-      Alert.alert("Error", "Failed to download file");
+      Alert.alert("Error", error?.message || "Failed to download file. Please try again.");
     }
   };
 
@@ -353,10 +500,10 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
   const getStatusLabel = (status) => {
     const statusLower = status?.toLowerCase() || "";
-    if (statusLower === "delivered") return "Đã gửi";
-    if (statusLower === "customer_accepted") return "Đã chấp nhận";
-    if (statusLower === "customer_rejected") return "Đã từ chối - Yêu cầu chỉnh sửa";
-    if (statusLower === "revision_requested") return "Yêu cầu chỉnh sửa";
+    if (statusLower === "delivered") return "Delivered";
+    if (statusLower === "customer_accepted") return "Accepted";
+    if (statusLower === "customer_rejected") return "Rejected - Revision Requested";
+    if (statusLower === "revision_requested") return "Revision Requested";
     return status || "Unknown";
   };
 
@@ -370,9 +517,9 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
   const getWorkStatusLabel = (status) => {
     const statusUpper = status?.toUpperCase() || "";
-    if (statusUpper === "WAITING_CUSTOMER") return "Chờ khách hàng phản hồi";
-    if (statusUpper === "COMPLETED") return "Hoàn thành";
-    if (statusUpper === "IN_PROGRESS") return "Đang thực hiện";
+    if (statusUpper === "WAITING_CUSTOMER") return "Waiting for Customer";
+    if (statusUpper === "COMPLETED") return "Completed";
+    if (statusUpper === "IN_PROGRESS") return "In Progress";
     return status || "Unknown";
   };
 
@@ -398,29 +545,21 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
         {contractInfo && milestoneInfo && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Contract & Milestone Info</Text>
-            <InfoRow
-              icon="document-text-outline"
-              label="Contract Number"
-              value={contractInfo.contractNumber || contractId}
-            />
-            <InfoRow
-              icon="briefcase-outline"
-              label="Contract Type"
-              value={contractInfo.contractType?.toUpperCase() || "N/A"}
-            />
-            <InfoRow
-              icon="flag-outline"
-              label="Milestone Name"
-              value={milestoneInfo.name || "N/A"}
-            />
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={COLORS.textSecondary}
+            <View style={styles.tableContainer}>
+              <InfoRow
+                label="Contract Number"
+                value={contractInfo.contractNumber || contractId}
               />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Milestone Status</Text>
+              <InfoRow
+                label="Contract Type"
+                value={contractInfo.contractType?.toUpperCase() || "N/A"}
+              />
+              <InfoRow
+                label="Milestone Name"
+                value={milestoneInfo.name || "N/A"}
+              />
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Milestone Status</Text>
                 <View style={styles.statusRow}>
                   <View style={styles.statusBadge}>
                     <View
@@ -438,7 +577,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                       {getWorkStatusLabel(milestoneInfo.workStatus)}
                     </Text>
                   </View>
-                  {/* Button "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
+                  {/* Pay button when milestone READY_FOR_PAYMENT/COMPLETED AND installment not PAID */}
                   {(milestoneInfo.workStatus === "READY_FOR_PAYMENT" ||
                     milestoneInfo.workStatus === "COMPLETED") &&
                     milestoneInfo.installmentStatus !== "PAID" && (
@@ -455,7 +594,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                         <Text style={styles.payMilestoneButtonText}>Pay</Text>
                       </TouchableOpacity>
                     )}
-                  {/* Tag "Đã thanh toán" nếu installment đã PAID */}
+                  {/* Paid tag if installment is PAID */}
                   {milestoneInfo.installmentStatus === "PAID" && (
                     <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
                       <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
@@ -465,50 +604,39 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                   )}
                 </View>
               </View>
-            </View>
-            {milestoneInfo.description && (
-              <View style={styles.descriptionBox}>
-                <Text style={styles.descriptionLabel}>Description</Text>
-                <Text style={styles.descriptionText}>
-                  {milestoneInfo.description}
-                </Text>
-              </View>
-            )}
-            {milestoneInfo.plannedDueDate && (
-              <InfoRow
-                icon="calendar-outline"
-                label="Planned Due Date"
-                value={dayjs(milestoneInfo.plannedDueDate).format("DD/MM/YYYY")}
-              />
-            )}
-            <InfoRow
-              icon="document-outline"
-              label="Total Submissions"
-              value={submissions.length.toString()}
-            />
-            <InfoRow
-              icon="folder-outline"
-              label="Total Files"
-              value={submissions
-                .reduce((total, sub) => total + (sub.files?.length || 0), 0)
-                .toString()}
-            />
-            {contractInfo.freeRevisionsIncluded != null && (
-              <>
+              {milestoneInfo.description && (
+                <View style={styles.tableRowVertical}>
+                  <Text style={styles.tableLabelVertical}>Description</Text>
+                  <Text style={styles.tableValueVertical}>
+                    {milestoneInfo.description}
+                  </Text>
+                </View>
+              )}
+              {milestoneInfo.plannedDueDate && (
                 <InfoRow
-                  icon="repeat-outline"
-                  label="Free Revisions Included"
-                  value={contractInfo.freeRevisionsIncluded.toString()}
+                  label="Planned Due Date"
+                  value={dayjs(milestoneInfo.plannedDueDate).format("DD/MM/YYYY")}
                 />
-                <View style={styles.infoRow}>
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={18}
-                    color={COLORS.textSecondary}
+              )}
+              <InfoRow
+                label="Total Submissions"
+                value={submissions.length.toString()}
+              />
+              <InfoRow
+                label="Total Files"
+                value={submissions
+                  .reduce((total, sub) => total + (sub.files?.length || 0), 0)
+                  .toString()}
+              />
+              {contractInfo.freeRevisionsIncluded != null && (
+                <>
+                  <InfoRow
+                    label="Free Revisions Included"
+                    value={contractInfo.freeRevisionsIncluded.toString()}
                   />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Revisions Used</Text>
-                    <Text style={styles.infoValue}>
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Revisions Used</Text>
+                    <Text style={styles.tableValueVertical}>
                       {revisionRequests.length} / {contractInfo.freeRevisionsIncluded} (Free)
                     </Text>
                     <Text style={styles.infoHint}>
@@ -525,9 +653,9 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                       ).length}
                     </Text>
                   </View>
-                </View>
-              </>
-            )}
+                </>
+              )}
+            </View>
           </View>
         )}
 
@@ -542,61 +670,51 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
             </View>
             {requestInfo ? (
               <>
-                <InfoRow
-                  icon="document-text-outline"
-                  label="Request ID"
-                  value={requestInfo.requestId || "N/A"}
-                />
-                <InfoRow
-                  icon="briefcase-outline"
-                  label="Service Type"
-                  value={
-                    (requestInfo.requestType || requestInfo.serviceType)
-                      ?.toUpperCase() || "N/A"
-                  }
-                />
-                <InfoRow
-                  icon="text-outline"
-                  label="Title"
-                  value={requestInfo.title || "N/A"}
-                />
-                {requestInfo.description && (
-                  <View style={styles.descriptionBox}>
-                    <Text style={styles.descriptionLabel}>Description</Text>
-                    <Text style={styles.descriptionText}>
-                      {requestInfo.description}
-                    </Text>
-                  </View>
-                )}
-                {(requestInfo.durationMinutes || requestInfo.durationSeconds) && (
+                <View style={styles.tableContainer}>
                   <InfoRow
-                    icon="time-outline"
-                    label="Duration"
+                    label="Request ID"
+                    value={requestInfo.requestId || "N/A"}
+                  />
+                  <InfoRow
+                    label="Service Type"
                     value={
-                      requestInfo.durationMinutes
-                        ? `${Math.floor(requestInfo.durationMinutes)} phút ${Math.round((requestInfo.durationMinutes % 1) * 60)} giây`
-                        : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} phút ${(requestInfo.durationSeconds || 0) % 60} giây`
+                      (requestInfo.requestType || requestInfo.serviceType)
+                        ?.toUpperCase() || "N/A"
                     }
                   />
-                )}
-                {(requestInfo.tempoPercentage || requestInfo.tempo) && (
                   <InfoRow
-                    icon="musical-notes-outline"
-                    label="Tempo"
-                    value={`${requestInfo.tempoPercentage || requestInfo.tempo}%`}
+                    label="Title"
+                    value={requestInfo.title || "N/A"}
                   />
-                )}
-                {requestInfo.instruments &&
-                  Array.isArray(requestInfo.instruments) &&
-                  requestInfo.instruments.length > 0 && (
-                    <View style={styles.infoRow}>
-                      <Ionicons
-                        name="musical-note-outline"
-                        size={18}
-                        color={COLORS.textSecondary}
-                      />
-                      <View style={styles.infoContent}>
-                        <Text style={styles.infoLabel}>Instruments</Text>
+                  {requestInfo.description && (
+                    <View style={styles.tableRowVertical}>
+                      <Text style={styles.tableLabelVertical}>Description</Text>
+                      <Text style={styles.tableValueVertical}>
+                        {requestInfo.description}
+                      </Text>
+                    </View>
+                  )}
+                  {(requestInfo.durationMinutes || requestInfo.durationSeconds) && (
+                    <InfoRow
+                      label="Duration"
+                      value={
+                        requestInfo.durationMinutes
+                          ? `${Math.floor(requestInfo.durationMinutes)} min ${Math.round((requestInfo.durationMinutes % 1) * 60)} sec`
+                          : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} min ${(requestInfo.durationSeconds || 0) % 60} sec`
+                      }
+                    />
+                  )}
+                  {(requestInfo.tempoPercentage || requestInfo.tempo) && (
+                    <InfoRow
+                      label="Tempo"
+                      value={`${requestInfo.tempoPercentage || requestInfo.tempo}%`}
+                    />
+                  )}
+                  {requestInfo.instruments &&
+                    Array.isArray(requestInfo.instruments) &&
+                    requestInfo.instruments.length > 0 && (
+                      <View style={styles.tableRowVertical}>
+                        <Text style={styles.tableLabelVertical}>Instruments</Text>
                         <View style={styles.tagsContainer}>
                           {requestInfo.instruments.map((instrument, index) => (
                             <View key={index} style={styles.tag}>
@@ -609,8 +727,8 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                           ))}
                         </View>
                       </View>
-                    </View>
-                  )}
+                    )}
+                </View>
                 {/* Customer Uploaded Files - Filter out contract PDF */}
                 {requestInfo.files &&
                   Array.isArray(requestInfo.files) &&
@@ -632,7 +750,8 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                             <View key={index} style={styles.fileRow}>
                               <FileItem file={file} />
                               <View style={styles.fileActions}>
-                                <TouchableOpacity
+                                {/* Preview button - commented out */}
+                                {/* <TouchableOpacity
                                   style={styles.fileActionButton}
                                   onPress={() => handlePreviewFile(file)}
                                 >
@@ -642,7 +761,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                     color={COLORS.primary}
                                   />
                                   <Text style={styles.fileActionText}>Preview</Text>
-                                </TouchableOpacity>
+                                </TouchableOpacity> */}
                                 <TouchableOpacity
                                   style={styles.fileActionButton}
                                   onPress={() =>
@@ -698,31 +817,32 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
               return (
                 <View key={submission.submissionId} style={styles.submissionCard}>
                   <View style={styles.submissionHeader}>
-                    <View style={styles.submissionTitleRow}>
-                      <Text style={styles.submissionTitle}>
-                        {submission.submissionName || "Submission"}
-                      </Text>
+                    {/* Title Row */}
+                    <Text style={styles.submissionTitle}>
+                      {submission.submissionName || "Submission"}
+                    </Text>
+                    {/* Status Row */}
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(submission.status) + "20" },
+                        styles.statusBadgeFullWidth,
+                      ]}
+                    >
                       <View
                         style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(submission.status) + "20" },
+                          styles.statusDot,
+                          { backgroundColor: getStatusColor(submission.status) },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(submission.status) },
                         ]}
                       >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            { backgroundColor: getStatusColor(submission.status) },
-                          ]}
-                        />
-                        <Text
-                          style={[
-                            styles.statusText,
-                            { color: getStatusColor(submission.status) },
-                          ]}
-                        >
-                          {getStatusLabel(submission.status)}
-                        </Text>
-                      </View>
+                        {getStatusLabel(submission.status)}
+                      </Text>
                     </View>
                     {submission.deliveredAt && (
                       <Text style={styles.deliveredAt}>
@@ -739,7 +859,8 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                         <View key={index} style={styles.fileRow}>
                           <FileItem file={file} />
                           <View style={styles.fileActions}>
-                            <TouchableOpacity
+                            {/* Preview button - commented out */}
+                            {/* <TouchableOpacity
                               style={styles.fileActionButton}
                               onPress={() => handlePreviewFile(file)}
                             >
@@ -749,7 +870,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                 color={COLORS.primary}
                               />
                               <Text style={styles.fileActionText}>Preview</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
                             <TouchableOpacity
                               style={styles.fileActionButton}
                               onPress={() =>
@@ -787,15 +908,11 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                           styles.actionButton,
                           styles.revisionButton,
                           !hasFreeLeft && styles.revisionButtonPaid,
+                          styles.revisionButtonColumn,
                         ]}
                         onPress={() => handleRequestRevision(submission)}
                         disabled={actionLoading}
                       >
-                        <Ionicons
-                          name="refresh-circle"
-                          size={18}
-                          color={hasFreeLeft ? COLORS.white : COLORS.warning}
-                        />
                         <Text
                           style={[
                             styles.actionButtonText,
@@ -805,9 +922,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                           Request Revision
                         </Text>
                         {!hasFreeLeft && (
-                          <View style={styles.paidBadge}>
-                            <Text style={styles.paidBadgeText}>(Paid)</Text>
-                          </View>
+                          <Text style={styles.paidBadgeTextInline}>(Paid)</Text>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -909,7 +1024,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                             <View style={styles.infoBadge}>
                               <Ionicons name="time-outline" size={16} color={COLORS.warning} />
                               <Text style={styles.infoBadgeText}>
-                                Đã yêu cầu chỉnh sửa - Đang chờ xử lý
+                                Revision requested - Pending processing
                               </Text>
                             </View>
                           );
@@ -1129,74 +1244,85 @@ const CollapsibleRevision = ({
         onPress={() => setExpanded(!expanded)}
       >
         <View style={styles.collapsibleHeaderLeft}>
-          <View style={styles.revisionTag}>
-            <Text style={styles.revisionTagText}>
-              Round #{revision.revisionRound}
-            </Text>
-          </View>
-          {submission && (
-            <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
-              <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
-                Revised Version
+          {/* Tags Row */}
+          <View style={styles.revisionTagsRow}>
+            <View style={styles.revisionTag}>
+              <Text style={styles.revisionTagText}>
+                Round #{revision.revisionRound}
               </Text>
             </View>
-          )}
-          {isOrphan && (
-            <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
-              <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
-                Not Linked
-              </Text>
-            </View>
-          )}
-          {revision.isFreeRevision && (
-            <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
-              <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
-                Free
-              </Text>
-            </View>
-          )}
-          {!revision.isFreeRevision && (
-            <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
-              <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
-                Paid
-              </Text>
-            </View>
-          )}
-          {showStatus && statusColor && statusLabel && (
-            <View style={[styles.revisionTag, { backgroundColor: statusColor + "20" }]}>
-              <Text style={[styles.revisionTagText, { color: statusColor }]}>
-                {statusLabel}
-              </Text>
-            </View>
-          )}
-          {revision.revisionDueAt && (
-            <View
-              style={[
-                styles.revisionTag,
-                {
-                  backgroundColor: isOverdue
-                    ? COLORS.error + "20"
-                    : COLORS.info + "20",
-                },
-              ]}
-            >
-              <Text
+            {submission && (
+              <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
+                  Revised Version
+                </Text>
+              </View>
+            )}
+            {isOrphan && (
+              <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
+                  Not Linked
+                </Text>
+              </View>
+            )}
+            {revision.isFreeRevision && (
+              <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
+                  Free
+                </Text>
+              </View>
+            )}
+            {!revision.isFreeRevision && (
+              <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
+                  Paid
+                </Text>
+              </View>
+            )}
+            {revision.revisionDueAt && (
+              <View
                 style={[
-                  styles.revisionTagText,
-                  { color: isOverdue ? COLORS.error : COLORS.info },
+                  styles.revisionTag,
+                  {
+                    backgroundColor: isOverdue
+                      ? COLORS.error + "20"
+                      : COLORS.info + "20",
+                  },
                 ]}
               >
-                {isOverdue
-                  ? "Overdue"
-                  : daysRemaining !== null
-                    ? `${daysRemaining}d left`
-                    : dayjs(revision.revisionDueAt).format("DD/MM/YYYY")}
-              </Text>
+                <Text
+                  style={[
+                    styles.revisionTagText,
+                    { color: isOverdue ? COLORS.error : COLORS.info },
+                  ]}
+                >
+                  {isOverdue
+                    ? "Overdue"
+                    : daysRemaining !== null
+                      ? `${daysRemaining}d left`
+                      : dayjs(revision.revisionDueAt).format("DD/MM/YYYY")}
+                </Text>
+              </View>
+            )}
+          </View>
+          {/* Status Row */}
+          {showStatus && statusColor && statusLabel && (
+            <View style={styles.revisionInfoRow}>
+              <Text style={styles.revisionLabel}>Status:</Text>
+              <View style={[styles.revisionTag, { backgroundColor: statusColor + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: statusColor }]}>
+                  {statusLabel}
+                </Text>
+              </View>
             </View>
           )}
-          <Text style={styles.revisionTitleSmall} numberOfLines={1}>
-            {revision.title}
-          </Text>
+          {/* Title Row */}
+          <View style={styles.revisionInfoRow}>
+            <Text style={styles.revisionLabel}>Title:</Text>
+            <Text style={styles.revisionTitleSmall}>
+              {revision.title}
+            </Text>
+          </View>
         </View>
         <Ionicons
           name={expanded ? "chevron-up" : "chevron-down"}
@@ -1206,55 +1332,44 @@ const CollapsibleRevision = ({
       </TouchableOpacity>
       {expanded && (
         <View style={styles.collapsibleContent}>
-          <InfoRow
-            icon="text-outline"
-            label="Description"
-            value={revision.description || "N/A"}
-          />
-          {showStatus && statusColor && statusLabel && (
+          <View style={styles.tableContainer}>
             <InfoRow
-              icon="information-circle-outline"
-              label="Status"
-              value={statusLabel}
+              label="Description"
+              value={revision.description || "N/A"}
             />
-          )}
-          {revision.revisionRound && (
-            <InfoRow
-              icon="repeat-outline"
-              label="Revision Round"
-              value={`#${revision.revisionRound}`}
-            />
-          )}
-          <InfoRow
-            icon={revision.isFreeRevision ? "checkmark-circle-outline" : "card-outline"}
-            label="Free Revision"
-            value={revision.isFreeRevision ? "Yes" : "No (Paid)"}
-          />
-          {revision.originalSubmissionId && (
-            <InfoRow
-              icon="document-outline"
-              label="Original Submission"
-              value={revision.originalSubmissionId.substring(0, 8) + "..."}
-            />
-          )}
-          {revision.revisedSubmissionId && (
-            <InfoRow
-              icon="document-text-outline"
-              label="Revised Submission"
-              value={revision.revisedSubmissionId.substring(0, 8) + "..."}
-            />
-          )}
-          {revision.revisionDueAt && (
-            <View style={styles.infoRow}>
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={COLORS.textSecondary}
+            {showStatus && statusColor && statusLabel && (
+              <InfoRow
+                label="Status"
+                value={statusLabel}
               />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Revision Deadline</Text>
+            )}
+            {revision.revisionRound && (
+              <InfoRow
+                label="Revision Round"
+                value={`#${revision.revisionRound}`}
+              />
+            )}
+            <InfoRow
+              label="Free Revision"
+              value={revision.isFreeRevision ? "Yes" : "No (Paid)"}
+            />
+            {revision.originalSubmissionId && (
+              <InfoRow
+                label="Original Submission"
+                value={revision.originalSubmissionId}
+              />
+            )}
+            {revision.revisedSubmissionId && (
+              <InfoRow
+                label="Revised Submission"
+                value={revision.revisedSubmissionId}
+              />
+            )}
+            {revision.revisionDueAt && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Revision Deadline</Text>
                 <View style={styles.deadlineRow}>
-                  <Text style={styles.infoValue}>
+                  <Text style={styles.tableValueVertical}>
                     {dayjs(revision.revisionDueAt).format("DD/MM/YYYY HH:mm")}
                   </Text>
                   {revision.revisionDeadlineDays && (
@@ -1277,22 +1392,20 @@ const CollapsibleRevision = ({
                   ) : null}
                 </View>
               </View>
-            </View>
-          )}
-          {revision.managerNote && (
-            <InfoRow
-              icon="information-circle-outline"
-              label="Manager Note"
-              value={revision.managerNote}
-            />
-          )}
-          {revision.requestedAt && (
-            <InfoRow
-              icon="time-outline"
-              label="Requested At"
-              value={dayjs(revision.requestedAt).format("DD/MM/YYYY HH:mm")}
-            />
-          )}
+            )}
+            {revision.managerNote && (
+              <InfoRow
+                label="Manager Note"
+                value={revision.managerNote}
+              />
+            )}
+            {revision.requestedAt && (
+              <InfoRow
+                label="Requested At"
+                value={dayjs(revision.requestedAt).format("DD/MM/YYYY HH:mm")}
+              />
+            )}
+          </View>
         </View>
       )}
     </View>
@@ -1300,13 +1413,10 @@ const CollapsibleRevision = ({
 };
 
 // Helper Component
-const InfoRow = ({ icon, label, value }) => (
-  <View style={styles.infoRow}>
-    <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
-    <View style={styles.infoContent}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
+const InfoRow = ({ label, value }) => (
+  <View style={styles.tableRowVertical}>
+    <Text style={styles.tableLabelVertical}>{label}</Text>
+    <Text style={styles.tableValueVertical}>{value}</Text>
   </View>
 );
 
@@ -1359,6 +1469,31 @@ const styles = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
   },
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
+  },
+  tableRowVertical: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableLabelVertical: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  tableValueVertical: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
   infoRow: {
     flexDirection: "row",
     marginBottom: SPACING.md,
@@ -1366,7 +1501,7 @@ const styles = StyleSheet.create({
   },
   infoContent: {
     flex: 1,
-    marginLeft: SPACING.sm,
+    marginLeft: 0,
     minWidth: 0, // Allow text to wrap
   },
   infoLabel: {
@@ -1407,8 +1542,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
     paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.sm,
-    flexShrink: 0,
-    maxWidth: "100%",
+    alignSelf: "flex-start",
+  },
+  statusBadgeFullWidth: {
+    alignSelf: "flex-start",
+    marginBottom: SPACING.xs,
   },
   statusDot: {
     width: 8,
@@ -1419,7 +1557,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: FONT_SIZES.xs - 1,
     fontWeight: "600",
-    flexShrink: 1,
   },
   emptyContainer: {
     alignItems: "center",
@@ -1443,19 +1580,11 @@ const styles = StyleSheet.create({
   submissionHeader: {
     marginBottom: SPACING.md,
   },
-  submissionTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING.xs,
-    gap: SPACING.xs,
-  },
   submissionTitle: {
     fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    flex: 1,
-    flexShrink: 1,
+    marginBottom: SPACING.xs,
   },
   deliveredAt: {
     fontSize: FONT_SIZES.xs,
@@ -1487,14 +1616,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   actionButtons: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: SPACING.sm,
     marginTop: SPACING.md,
-    flexWrap: "wrap",
   },
   actionButton: {
-    flex: 1,
-    minWidth: "45%",
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1513,6 +1640,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.warning,
+  },
+  revisionButtonColumn: {
+    flexDirection: "column",
+    gap: SPACING.xs / 2,
   },
   actionButtonText: {
     fontSize: FONT_SIZES.sm,
@@ -1534,6 +1665,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     fontWeight: "700",
     color: COLORS.white,
+  },
+  paidBadgeTextInline: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "700",
+    color: COLORS.warning,
   },
   infoBadge: {
     flexDirection: "row",
@@ -1733,7 +1869,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.sm,
-    flexShrink: 0,
+    alignSelf: "flex-start",
   },
   revisionTagText: {
     fontSize: FONT_SIZES.xs - 1,
@@ -1747,12 +1883,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   revisionTitleSmall: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.text,
     flex: 1,
-    marginLeft: SPACING.xs / 2,
-    flexShrink: 1,
   },
   collapsibleRevision: {
     backgroundColor: COLORS.background,
@@ -1769,12 +1903,25 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   collapsibleHeaderLeft: {
+    flexDirection: "column",
+    flex: 1,
+    paddingRight: SPACING.xs,
+  },
+  revisionTagsRow: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
     flexWrap: "wrap",
     gap: SPACING.xs / 2,
-    paddingRight: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  revisionInfoRow: {
+    marginBottom: SPACING.xs,
+  },
+  revisionLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs / 2,
   },
   collapsibleContent: {
     padding: SPACING.md,

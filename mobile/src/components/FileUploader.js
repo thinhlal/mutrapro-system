@@ -12,15 +12,39 @@ import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 
-const FileUploader = ({ onFileSelect, selectedFile, onClearFile }) => {
+const FileUploader = ({ onFileSelect, selectedFile, onClearFile, allowedFileTypes = null }) => {
   const [uploading, setUploading] = useState(false);
+
+  // Validate file extension for arrangement services
+  const isValidFileForArrangement = (fileName) => {
+    if (!allowedFileTypes || allowedFileTypes.length === 0) return true;
+    
+    if (!fileName || !fileName.includes('.')) return false;
+    
+    const fileNameLower = fileName.toLowerCase();
+    const validExtensions = allowedFileTypes.map(ext => ext.toLowerCase().replace('.', ''));
+    
+    // Check if file ends with any valid extension
+    return validExtensions.some(ext => fileNameLower.endsWith('.' + ext));
+  };
 
   const pickAudioFile = async () => {
     try {
       setUploading(true);
 
+      // Determine file types based on allowedFileTypes
+      let pickerTypes;
+      if (allowedFileTypes && allowedFileTypes.length > 0) {
+        // For arrangement services, allow all file types (we'll validate extension)
+        // This is because expo-document-picker doesn't support MusicXML/MIDI MIME types well
+        pickerTypes = "*/*";
+      } else {
+        // Default: audio and video files
+        pickerTypes = ["audio/*", "video/*"];
+      }
+
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["audio/*", "video/*"],
+        type: pickerTypes,
         copyToCacheDirectory: true,
       });
 
@@ -31,34 +55,48 @@ const FileUploader = ({ onFileSelect, selectedFile, onClearFile }) => {
 
       const file = result.assets[0];
 
-      // Get audio duration
-      let duration = 0;
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: file.uri },
-          { shouldPlay: false }
-        );
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded && status.durationMillis) {
-          duration = status.durationMillis / 1000 / 60; // Convert to minutes
+      // Validate file extension for arrangement services
+      if (allowedFileTypes && allowedFileTypes.length > 0) {
+        if (!isValidFileForArrangement(file.name)) {
+          Alert.alert(
+            "Invalid File Type",
+            `Please select a file with one of these extensions: ${allowedFileTypes.join(", ")}`
+          );
+          setUploading(false);
+          return;
         }
-        await sound.unloadAsync();
-      } catch (error) {
-        console.warn("Could not get audio duration:", error);
+      }
+
+      // Get audio duration (only for audio/video files, not for arrangement files)
+      let duration = 0;
+      if (!allowedFileTypes || allowedFileTypes.length === 0) {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            { uri: file.uri },
+            { shouldPlay: false }
+          );
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded && status.durationMillis) {
+            duration = status.durationMillis / 1000 / 60; // Convert to minutes
+          }
+          await sound.unloadAsync();
+        } catch (error) {
+          console.warn("Could not get audio duration:", error);
+        }
       }
 
       const fileData = {
         uri: file.uri,
         name: file.name,
-        type: file.mimeType || "audio/mpeg",
+        type: file.mimeType || (allowedFileTypes ? "application/octet-stream" : "audio/mpeg"),
         size: file.size,
-        duration: duration, // in minutes
+        duration: duration, // in minutes (0 for arrangement files)
       };
 
       onFileSelect(fileData);
     } catch (error) {
       console.error("Error picking file:", error);
-      Alert.alert("Error", "Failed to pick audio file. Please try again.");
+      Alert.alert("Error", "Failed to pick file. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -100,10 +138,14 @@ const FileUploader = ({ onFileSelect, selectedFile, onClearFile }) => {
             <Ionicons name="cloud-upload-outline" size={40} color={COLORS.primary} />
           </View>
           <Text style={styles.uploadTitle}>
-            {uploading ? "Loading..." : "Upload Audio/Video File"}
+            {uploading ? "Loading..." : allowedFileTypes && allowedFileTypes.length > 0 
+              ? `Upload File (${allowedFileTypes.join(", ").toUpperCase()})`
+              : "Upload Audio/Video File"}
           </Text>
           <Text style={styles.uploadSubtitle}>
-            Tap to browse your files
+            {allowedFileTypes && allowedFileTypes.length > 0
+              ? `Accepted formats: ${allowedFileTypes.join(", ").toUpperCase()}`
+              : "Tap to browse your files"}
           </Text>
         </TouchableOpacity>
       ) : (
