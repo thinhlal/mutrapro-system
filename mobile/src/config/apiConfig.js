@@ -184,6 +184,8 @@ export const API_ENDPOINTS = {
 
   // === Studio Booking (Recording) ===
   STUDIO_BOOKINGS: {
+    // GET /projects/studio-bookings/active-studio
+    GET_ACTIVE_STUDIO: `${STUDIO_BOOKINGS_PATH}/active-studio`,
     // GET /projects/studio-bookings/available-slots?date=YYYY-MM-DD
     GET_AVAILABLE_SLOTS: (date) =>
       `${STUDIO_BOOKINGS_PATH}/available-slots?date=${date}`,

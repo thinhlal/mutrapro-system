@@ -22,6 +22,7 @@ import ServiceRequestScreen from "../screens/Services/ServiceRequestScreen";
 import ServiceQuoteScreen from "../screens/Services/ServiceQuoteScreen";
 import VocalistSelectionScreen from "../screens/Services/VocalistSelectionScreen";
 import VocalistDetailScreen from "../screens/Services/VocalistDetailScreen";
+import RecordingFlowController from "../screens/Booking/RecordingFlowController";
 // import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
 // import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
 
@@ -130,6 +131,21 @@ const ChatStack = () => {
 //   );
 // };
 
+// Booking Stack
+const BookingStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={defaultStackScreenOptions}
+    >
+      <Stack.Screen
+        name="BookingMain"
+        component={RecordingFlowController}
+        options={{ title: "Studio Booking" }}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Profile Stack
 const ProfileStack = () => {
   return (
@@ -212,6 +228,9 @@ const BottomTabNavigator = ({ navigation }) => {
             // case "AI":
             //   iconName = focused ? "sparkles" : "sparkles-outline";
             //   break;
+            case "Booking":
+              iconName = focused ? "calendar" : "calendar-outline";
+              break;
             case "Chat":
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
               break;
@@ -253,6 +272,13 @@ const BottomTabNavigator = ({ navigation }) => {
           tabBarLabel: "AI",
         }}
       /> */}
+      <Tab.Screen
+        name="Booking"
+        component={BookingStack}
+        options={{
+          tabBarLabel: "Booking",
+        }}
+      />
       <Tab.Screen
         name="Chat"
         component={ChatStack}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import * as chatApi from "../../services/chatService";
 const ChatRoomScreen = ({ route, navigation }) => {
   // Can receive either { room } or { roomId }
   const { room: roomParam, roomId: roomIdParam } = route.params || {};
+  const fromNotification = route?.params?.fromNotification || false;
   const flatListRef = useRef(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [room, setRoom] = useState(roomParam); // Initialize with roomParam if available
@@ -126,20 +127,46 @@ const ChatRoomScreen = ({ route, navigation }) => {
     loadMessages,
   ]);
 
+  const handleBack = useCallback(() => {
+    if (fromNotification) {
+      // When coming from notification, ChatRoom was pushed on top of ChatList
+      // So we can safely go back to ChatList
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        // Fallback: navigate to ChatList if can't go back
+        navigation.navigate('Chat', {
+          screen: 'ChatList',
+        });
+      }
+      return;
+    }
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    // Fallback to chat list if no back stack is available
+    navigation.navigate('Chat', {
+      screen: 'ChatList',
+    });
+  }, [fromNotification, navigation]);
+
   useEffect(() => {
     // Set header - only back button, room info is displayed outside header
     navigation.setOptions({
       headerLeft: () => (
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
       ),
       headerTitle: '', // Empty title to avoid conflicts
     });
-  }, [navigation]);
+  }, [navigation, handleBack]);
 
   // Auto scroll to bottom when messages change
   useEffect(() => {

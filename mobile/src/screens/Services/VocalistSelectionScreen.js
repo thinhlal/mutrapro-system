@@ -14,7 +14,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { getVocalists } from "../../services/specialistService";
+import { getAvailableArtistsForRequest } from "../../services/studioBookingService";
 import { MUSIC_GENRES } from "../../constants/musicOptionsConstants";
+import { getItem, setItem } from "../../utils/storage";
 
 const VocalistSelectionScreen = ({ navigation, route }) => {
   const {
@@ -22,6 +24,10 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
     maxSelections = 1,
     selectedVocalists = [],
     onSelect,
+    fromFlow = false,
+    bookingDate,
+    bookingStartTime,
+    bookingEndTime,
   } = route.params || {};
 
   const [vocalists, setVocalists] = useState([]);
@@ -37,10 +43,47 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
     return selectedVocalist ? [selectedVocalist.id || selectedVocalist.specialistId || selectedVocalist] : [];
   });
 
-  // Fetch vocalists with filters
+  // Get booking info from storage if not in route params (when fromFlow is true)
+  const [effectiveBookingDate, setEffectiveBookingDate] = useState(bookingDate);
+  const [effectiveBookingStartTime, setEffectiveBookingStartTime] = useState(bookingStartTime);
+  const [effectiveBookingEndTime, setEffectiveBookingEndTime] = useState(bookingEndTime);
+  const [bookingInfoLoaded, setBookingInfoLoaded] = useState(false);
+
   useEffect(() => {
-    fetchVocalists();
-  }, [genderFilter, selectedGenres]);
+    if (!bookingDate && fromFlow) {
+      // Try to load booking info from storage
+      const loadBookingInfo = async () => {
+        try {
+          const stored = await getItem('recordingFlowData');
+          if (stored?.step1) {
+            setEffectiveBookingDate(stored.step1.bookingDate);
+            setEffectiveBookingStartTime(stored.step1.bookingStartTime);
+            setEffectiveBookingEndTime(stored.step1.bookingEndTime);
+            setBookingInfoLoaded(true);
+          } else {
+            setBookingInfoLoaded(true); // Mark as loaded even if no step1 data
+          }
+        } catch (error) {
+          console.error('Error reading flow data:', error);
+          setBookingInfoLoaded(true);
+        }
+      };
+      loadBookingInfo();
+    } else {
+      setEffectiveBookingDate(bookingDate);
+      setEffectiveBookingStartTime(bookingStartTime);
+      setEffectiveBookingEndTime(bookingEndTime);
+      setBookingInfoLoaded(true);
+    }
+  }, [bookingDate, bookingStartTime, bookingEndTime, fromFlow]);
+
+  // Fetch vocalists with filters
+  // Only fetch after booking info is loaded (to avoid fetching all vocalists first)
+  useEffect(() => {
+    if (bookingInfoLoaded || !fromFlow) {
+      fetchVocalists();
+    }
+  }, [genderFilter, selectedGenres, effectiveBookingDate, effectiveBookingStartTime, effectiveBookingEndTime, bookingInfoLoaded, fromFlow]);
 
   const fetchVocalists = async () => {
     setLoading(true);
@@ -48,16 +91,45 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
       const gender = genderFilter !== "ALL" ? genderFilter : null;
       const genres = selectedGenres.length > 0 ? selectedGenres : null;
 
-      const response = await getVocalists(gender, genres);
-      if (response?.status === "success" && response?.data) {
-        setVocalists(response.data);
-      } else if (response?.data) {
-        // Handle case where data is directly in response.data
-        setVocalists(Array.isArray(response.data) ? response.data : []);
+      // If we have booking date/time, use getAvailableArtistsForRequest to filter by availability
+      if (fromFlow && effectiveBookingDate && effectiveBookingStartTime && effectiveBookingEndTime) {
+        const response = await getAvailableArtistsForRequest(
+          effectiveBookingDate,
+          effectiveBookingStartTime,
+          effectiveBookingEndTime,
+          null, // skillId - null for vocalists
+          'VOCAL', // roleType
+          genres // genres filter
+        );
+        
+        if (response?.status === 'success' && response?.data) {
+          let filteredVocalists = response.data;
+          
+          // Apply gender filter if needed
+          if (gender) {
+            filteredVocalists = filteredVocalists.filter(
+              v => v.gender === gender
+            );
+          }
+          
+          setVocalists(filteredVocalists);
+        } else {
+          setVocalists([]);
+        }
+      } else {
+        // Fallback: Fetch all vocalists (for arrangement flow or when no booking info)
+        const response = await getVocalists(gender, genres);
+        if (response?.status === "success" && response?.data) {
+          setVocalists(response.data);
+        } else if (response?.data) {
+          // Handle case where data is directly in response.data
+          setVocalists(Array.isArray(response.data) ? response.data : []);
+        }
       }
     } catch (error) {
       console.error("Error fetching vocalists:", error);
       Alert.alert("Error", error.message || "Failed to load vocalists");
+      setVocalists([]);
     } finally {
       setLoading(false);
     }
@@ -87,7 +159,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedIds.length === 0) {
       Alert.alert("Notice", "Please select at least one vocalist");
       return;
@@ -102,14 +174,40 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
         name: v.name || v.fullName || `Vocalist ${v.id || v.specialistId}`,
         fullName: v.fullName || v.name,
         avatar: v.avatar || v.avatarUrl,
+        avatarUrl: v.avatarUrl || v.avatar,
         gender: v.gender,
+        rating: v.rating,
+        experienceYears: v.experienceYears,
+        hourlyRate: v.hourlyRate,
       }));
 
-    if (onSelect) {
-      onSelect(selected);
+    // If from recording flow, save to storage
+    if (fromFlow) {
+      try {
+        const stored = await getItem('recordingFlowData') || {};
+        stored.step2 = {
+          ...stored.step2,
+          selectedVocalists: selected,
+        };
+        await setItem('recordingFlowData', stored);
+        
+        // Navigate back to Booking tab
+        navigation.navigate('Booking');
+      } catch (error) {
+        console.error('Error saving vocalists to flow data:', error);
+        // Fallback to callback if storage fails
+        if (onSelect) {
+          onSelect(selected);
+        }
+        navigation.goBack();
+      }
+    } else {
+      // Normal flow - use callback
+      if (onSelect) {
+        onSelect(selected);
+      }
+      navigation.goBack();
     }
-
-    navigation.goBack();
   };
 
   const isSelected = (vocalist) => {

@@ -477,7 +477,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </Text>
             </View>
           </View>
-          <View style={styles.statusInfoRow}>
+          <View style={styles.statusInfoRowVertical}>
             <Text style={styles.statusLabel}>Status:</Text>
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
               <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
@@ -1211,12 +1211,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  statusInfoRowVertical: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
   statusLabel: {
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 60,
+    marginBottom: SPACING.xs,
   },
   typeBadge: {
     backgroundColor: COLORS.primary + "20",
