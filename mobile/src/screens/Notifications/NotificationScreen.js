@@ -147,9 +147,12 @@ const NotificationScreen = ({ navigation }) => {
         if (url.startsWith('/chat/')) {
           const roomId = url.split('/chat/')[1];
           if (roomId) {
+            // Navigate to Chat tab and push ChatRoom
+            // This will push ChatRoom on top of ChatList (initial screen)
+            // So when back from ChatRoom, it will go back to ChatList
             navigation.navigate('Chat', {
               screen: 'ChatRoom',
-              params: { roomId },
+              params: { roomId, fromNotification: true },
             });
           }
         }
@@ -163,13 +166,41 @@ const NotificationScreen = ({ navigation }) => {
             });
           }
         }
-        // Contract navigation: /contracts/{contractId}
+        // Contract navigation: /contracts/{contractId} or /contracts/{contractId}/milestones/{milestoneId}/deliveries
         else if (url.startsWith('/contracts/') || url.startsWith('/contract/')) {
-          const contractId = url.split('/').pop();
-          if (contractId) {
-            navigation.navigate('ContractDetail', {
-              contractId: contractId,
-            });
+          // Check if this is a milestone deliveries route
+          // Format: /contracts/{contractId}/milestones/{milestoneId}/deliveries
+          const deliveriesMatch = url.match(/\/contracts\/([^\/]+)\/milestones\/([^\/]+)\/deliveries/);
+          if (deliveriesMatch) {
+            const contractId = deliveriesMatch[1];
+            const milestoneId = deliveriesMatch[2];
+            // Validate that contractId and milestoneId are not invalid values
+            if (contractId && milestoneId && 
+                contractId !== 'deliveries' && milestoneId !== 'deliveries' &&
+                contractId !== 'contracts' && milestoneId !== 'contracts' &&
+                contractId !== 'contract' && milestoneId !== 'contract') {
+              navigation.navigate('MilestoneDeliveries', {
+                contractId: contractId,
+                milestoneId: milestoneId,
+              });
+            } else {
+              console.warn('[Mobile] Invalid milestone deliveries URL format:', url);
+            }
+          } else {
+            // Regular contract detail route: /contracts/{contractId}
+            const contractId = url.split('/').pop();
+            // Validate that contractId is not invalid values
+            if (contractId && 
+                contractId !== 'contracts' && 
+                contractId !== 'contract' && 
+                contractId !== 'deliveries' &&
+                contractId !== 'milestones') {
+              navigation.navigate('ContractDetail', {
+                contractId: contractId,
+              });
+            } else {
+              console.warn('[Mobile] Invalid contract URL format:', url);
+            }
           }
         }
         // Service navigation: /services/{serviceId}

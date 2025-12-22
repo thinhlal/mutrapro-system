@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   RefreshControl,
   SafeAreaView,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
@@ -26,6 +27,14 @@ const ContractsListScreen = ({ navigation }) => {
   useEffect(() => {
     loadContracts();
   }, []);
+
+  // Reload contracts when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadContracts();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   const loadContracts = async () => {
     try {
@@ -543,8 +552,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm + 2,
     paddingVertical: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.md,
-    flex: 1,
-    // maxWidth: 200,
+    alignSelf: "flex-start",
   },
   statusDot: {
     width: 6,

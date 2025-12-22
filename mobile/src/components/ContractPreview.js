@@ -37,10 +37,10 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
-  // Format description duration - replace "X.XX phút" with mm:ss format
+  // Format description duration - replace "X.XX minutes" with mm:ss format
   const formatDescriptionDuration = (description) => {
     if (!description) return description;
-    const pattern = /(\d+\.?\d*)\s*phút/gi;
+    const pattern = /(\d+\.?\d*)\s*(phút|minutes?)/gi;
     return description.replace(pattern, (match, minutes) => {
       const minutesNum = parseFloat(minutes);
       if (!isNaN(minutesNum) && minutesNum > 0) {
@@ -82,18 +82,32 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
   };
 
   const statusConfig = getStatusConfig(contract?.status);
-  const isSigned = ["signed", "active", "active_pending_assignment"].includes(
-    contract?.status?.toLowerCase()
-  );
+  // Check if contract is signed or active (same logic as frontend)
+  const currentStatus = contract?.status?.toLowerCase() || "";
+  const isSigned = currentStatus === "signed";
+  const isActive = currentStatus === "active" || currentStatus === "active_pending_assignment";
+  const isCompleted = currentStatus === "completed";
+  const isCanceled = currentStatus === "canceled_by_customer" || currentStatus === "canceled_by_manager";
+  const isExpired = currentStatus === "expired";
+  
+  // Show seal when contract is signed/active and not canceled/expired/completed (same as frontend canPayMilestones)
+  const shouldShowSeal = (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
+  
+  // Show Party A signature when contract is signed/active/completed (same as frontend shouldShowPartyASignature)
+  const shouldShowPartyASignature = isSigned || isActive || isCompleted;
+  
+  // Show Party B signature when customer has signed or contract is signed/active/completed (same as frontend hasSigned)
+  const shouldShowPartyBSignature = contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
-  // Fetch signature images when contract is signed
+  // Fetch signature images when contract is signed/active/completed
   useEffect(() => {
-    // Party A signature is loaded from local asset (always available if isSigned)
+    // Party A signature is loaded from local asset (always available if shouldShowPartyASignature)
     // We don't need to set URL, we'll use require() directly in render
 
     // Load Party B signature from backend API
     const fetchPartyBSignature = async () => {
-      if (!contract?.contractId || !contract?.customerSignedAt) {
+      // Fetch signature if contract is signed/active/completed or has customerSignedAt
+      if (!contract?.contractId || !shouldShowPartyBSignature) {
         setPartyBSignatureUrl(null);
         return;
       }
@@ -112,14 +126,28 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     };
 
     fetchPartyBSignature();
-  }, [contract?.contractId, contract?.customerSignedAt]);
+  }, [contract?.contractId, shouldShowPartyBSignature]);
 
-  const generateContractHtml = () => {
+  const generateContractHtml = (partyBSignatureDataUrl = null) => {
     const contractNumber = contract?.contractNumber || contract?.contractId || "N/A";
     const contractType = contract?.contractType || "N/A";
     const statusText = statusConfig.text;
     const totalPrice = contract?.totalPrice || 0;
     const currency = contract?.currency || "VND";
+    
+    // Calculate signature display logic for HTML export (same as component logic)
+    const htmlCurrentStatus = contract?.status?.toLowerCase() || "";
+    const htmlIsSigned = htmlCurrentStatus === "signed";
+    const htmlIsActive = htmlCurrentStatus === "active" || htmlCurrentStatus === "active_pending_assignment";
+    const htmlIsCompleted = htmlCurrentStatus === "completed";
+    const htmlIsCanceled = htmlCurrentStatus === "canceled_by_customer" || htmlCurrentStatus === "canceled_by_manager";
+    const htmlIsExpired = htmlCurrentStatus === "expired";
+    const htmlShouldShowSeal = (htmlIsSigned || htmlIsActive) && !htmlIsCanceled && !htmlIsExpired && !htmlIsCompleted;
+    const htmlShouldShowPartyASignature = htmlIsSigned || htmlIsActive || htmlIsCompleted;
+    const htmlShouldShowPartyBSignature = contract?.customerSignedAt || htmlIsSigned || htmlIsActive || htmlIsCompleted;
+    
+    // Use provided signature URL or fallback to state
+    const htmlPartyBSignatureUrl = partyBSignatureDataUrl || partyBSignatureUrl;
     
     const formatCurrencyHTML = (amount, curr = "VND") => {
       if (curr === "VND") {
@@ -246,9 +274,77 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       background-color: #f0f0f0;
       font-weight: bold;
     }
+    .watermark {
+      position: fixed;
+      top: 300px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-25deg);
+      font-size: 80px;
+      font-weight: 900;
+      color: rgba(239, 68, 68, 0.1);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .seal {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 120px;
+      height: 120px;
+      z-index: 10;
+    }
+    .seal-circle {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 60px;
+      border: 3px dashed #dc2626;
+    }
+    .seal-inner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 50px;
+      padding: 15px;
+      text-align: center;
+    }
+    .seal-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: #dc2626;
+      text-transform: uppercase;
+      margin: 2px 0;
+    }
+    .seal-date {
+      font-size: 10px;
+      color: #dc2626;
+      margin-top: 4px;
+    }
+    .signature-image {
+      max-height: 60px;
+      max-width: 200px;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
+  ${!htmlShouldShowSeal ? `
+  <div class="watermark">${statusText}</div>
+  ` : ''}
+  
+  ${htmlShouldShowSeal ? `
+  <div class="seal">
+    <div class="seal-circle"></div>
+    <div class="seal-inner">
+      <div class="seal-text">MuTraPro</div>
+      <div class="seal-text">Official</div>
+      <div class="seal-date">${contract?.signedAt ? dayjs(contract.signedAt).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD")}</div>
+    </div>
+  </div>
+  ` : ''}
+  
   <div class="header">
     <div class="logo">MuTraPro</div>
     <div style="font-size: 14px; color: #666;">Contract Document</div>
@@ -296,7 +392,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
         requestDetails.purpose === 'other' ? 'Other' :
         requestDetails.purpose
       }</p>` : ''}
-      ${requestDetails.preferredSpecialists && requestDetails.preferredSpecialists.length > 0 ? `<p><strong>Preferred Vocalists:</strong> ${requestDetails.preferredSpecialists.map(s => s.name || `Vocalist ${s.specialistId}`).join(', ')}</p>` : ''}
+      ${requestDetails.requestType === 'arrangement_with_recording' && requestDetails.preferredSpecialists && requestDetails.preferredSpecialists.length > 0 ? `<p><strong>Preferred Vocalists:</strong> ${requestDetails.preferredSpecialists.map(s => s.name || `Vocalist ${s.specialistId}`).join(', ')}</p>` : ''}
     ` : ''}
   </div>
   <div class="divider"></div>
@@ -319,7 +415,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       ${pricingBreakdown?.transcriptionDetails?.breakdown?.map(item => {
         const formatDesc = (desc) => {
           if (!desc) return desc;
-          const pattern = /(\d+\.?\d*)\s*phút/gi;
+          const pattern = /(\d+\.?\d*)\s*(phút|minutes?)/gi;
           return desc.replace(pattern, (match, minutes) => {
             const minutesNum = parseFloat(minutes);
             if (!isNaN(minutesNum) && minutesNum > 0) {
@@ -340,7 +436,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       }).join('') || ''}
       ${requestDetails?.servicePrice && (requestDetails.requestType === 'arrangement' || requestDetails.requestType === 'arrangement_with_recording') ? `
       <tr>
-        <td>Arrangement Service</td>
+        <td>${requestDetails.requestType === 'arrangement_with_recording' ? 'Arrangement with Recording' : 'Arrangement Service'}</td>
         <td>${Number(requestDetails.servicePrice)?.toLocaleString("vi-VN") ?? requestDetails.servicePrice}</td>
       </tr>
       ` : ''}
@@ -350,7 +446,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       </tr>
       ${bookingData.participants.map(p => `
       <tr>
-        <td style="padding-left: 24px;">• ${p.specialistName || 'Unnamed'} (${p.roleType}) - ${p.participantFee?.toLocaleString("vi-VN")} VND/giờ × ${bookingData.durationHours} giờ</td>
+        <td style="padding-left: 24px;">• ${p.specialistName || 'Unnamed'} (${p.roleType}) - ${p.participantFee?.toLocaleString("vi-VN")} VND/hour × ${bookingData.durationHours} hours</td>
         <td>${((p.participantFee || 0) * (bookingData.durationHours || 1)).toLocaleString("vi-VN")}</td>
       </tr>
       `).join('')}
@@ -365,7 +461,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       </tr>
       ${bookingData.requiredEquipment.map(eq => `
       <tr>
-        <td style="padding-left: 24px;">• ${eq.equipmentName || 'Unnamed'} × ${eq.quantity} - ${eq.rentalFeePerUnit?.toLocaleString("vi-VN")} VND/giờ × ${bookingData.durationHours} giờ</td>
+        <td style="padding-left: 24px;">• ${eq.equipmentName || 'Unnamed'} × ${eq.quantity} - ${eq.rentalFeePerUnit?.toLocaleString("vi-VN")} VND/hour × ${bookingData.durationHours} hours</td>
         <td>${((eq.rentalFeePerUnit || 0) * (eq.quantity || 1) * (bookingData.durationHours || 1)).toLocaleString("vi-VN")}</td>
       </tr>
       `).join('')}
@@ -481,10 +577,12 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     <div class="signature-section">
       <div class="signature-box">
         <p><strong>Party A Representative</strong></p>
-        ${isSigned ? `
-        <p style="font-style: italic; color: #666; margin: 20px 0;">[Digital Signature]</p>
-        <p>CEO - MuTraPro Studio</p>
-        <p style="font-size: 12px;">Signed: ${formatDateHTML(contract?.signedAt || contract?.sentAt)}</p>
+        ${htmlShouldShowPartyASignature ? `
+        <div style="margin: 20px 0;">
+          <p style="font-style: italic; color: #666; margin-bottom: 10px;">[Digital Signature]</p>
+          <p style="font-weight: 600; margin: 8px 0;">CEO - MuTraPro Studio Co., Ltd</p>
+          <p style="font-size: 12px; color: #666;">Signed: ${formatDateHTML(contract?.signedAt || contract?.sentAt)}</p>
+        </div>
         ` : `
         <div class="signature-line"></div>
         <p>Name, Title</p>
@@ -492,10 +590,16 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       </div>
       <div class="signature-box">
         <p><strong>Party B Representative</strong></p>
-        ${isSigned ? `
-        <p style="font-style: italic; color: #666; margin: 20px 0;">[Digital Signature]</p>
-        <p>${contract?.nameSnapshot || "Customer"}</p>
-        <p style="font-size: 12px;">Signed: ${formatDateHTML(contract?.customerSignedAt || contract?.signedAt || "Pending")}</p>
+        ${htmlShouldShowPartyBSignature ? `
+        <div style="margin: 20px 0;">
+          ${htmlPartyBSignatureUrl ? `
+          <img src="${htmlPartyBSignatureUrl}" alt="Party B Signature" class="signature-image" />
+          ` : `
+          <p style="font-style: italic; color: #666; margin-bottom: 10px;">[Digital Signature]</p>
+          `}
+          <p style="font-weight: 600; margin: 8px 0;">${contract?.nameSnapshot || "Customer"}</p>
+          <p style="font-size: 12px; color: #666;">Signed: ${formatDateHTML(contract?.customerSignedAt || contract?.signedAt || "Pending")}</p>
+        </div>
         ` : `
         <div class="signature-line"></div>
         <p>Name, Title</p>
@@ -522,8 +626,22 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     try {
       setExporting(true);
       
-      // Generate HTML from contract data
-      const htmlContent = generateContractHtml();
+      // Fetch Party B signature if needed for export
+      let signatureDataUrl = partyBSignatureUrl;
+      if (shouldShowPartyBSignature && !signatureDataUrl && contract?.contractId) {
+        try {
+          const signatureResponse = await getSignatureImage(contract.contractId);
+          if (signatureResponse?.data) {
+            signatureDataUrl = signatureResponse.data;
+          }
+        } catch (error) {
+          console.error('Error loading signature for export:', error);
+          // Continue without signature image
+        }
+      }
+      
+      // Generate HTML from contract data with signature
+      const htmlContent = generateContractHtml(signatureDataUrl);
       
       // Generate filename
       const contractNumber = contract?.contractNumber || contract?.contractId || "contract";
@@ -587,14 +705,14 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Watermark for non-signed contracts */}
-      {!isSigned && (
+      {!shouldShowSeal && (
         <View style={styles.watermarkContainer}>
           <Text style={styles.watermark}>{statusConfig.text}</Text>
         </View>
       )}
 
       {/* Official Seal for signed contracts */}
-      {isSigned && (
+      {shouldShowSeal && (
         <View style={styles.sealContainer}>
           <View style={styles.seal}>
             <View style={styles.sealCircle} />
@@ -682,7 +800,8 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
                     {getPurposeLabel(requestDetails.purpose)}
                   </Text>
                 )}
-                {requestDetails.preferredSpecialists &&
+                {requestDetails.requestType === 'arrangement_with_recording' &&
+                  requestDetails.preferredSpecialists &&
                   requestDetails.preferredSpecialists.length > 0 && (
                     <Text style={styles.paragraph}>
                       <Text style={styles.bold}>Preferred Vocalists: </Text>
@@ -758,7 +877,11 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
                 requestDetails.requestType === 'arrangement_with_recording') && (
                 <View style={styles.tableRow}>
                   <View style={[styles.tableCell, styles.tableCellLeft]}>
-                    <Text style={styles.tableCellTextBold}>Arrangement Service</Text>
+                    <Text style={styles.tableCellTextBold}>
+                      {requestDetails.requestType === 'arrangement_with_recording'
+                        ? 'Arrangement with Recording'
+                        : 'Arrangement Service'}
+                    </Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellRight]}>
                     <Text style={styles.tableCellTextBold}>
@@ -785,8 +908,8 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
                       <View style={[styles.tableCell, styles.tableCellLeft, { paddingLeft: 24 }]}>
                         <Text style={styles.tableCellText}>
                           • {participant.specialistName || 'Unnamed'} ({participant.roleType}) -{' '}
-                          {participant.participantFee?.toLocaleString()} VND/giờ ×{' '}
-                          {bookingData.durationHours} giờ
+                          {participant.participantFee?.toLocaleString()} VND/hour ×{' '}
+                          {bookingData.durationHours} hours
                         </Text>
                       </View>
                       <View style={[styles.tableCell, styles.tableCellRight]}>
@@ -835,8 +958,8 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
                       <View style={[styles.tableCell, styles.tableCellLeft, { paddingLeft: 24 }]}>
                         <Text style={styles.tableCellText}>
                           • {equipment.equipmentName || 'Unnamed'} × {equipment.quantity} -{' '}
-                          {equipment.rentalFeePerUnit?.toLocaleString()} VND/giờ ×{' '}
-                          {bookingData.durationHours} giờ
+                          {equipment.rentalFeePerUnit?.toLocaleString()} VND/hour ×{' '}
+                          {bookingData.durationHours} hours
                         </Text>
                       </View>
                       <View style={[styles.tableCell, styles.tableCellRight]}>
@@ -1119,7 +1242,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
           {/* Party A */}
           <View style={styles.signatureBox}>
             <Text style={styles.signatureLabel}>Party A Representative</Text>
-            {isSigned ? (
+            {shouldShowPartyASignature ? (
               <>
                 <Image
                   source={require("../../assets/images/signature.png")}
@@ -1142,7 +1265,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
           {/* Party B */}
           <View style={styles.signatureBox}>
             <Text style={styles.signatureLabel}>Party B Representative</Text>
-            {isSigned ? (
+            {shouldShowPartyBSignature ? (
               <>
                 {partyBSignatureUrl ? (
                   <Image
