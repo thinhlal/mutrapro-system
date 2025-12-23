@@ -655,13 +655,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.md,
@@ -692,14 +692,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   timeTableLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textSecondary,
     minWidth: 100,
     marginRight: SPACING.md,
   },
   timeTableValue: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   },
   alertText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
   },
   vocalistItem: {
@@ -736,12 +736,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   vocalistLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   vocalistValue: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -753,13 +753,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   instrumentName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   instrumentDetail: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -778,18 +778,18 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   feeLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   feeLabelTotal: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
   },
   feeValue: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     marginBottom: SPACING.xs,
   },
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     color: COLORS.warning,
   },
   feeValueTotal: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '700',
     color: COLORS.error,
   },
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: SPACING.xs,
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
     backgroundColor: COLORS.white,
   },
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -870,7 +870,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.md + 4,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.sm,
   },
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.white,
   },

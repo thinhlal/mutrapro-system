@@ -42,6 +42,7 @@ const RecordingFlowController = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [flowData, setFlowData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
 
   // Load flow data from storage on mount
   useEffect(() => {
@@ -133,6 +134,10 @@ const RecordingFlowController = ({ navigation }) => {
       // If at last step, just update data
       await setItem(STORAGE_KEY, { ...updated, currentStep });
     }
+  };
+
+  const toggleNavigation = () => {
+    setIsNavigationVisible(!isNavigationVisible);
   };
 
   const renderStepContent = () => {
@@ -256,26 +261,39 @@ const RecordingFlowController = ({ navigation }) => {
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={!isNavigationVisible ? styles.scrollContentPadding : undefined}
+      >
         {renderStepContent()}
       </ScrollView>
 
       {/* Navigation */}
-      <View style={styles.navigationContainer}>
-        <TouchableOpacity
-          style={[styles.navButton, currentStep === 0 && styles.navButtonDisabled]}
-          onPress={handlePrev}
-          disabled={currentStep === 0}
-        >
-          <Ionicons name="arrow-back" size={20} color={currentStep === 0 ? COLORS.textSecondary : COLORS.text} />
-          <Text style={[styles.navButtonText, currentStep === 0 && styles.navButtonTextDisabled]}>
-            Previous
+      {isNavigationVisible ? (
+        <View style={styles.navigationContainer}>
+          <TouchableOpacity
+            style={[styles.navButton, currentStep === 0 && styles.navButtonDisabled]}
+            onPress={handlePrev}
+            disabled={currentStep === 0}
+          >
+            <Ionicons name="arrow-back" size={20} color={currentStep === 0 ? COLORS.textSecondary : COLORS.text} />
+            <Text style={[styles.navButtonText, currentStep === 0 && styles.navButtonTextDisabled]}>
+              Previous
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.stepIndicator}>
+            Step {currentStep + 1} of {STEPS.length}
           </Text>
+          <TouchableOpacity style={styles.toggleButton} onPress={toggleNavigation}>
+            <Ionicons name="chevron-down" size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.navigationToggleButton} onPress={toggleNavigation}>
+          <Ionicons name="chevron-up" size={20} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.stepIndicator}>
-          Step {currentStep + 1} of {STEPS.length}
-        </Text>
-      </View>
+      )}
     </View>
   );
 };
@@ -346,6 +364,9 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
+  scrollContentPadding: {
+    paddingBottom: 50,
+  },
   navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -378,6 +399,31 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     fontWeight: '500',
+  },
+  toggleButton: {
+    padding: SPACING.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navigationToggleButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
   },
 });
 

@@ -419,13 +419,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -444,13 +444,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   alertTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   alertText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
   },
   slotInfoRow: {
@@ -459,14 +459,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   slotInfoLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 50,
   },
   slotInfoValue: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   radioLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: SPACING.xs,
@@ -550,13 +550,13 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   sectionSubtitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
   },
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   browseButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.primary,
   },
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   selectedSummaryTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.md,
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vocalistName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.xs,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.md + 4,
     borderRadius: BORDER_RADIUS.md,
   },
   continueButtonDisabled: {
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.white,
   },
