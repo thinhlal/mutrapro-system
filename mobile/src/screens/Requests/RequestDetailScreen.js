@@ -30,6 +30,25 @@ import FileItem from "../../components/FileItem";
 import { getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
 import { formatPrice } from "../../services/pricingMatrixService";
 
+// Booking Status
+const BOOKING_STATUS_COLORS = {
+  TENTATIVE: COLORS.textSecondary,
+  PENDING: COLORS.warning,
+  CONFIRMED: COLORS.success,
+  IN_PROGRESS: COLORS.primary,
+  COMPLETED: COLORS.success,
+  CANCELLED: COLORS.error,
+};
+
+const BOOKING_STATUS_LABELS = {
+  TENTATIVE: "Tentative",
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
 const RequestDetailScreen = ({ navigation, route }) => {
   const { requestId } = route.params;
   const [request, setRequest] = useState(null);
@@ -570,8 +589,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </View>
             )}
 
-            {/* Instruments */}
-            {(() => {
+            {/* Instruments - Hidden for recording type */}
+            {request.requestType !== "recording" && (() => {
               const instrumentsToShow = instruments.length > 0 
                 ? instruments 
                 : (request.instruments && Array.isArray(request.instruments) ? request.instruments : []);
@@ -621,8 +640,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
               }
             })()}
 
-            {/* Instruments Price - Right after Instruments */}
-            {request.instrumentPrice && request.instrumentPrice > 0 && (
+            {/* Instruments Price - Hidden for recording type */}
+            {request.requestType !== "recording" && request.instrumentPrice && request.instrumentPrice > 0 && (
               <View style={styles.tableRowVertical}>
                 <Text style={styles.tableLabelVertical}>Instruments Price</Text>
                 <Text style={[styles.tableValueVertical, { color: COLORS.primary, fontWeight: "600" }]}>
@@ -631,8 +650,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </View>
             )}
 
-            {/* Service Price */}
-            {request.servicePrice && (
+            {/* Service Price - Hidden for recording type */}
+            {request.requestType !== "recording" && request.servicePrice && (
               <View style={styles.tableRowVertical}>
                 <Text style={styles.tableLabelVertical}>Service Price</Text>
                 <Text style={[styles.tableValueVertical, { color: COLORS.primary, fontWeight: "600" }]}>
@@ -641,8 +660,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </View>
             )}
 
-            {/* Total Price - After Service Price and Instruments Price */}
-            {request.totalPrice && (
+            {/* Total Price - Hidden for recording type (uses booking totalCost) */}
+            {request.requestType !== "recording" && request.totalPrice && (
               <View style={styles.tableRowVertical}>
                 <Text style={styles.tableLabelVertical}>Total Price</Text>
                 <Text style={[styles.tableValueVertical, { color: COLORS.success, fontWeight: "600", fontSize: FONT_SIZES.base }]}>
@@ -837,73 +856,223 @@ const RequestDetailScreen = ({ navigation, route }) => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Booking Information</Text>
             {booking ? (
-              <>
-                <InfoRow
-                  icon="calendar-outline"
-                  label="Booking Date"
-                  value={booking.bookingDate || "N/A"}
-                />
-                <InfoRow
-                  icon="time-outline"
-                  label="Time Slot"
-                  value={
-                    booking.startTime && booking.endTime
-                      ? `${booking.startTime} - ${booking.endTime}`
-                      : "N/A"
-                  }
-                />
+              <View style={styles.tableContainer}>
+                {/* Booking Date */}
+                {booking.bookingDate && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Booking Date</Text>
+                    <Text style={styles.tableValueVertical}>
+                      {booking.bookingDate}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Time Slot */}
+                {booking.startTime && booking.endTime && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Time Slot</Text>
+                    <Text style={styles.tableValueVertical}>
+                      {booking.startTime} - {booking.endTime}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Duration */}
                 {booking.durationHours && (
-                  <InfoRow
-                    icon="timer-outline"
-                    label="Duration"
-                    value={`${booking.durationHours} hrs`}
-                  />
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Duration</Text>
+                    <Text style={styles.tableValueVertical}>
+                      {booking.durationHours} hours
+                    </Text>
+                  </View>
                 )}
 
+                {/* Booking Status */}
+                {booking.status && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Status</Text>
+                    <View style={[styles.statusBadge, { 
+                      backgroundColor: BOOKING_STATUS_COLORS[booking.status] + "15",
+                      alignSelf: "flex-start"
+                    }]}>
+                      <Text style={[styles.statusText, { color: BOOKING_STATUS_COLORS[booking.status] }]}>
+                        {BOOKING_STATUS_LABELS[booking.status] || booking.status}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Participants */}
                 {booking.participants && booking.participants.length > 0 && (
-                  <View style={styles.infoRow}>
-                    <Ionicons name="people-outline" size={18} color={COLORS.textSecondary} />
-                    <View style={styles.infoContent}>
-                      <Text style={styles.infoLabel}>Participants</Text>
-                      {booking.participants.map((p, idx) => (
-                        <Text key={idx} style={styles.infoValue}>
-                          • {p.roleType} - {p.performerSource}
-                          {p.specialistName ? ` (${p.specialistName})` : ""}
-                          {p.participantFee
-                            ? ` • ${p.participantFee.toLocaleString("vi-VN")} VND`
-                            : ""}
-                        </Text>
-                      ))}
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Participants</Text>
+                    <View style={styles.itemsListContainer}>
+                      {booking.participants.map((p, idx) => {
+                        const roleLabel =
+                          p.roleType === "VOCAL"
+                            ? "Vocal"
+                            : p.roleType === "INSTRUMENT"
+                            ? "Instrument"
+                            : p.roleType || "Participant";
+
+                        const performerLabel =
+                          p.performerSource === "CUSTOMER_SELF"
+                            ? "Self"
+                            : p.specialistName || "Internal artist";
+
+                        const skillLabel = p.skillName ? p.skillName : null;
+
+                        const feeNumber =
+                          typeof p.participantFee === "number"
+                            ? p.participantFee
+                            : p.participantFee
+                            ? Number(p.participantFee)
+                            : 0;
+
+                        return (
+                          <View key={idx} style={styles.itemCard}>
+                            <View style={styles.itemHeader}>
+                              <View style={[
+                                styles.roleBadge,
+                                p.roleType === "VOCAL" ? styles.roleBadgeVocal : styles.roleBadgeInstrument
+                              ]}>
+                                <Text style={[
+                                  styles.roleBadgeText,
+                                  { color: p.roleType === "VOCAL" ? COLORS.info : COLORS.primary }
+                                ]}>
+                                  {roleLabel}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.itemContent}>
+                              <Text style={styles.itemMainText}>{performerLabel}</Text>
+                              {skillLabel && (
+                                <Text style={styles.itemSubText}>Skill: {skillLabel}</Text>
+                              )}
+                              {feeNumber > 0 && (
+                                <Text style={styles.itemFeeText}>
+                                  {feeNumber.toLocaleString("vi-VN")} VND
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        );
+                      })}
                     </View>
                   </View>
                 )}
 
+                {/* Equipment */}
                 {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
-                  <View style={styles.infoRow}>
-                    <Ionicons name="hammer-outline" size={18} color={COLORS.textSecondary} />
-                    <View style={styles.infoContent}>
-                      <Text style={styles.infoLabel}>Equipment</Text>
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Equipment</Text>
+                    <View style={styles.itemsListContainer}>
                       {booking.requiredEquipment.map((eq, idx) => (
-                        <Text key={idx} style={styles.infoValue}>
-                          • {eq.equipmentName || eq.equipmentId} x {eq.quantity}
-                          {eq.totalRentalFee
-                            ? ` • ${eq.totalRentalFee.toLocaleString("vi-VN")} VND`
-                            : ""}
-                        </Text>
+                        <View key={idx} style={styles.itemCard}>
+                          <View style={styles.itemHeader}>
+                            <Text style={styles.itemMainText}>
+                              {eq.equipmentName || eq.equipmentId || "Equipment"}
+                            </Text>
+                            <View style={styles.quantityBadge}>
+                              <Text style={styles.quantityBadgeText}>x{eq.quantity}</Text>
+                            </View>
+                          </View>
+                          {eq.totalRentalFee && eq.totalRentalFee > 0 && (
+                            <View style={styles.itemContent}>
+                              <Text style={styles.itemFeeText}>
+                                {eq.totalRentalFee.toLocaleString("vi-VN")} VND
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       ))}
                     </View>
                   </View>
                 )}
 
-                {booking.totalCost && (
-                  <InfoRow
-                    icon="cash-outline"
-                    label="Total Cost"
-                    value={`${booking.totalCost.toLocaleString("vi-VN")} VND`}
-                    valueColor={COLORS.error}
-                  />
+                {/* Participant Fee (Total) */}
+                <View style={styles.tableRowVertical}>
+                  <Text style={styles.tableLabelVertical}>Participant Fee</Text>
+                  <Text style={styles.tableValueVertical}>
+                    {(booking.artistFee || 0).toLocaleString("vi-VN")} VND
+                  </Text>
+                </View>
+
+                {/* Equipment Fee (Total) */}
+                <View style={styles.tableRowVertical}>
+                  <Text style={styles.tableLabelVertical}>Equipment Fee</Text>
+                  <Text style={styles.tableValueVertical}>
+                    {(booking.equipmentRentalFee || 0).toLocaleString("vi-VN")} VND
+                  </Text>
+                </View>
+
+                {/* Guest Fee */}
+                {booking.externalGuestFee !== undefined && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>
+                      {(() => {
+                        const count =
+                          typeof booking.externalGuestCount === "number"
+                            ? booking.externalGuestCount
+                            : 0;
+                        const freeLimit =
+                          typeof booking.freeExternalGuestsLimit === "number"
+                            ? booking.freeExternalGuestsLimit
+                            : 0;
+                        const paidGuests = Math.max(0, count - freeLimit);
+                        const freeGuests = Math.max(0, count - paidGuests);
+
+                        if (count === 0) {
+                          return "Guest Fee (0 guests)";
+                        }
+
+                        if (paidGuests > 0 && freeLimit > 0) {
+                          return `Guest Fee (${count} guests: ${freeGuests} free, ${paidGuests} paid)`;
+                        }
+
+                        if (paidGuests > 0) {
+                          return `Guest Fee (${count} paid guest${count === 1 ? "" : "s"})`;
+                        }
+
+                        return `Guest Fee (${count} free guest${count === 1 ? "" : "s"})`;
+                      })()}
+                    </Text>
+                    <Text style={styles.tableValueVertical}>
+                      {booking.externalGuestFee && booking.externalGuestFee > 0
+                        ? `${booking.externalGuestFee.toLocaleString("vi-VN")} VND`
+                        : "0 VND"}
+                    </Text>
+                  </View>
                 )}
-              </>
+
+                {/* Studio Fee */}
+                {booking.totalCost && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Studio Fee</Text>
+                    <Text style={styles.tableValueVertical}>
+                      {(() => {
+                        const artistFee = booking.artistFee || 0;
+                        const equipmentFee = booking.equipmentRentalFee || 0;
+                        const guestFee = booking.externalGuestFee || 0;
+                        const rawStudioFee =
+                          booking.totalCost - artistFee - equipmentFee - guestFee;
+                        const studioFee = rawStudioFee > 0 ? rawStudioFee : 0;
+                        return `${studioFee.toLocaleString("vi-VN")} VND`;
+                      })()}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Total Cost */}
+                {booking.totalCost && (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Total Cost</Text>
+                    <Text style={[styles.tableValueVertical, { color: COLORS.error, fontWeight: "700", fontSize: FONT_SIZES.lg }]}>
+                      {booking.totalCost.toLocaleString("vi-VN")} VND
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <Text style={styles.helperText}>No booking information yet.</Text>
             )}
@@ -1595,6 +1764,70 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
+  },
+  // Items list styles (Participants & Equipment)
+  itemsListContainer: {
+    marginTop: SPACING.xs,
+    gap: SPACING.sm,
+  },
+  itemCard: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  itemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: SPACING.xs,
+  },
+  itemContent: {
+    marginTop: SPACING.xs / 2,
+  },
+  itemMainText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.text,
+    flex: 1,
+  },
+  itemSubText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs / 2,
+  },
+  itemFeeText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.primary,
+    marginTop: SPACING.xs / 2,
+  },
+  roleBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  roleBadgeVocal: {
+    backgroundColor: COLORS.info + "20",
+  },
+  roleBadgeInstrument: {
+    backgroundColor: COLORS.primary + "20",
+  },
+  roleBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+  },
+  quantityBadge: {
+    backgroundColor: COLORS.warning + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  quantityBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.warning,
   },
 });
 
