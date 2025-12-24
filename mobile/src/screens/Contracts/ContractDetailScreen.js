@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -65,6 +65,33 @@ const ContractDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     loadContract();
   }, [contractId]);
+
+  // Custom back handler: navigate to RequestDetail if requestId exists
+  const handleBack = useCallback(() => {
+    if (requestId) {
+      // Navigate to RequestDetail instead of going back
+      navigation.navigate("RequestDetail", { requestId });
+    } else {
+      // Normal back behavior if no requestId
+      navigation.goBack();
+    }
+  }, [navigation, requestId]);
+
+  // Override header back button behavior when requestId is provided
+  useLayoutEffect(() => {
+    if (requestId) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={{ marginLeft: 16 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+        ),
+      });
+    }
+  }, [navigation, requestId, handleBack]);
 
   // Reload contract when screen comes into focus with polling for payment updates
   useFocusEffect(
@@ -202,7 +229,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
         "Error Loading Contract", 
         `${errorMsg}${errorDetails}\n\nPlease try again or contact support if the issue persists.`,
         [
-          { text: "Go Back", onPress: () => navigation.goBack(), style: "cancel" },
+          { text: "Go Back", onPress: handleBack, style: "cancel" },
           { text: "Retry", onPress: () => loadContract() }
         ]
       );
@@ -549,7 +576,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
       <View style={styles.emptyContainer}>
         <Ionicons name="alert-circle-outline" size={80} color={COLORS.textSecondary} />
         <Text style={styles.emptyText}>Contract not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -1138,6 +1165,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                               milestoneName:
                                 milestone.name ||
                                 `Milestone ${milestone.orderIndex || index + 1}`,
+                              requestId: requestId, // Pass requestId so back navigation works correctly
                             })
                           }
                         >
