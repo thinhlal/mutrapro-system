@@ -18,6 +18,7 @@ import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.CurrencyType;
 import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -168,8 +168,8 @@ public class ContractController {
     }
 
     @GetMapping("/my-managed-contracts")
-    @Operation(summary = "Lấy danh sách contracts được quản lý bởi manager hiện tại")
-    public ApiResponse<List<ContractResponse>> getMyManagedContracts(
+    @Operation(summary = "Lấy danh sách contracts được quản lý bởi manager hiện tại với pagination")
+    public ApiResponse<PageResponse<ContractResponse>> getMyManagedContracts(
             @Parameter(description = "Search by contract number or customer name")
             @RequestParam(required = false) String search,
             @Parameter(description = "Filter by contract type")
@@ -178,25 +178,19 @@ public class ContractController {
             @RequestParam(required = false) ContractStatus status,
             @Parameter(description = "Filter by currency")
             @RequestParam(required = false) CurrencyType currency,
-            @Parameter(description = "Start date for date range filter (ISO format)")
-            @RequestParam(required = false) LocalDateTime startDate,
-            @Parameter(description = "End date for date range filter (ISO format)")
-            @RequestParam(required = false) LocalDateTime endDate) {
-        log.info("Getting my managed contracts with filters: search={}, contractType={}, status={}, currency={}, startDate={}, endDate={}", 
-                search, contractType, status, currency, startDate, endDate);
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Getting my managed contracts with filters: search={}, contractType={}, status={}, currency={}, page={}, size={}", 
+                search, contractType, status, currency, page, size);
         
-        // Nếu có filter thì dùng method có filter, không thì dùng method cũ
-        List<ContractResponse> contracts;
-        if (search != null || contractType != null || status != null || currency != null || startDate != null || endDate != null) {
-            contracts = contractService.getMyManagedContractsWithFilters(
-                    search, contractType, status, currency, startDate, endDate);
-        } else {
-            contracts = contractService.getMyManagedContracts();
-        }
+        PageResponse<ContractResponse> contractsPage = contractService.getMyManagedContractsWithFilters(
+                search, contractType, status, currency, page, size);
         
-        return ApiResponse.<List<ContractResponse>>builder()
+        return ApiResponse.<PageResponse<ContractResponse>>builder()
                 .message("Contracts retrieved successfully")
-                .data(contracts)
+                .data(contractsPage)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

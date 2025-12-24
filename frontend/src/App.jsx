@@ -116,6 +116,22 @@ import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
 import WithdrawalRequestsManagement from './pages/manager/WithdrawalRequests/WithdrawalRequestsManagement';
+
+// Admin Pages (Copied from Manager pages)
+import AdminChatLayout from './layouts/AdminChatLayout/AdminChatLayout';
+import AdminChatConversationPage from './pages/admin/Chat/AdminChatConversationPage';
+import AdminContractsManagement from './pages/admin/ContractsList/AdminContractsManagement';
+import AdminMilestonesPage from './pages/admin/Milestones/AdminMilestonesPage';
+import AdminTaskProgressManagement from './pages/admin/TaskProgress/AdminTaskProgressManagement';
+import AdminRevisionRequestsManagement from './pages/admin/RevisionRequests/AdminRevisionRequestsManagement';
+import AdminStudioBookingsManagement from './pages/admin/StudioBookings/AdminStudioBookingsManagement';
+import AdminMilestoneDetailPage from './pages/admin/MilestoneDetail/AdminMilestoneDetailPage';
+import AdminTaskDetailPage from './pages/admin/TaskDetail/AdminTaskDetailPage';
+import AdminStudioBookingPage from './pages/admin/StudioBooking/AdminStudioBookingPage';
+import AdminStudioBookingDetailPage from './pages/admin/StudioBookings/AdminStudioBookingDetailPage';
+import AdminTaskAssignmentWorkspace from './pages/admin/TaskAssignmentWorkspace/AdminTaskAssignmentWorkspace';
+import AdminContractDetailPage from './pages/admin/ContractDetail/AdminContractDetailPage';
+import AdminChatRoomsManagement from './pages/admin/ChatRooms/AdminChatRoomsManagement';
 import MyStudioBookings from './pages/recordingArtist/MyStudioBookings/MyStudioBookings';
 import RecordingArtistStudioBookingDetailPage from './pages/recordingArtist/StudioBookingDetail/StudioBookingDetailPage';
 import MySlotsPage from './pages/recordingArtist/MySlots/MySlotsPage';
@@ -414,7 +430,7 @@ function App() {
           <Route
             path="/chat"
             element={
-              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <ChatLayout />
               </ProtectedRoute>
             }
@@ -422,8 +438,18 @@ function App() {
           <Route
             path="/chat/:roomId"
             element={
-              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <ChatLayout />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- ADMIN CHAT ROUTES --- */}
+          <Route
+            path="/admin/chat"
+            element={
+              <ProtectedRoute allowedRoles={['SYSTEM_ADMIN']}>
+                <AdminChatLayout />
               </ProtectedRoute>
             }
           />
@@ -570,15 +596,50 @@ function App() {
             <Route path="specialists" element={<SpecialistManagement />} />
             <Route path="skills" element={<SkillManagement />} />
             <Route path="demos" element={<DemoManagement />} />
-            <Route path="contracts" element={<ContractsManagement />} />
+            <Route path="contract-builder" element={<ContractBuilder />} />
+            <Route
+              path="contracts/:contractId/edit"
+              element={<ContractBuilder />}
+            />
+            <Route path="contracts" element={<AdminContractsManagement />} />
             <Route
               path="contracts/:contractId"
-              element={<ManagerContractDetailPage />}
+              element={<AdminContractDetailPage />}
+            />
+            <Route path="milestone-assignments" element={<AdminMilestonesPage />} />
+            <Route
+              path="milestone-assignments/:contractId/new"
+              element={<AdminTaskAssignmentWorkspace />}
+            />
+            <Route
+              path="milestone-assignments/:contractId/edit/:assignmentId"
+              element={<AdminTaskAssignmentWorkspace />}
+            />
+            <Route
+              path="milestone-assignments/:contractId/milestone/:milestoneId"
+              element={<AdminMilestoneDetailPage />}
+            />
+            <Route path="task-progress" element={<AdminTaskProgressManagement />} />
+            <Route
+              path="tasks/:contractId/:assignmentId"
+              element={<AdminTaskDetailPage />}
+            />
+            <Route
+              path="studio-booking/:contractId/:milestoneId"
+              element={<AdminStudioBookingPage />}
+            />
+            <Route path="revision-requests" element={<AdminRevisionRequestsManagement />} />
+            <Route path="studio-bookings" element={<AdminStudioBookingsManagement />} />
+            <Route
+              path="studio-bookings/:bookingId"
+              element={<AdminStudioBookingDetailPage />}
             />
             <Route path="tasks" element={<Tasks />} />
             <Route path="reviews" element={<ReviewManagement />} />
             <Route path="settings" element={<Dashboard />} />
             <Route path="profile" element={<AdminProfile />} />
+            <Route path="chat-rooms" element={<AdminChatRoomsManagement />} />
+            <Route path="chat/:roomId" element={<AdminChatConversationPage />} />
           </Route>
 
           {/* --- TRANSCRIPTION ROUTES (PROTECTED) --- */}

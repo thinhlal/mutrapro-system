@@ -16,6 +16,10 @@ import {
   StarOutlined,
   PlayCircleOutlined,
   DollarOutlined,
+  UsergroupAddOutlined,
+  EditOutlined,
+  CalendarOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -92,14 +96,34 @@ const menuItems = [
     label: <Link to="/admin/contracts">Contracts</Link>,
   },
   {
-    key: '/admin/tasks',
+    key: '/admin/milestone-assignments',
+    icon: <UsergroupAddOutlined />,
+    label: <Link to="/admin/milestone-assignments">Milestones</Link>,
+  },
+  {
+    key: '/admin/task-progress',
     icon: <UnorderedListOutlined />,
-    label: <Link to="/admin/tasks">Tasks</Link>,
+    label: <Link to="/admin/task-progress">Task Progress</Link>,
+  },
+  {
+    key: '/admin/revision-requests',
+    icon: <EditOutlined />,
+    label: <Link to="/admin/revision-requests">Revision Requests</Link>,
+  },
+  {
+    key: '/admin/studio-bookings',
+    icon: <CalendarOutlined />,
+    label: <Link to="/admin/studio-bookings">Studio Bookings</Link>,
   },
   {
     key: '/admin/reviews',
     icon: <StarOutlined />,
     label: <Link to="/admin/reviews">Review Management</Link>,
+  },
+  {
+    key: '/admin/chat-rooms',
+    icon: <MessageOutlined />,
+    label: <Link to="/admin/chat-rooms">Chat Rooms Management</Link>,
   },
 ];
 
@@ -112,6 +136,34 @@ const AdminLayout = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Function to get selected key for menu highlighting
+  const getSelectedKey = () => {
+    const path = location.pathname;
+    // Handle nested routes - return parent route key
+    if (path.startsWith('/admin/milestone-assignments')) {
+      return '/admin/milestone-assignments';
+    }
+    if (path.startsWith('/admin/tasks/')) {
+      return '/admin/task-progress';
+    }
+    if (path.startsWith('/admin/contracts/')) {
+      return '/admin/contracts';
+    }
+    if (path.startsWith('/admin/studio-bookings/')) {
+      return '/admin/studio-bookings';
+    }
+    if (path.startsWith('/admin/studio-booking/')) {
+      return '/admin/studio-bookings';
+    }
+    if (path.startsWith('/admin/chat-rooms')) {
+      return '/admin/chat-rooms';
+    }
+    if (path.startsWith('/admin/service-requests/')) {
+      return '/admin/service-requests';
+    }
+    return path;
+  };
 
   const handleLogout = async () => {
     try {
@@ -152,7 +204,7 @@ const AdminLayout = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[getSelectedKey()]}
           items={menuItems}
         />
       </Sider>

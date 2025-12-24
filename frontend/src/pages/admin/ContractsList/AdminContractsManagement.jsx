@@ -24,7 +24,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import styles from './ContractsManagement.module.css';
+import styles from './AdminContractsManagement.module.css';
 import {
   getAllContracts,
   cancelContractByManager,
@@ -173,7 +173,7 @@ const statusText = {
 
 const { Text } = Typography;
 
-export default function ContractsManagement() {
+export default function AdminContractsManagement() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState();
   const [status, setStatus] = useState();
@@ -619,7 +619,7 @@ export default function ContractsManagement() {
             <Tooltip title="View Details">
               <Button
                 icon={<EyeOutlined />}
-                onClick={() => navigate(`/manager/contracts/${r.contractId}`)}
+                onClick={() => navigate(`/admin/contracts/${r.contractId}`)}
                 block
               >
                 View Details
@@ -727,7 +727,7 @@ export default function ContractsManagement() {
                   type="primary"
                   ghost
                   onClick={() =>
-                    navigate(`/manager/contracts/${r.contractId}/edit`)
+                    navigate(`/admin/contracts/${r.contractId}/edit`)
                   }
                   block
                 />
@@ -849,19 +849,7 @@ export default function ContractsManagement() {
             dataSource={data}
             bordered
             size="middle"
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-              showTotal: total => `Total ${total} contracts`,
-              onChange: (page, pageSize) => {
-                fetchContracts(page - 1, pageSize); // Convert 1-indexed to 0-indexed
-              },
-              onShowSizeChange: (current, size) => {
-                fetchContracts(0, size); // Reset to first page when page size changes
-              },
-            }}
+            pagination={{ pageSize: 8, showSizeChanger: false }}
             loading={loading}
           />
         )}
@@ -914,7 +902,7 @@ export default function ContractsManagement() {
               icon={<CopyOutlined />}
               onClick={() => {
                 navigate(
-                  `/manager/contract-builder?requestId=${revisionContract.requestId}`,
+                  `/admin/contract-builder?requestId=${revisionContract.requestId}`,
                   {
                     state: {
                       copyFromContract: {
@@ -1290,3 +1278,4 @@ export default function ContractsManagement() {
     </div>
   );
 }
+

@@ -1,0 +1,33 @@
+.container {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.filterCard {
+  margin-bottom: 16px;
+}
+
+.summaryBar {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+}
+
+  .header {
+    flex-direction: column;
+  gap: 16px;
+}
+}

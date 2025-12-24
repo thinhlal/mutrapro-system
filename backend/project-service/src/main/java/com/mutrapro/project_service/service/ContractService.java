@@ -48,6 +48,11 @@ import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
 import com.mutrapro.project_service.mapper.ContractMilestoneMapper;
 import com.mutrapro.project_service.repository.ContractInstallmentRepository;
+import com.mutrapro.shared.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractSignSessionRepository;
@@ -1025,35 +1030,83 @@ public class ContractService {
     
     /**
      * Lấy danh sách contracts được quản lý bởi manager hiện tại
+     * SYSTEM_ADMIN: trả về tất cả contracts
+     * MANAGER: chỉ trả về contracts họ quản lý
      * Sắp xếp theo ngày tạo mới nhất lên đầu
      */
     @Transactional(readOnly = true)
     public List<ContractResponse> getMyManagedContracts() {
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
+        List<Contract> contracts;
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả contracts
+            contracts = contractRepository.findAll();
+            // Sort by createdAt descending
+            contracts = contracts.stream()
+                .sorted(Comparator.comparing(Contract::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+        } else {
+            // MANAGER: chỉ contracts họ quản lý
         String managerId = getCurrentUserId();
-        List<Contract> contracts = contractRepository.findByManagerUserIdOrderByCreatedAtDesc(managerId);
+            contracts = contractRepository.findByManagerUserIdOrderByCreatedAtDesc(managerId);
+        }
+        
         return contracts.stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());
     }
     
     /**
-     * Lấy danh sách contracts được quản lý bởi manager hiện tại với filter
+     * Lấy danh sách contracts được quản lý bởi manager hiện tại với filter và pagination
+     * SYSTEM_ADMIN: trả về tất cả contracts (không filter theo manager)
+     * MANAGER: chỉ trả về contracts họ quản lý
      * Sắp xếp theo ngày tạo mới nhất lên đầu
      */
     @Transactional(readOnly = true)
-    public List<ContractResponse> getMyManagedContractsWithFilters(
+    public PageResponse<ContractResponse> getMyManagedContractsWithFilters(
             String search,
             ContractType contractType,
             ContractStatus status,
             CurrencyType currency,
-            LocalDateTime startDate,
-            LocalDateTime endDate) {
-        String managerId = getCurrentUserId();
-        List<Contract> contracts = contractRepository.findMyManagedContractsWithFilters(
-                managerId, search, contractType, status, currency, startDate, endDate);
-        return contracts.stream()
+            int page,
+            int size) {
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
+        // Build Pageable với sort by createdAt DESC
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        Page<Contract> contractsPage;
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả contracts (không filter theo manager)
+            contractsPage = contractRepository.findAllContractsWithFilters(
+                    search, contractType, status, currency, pageable);
+        } else {
+            // MANAGER: chỉ contracts họ quản lý
+            String managerId = getCurrentUserId();
+            contractsPage = contractRepository.findMyManagedContractsWithFilters(
+                managerId, search, contractType, status, currency, pageable);
+        }
+        
+        // Map to response
+        List<ContractResponse> responses = contractsPage.getContent().stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());
+        
+        // Build PageResponse
+        return PageResponse.<ContractResponse>builder()
+                .content(responses)
+                .pageNumber(contractsPage.getNumber())
+                .pageSize(contractsPage.getSize())
+                .totalElements(contractsPage.getTotalElements())
+                .totalPages(contractsPage.getTotalPages())
+                .first(contractsPage.isFirst())
+                .last(contractsPage.isLast())
+                .hasNext(contractsPage.hasNext())
+                .hasPrevious(contractsPage.hasPrevious())
+                .build();
     }
     
     /**

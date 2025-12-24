@@ -75,6 +75,16 @@ export const removeParticipant = async (roomId, userId) => {
   return response.data;
 };
 
+/**
+ * Deactivate chat room (Admin only)
+ */
+export const deactivateRoom = async roomId => {
+  const response = await axiosInstance.put(
+    API_ENDPOINTS.CHAT.DEACTIVATE_ROOM(roomId)
+  );
+  return response.data;
+};
+
 // ==================== Messages ====================
 
 /**
@@ -178,6 +188,7 @@ export default {
   createChatRoom,
   addParticipant,
   removeParticipant,
+  deactivateRoom,
   getMessages,
   getRecentMessages,
   getUnreadCount,

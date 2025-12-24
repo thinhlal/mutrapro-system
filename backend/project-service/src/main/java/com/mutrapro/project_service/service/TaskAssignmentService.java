@@ -1437,7 +1437,10 @@ public class TaskAssignmentService {
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
-        String managerUserId = getCurrentUserId();
+        // Check if user is SYSTEM_ADMIN
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
         List<Contract> contracts;
         
         long step1Start = System.currentTimeMillis();
@@ -1467,8 +1470,18 @@ public class TaskAssignmentService {
                 ContractStatus.active,
                 ContractStatus.completed
             );
-            List<ContractBasicInfo> contractBasicInfos = 
-                contractRepository.findBasicInfoByManagerUserIdAndStatusIn(managerUserId, allowedStatuses);
+            
+            List<ContractBasicInfo> contractBasicInfos;
+            if (isSystemAdmin) {
+                // SYSTEM_ADMIN: xem tất cả contracts (không filter theo manager)
+                // Cần thêm method findAllBasicInfoByStatusIn trong repository
+                contractBasicInfos = contractRepository.findBasicInfoByStatusIn(allowedStatuses);
+            } else {
+                // MANAGER: chỉ contracts họ quản lý
+                String managerUserId = getCurrentUserId();
+                contractBasicInfos = 
+                    contractRepository.findBasicInfoByManagerUserIdAndStatusIn(managerUserId, allowedStatuses);
+            }
             
             // Convert projection to Contract objects (chỉ với các field cần thiết)
             // Note: Contract extends BaseEntity, createdAt is inherited
@@ -1836,7 +1849,9 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Lấy danh sách tất cả task assignments với pagination và filters (cho manager)
+     * Lấy danh sách tất cả task assignments với pagination và filters
+     * SYSTEM_ADMIN: trả về tất cả task assignments (không filter theo manager)
+     * MANAGER: chỉ trả về task assignments của contracts họ quản lý
      * Sử dụng JPA query với filters và pagination ở database level
      */
     public PageResponse<TaskAssignmentResponse> getAllTaskAssignments(
@@ -1850,7 +1865,9 @@ public class TaskAssignmentService {
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
-        String managerUserId = getCurrentUserId();
+        // Check if user is SYSTEM_ADMIN
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
         
         List<ContractStatus> allowedContractStatuses = List.of(
             ContractStatus.signed,
@@ -1901,29 +1918,55 @@ public class TaskAssignmentService {
         Pageable pageable = PageRequest.of(safePage, safeSize);
         Page<TaskAssignment> pageResult;
         
-        if (searchKeyword != null && !searchKeyword.isBlank()) {
-            // Use optimized query with JOIN for keyword search (including contractNumber)
-            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeywordOptimized(
-                managerUserId,
-                allowedContractStatuses,
-                statusEnum, 
-                taskTypeEnum, 
-                searchKeyword,
-                validMinProgress,
-                validMaxProgress,
-                pageable
-            );
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả task assignments (không filter theo manager)
+            if (searchKeyword != null && !searchKeyword.isBlank()) {
+                pageResult = taskAssignmentRepository.findAllWithFiltersAndKeywordOptimized(
+                    allowedContractStatuses,
+                    statusEnum, 
+                    taskTypeEnum, 
+                    searchKeyword,
+                    validMinProgress,
+                    validMaxProgress,
+                    pageable
+                );
+            } else {
+                pageResult = taskAssignmentRepository.findAllWithFiltersOptimized(
+                    allowedContractStatuses,
+                    statusEnum, 
+                    taskTypeEnum,
+                    validMinProgress,
+                    validMaxProgress,
+                    pageable
+                );
+            }
         } else {
-            // Use optimized query with JOIN (no keyword, better performance)
-            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersOptimized(
-                managerUserId,
-                allowedContractStatuses,
-                statusEnum, 
-                taskTypeEnum,
-                validMinProgress,
-                validMaxProgress,
-                pageable
-            );
+            // MANAGER: chỉ task assignments của contracts họ quản lý
+            String managerUserId = getCurrentUserId();
+            if (searchKeyword != null && !searchKeyword.isBlank()) {
+                // Use optimized query with JOIN for keyword search (including contractNumber)
+                pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeywordOptimized(
+                    managerUserId,
+                    allowedContractStatuses,
+                    statusEnum, 
+                    taskTypeEnum, 
+                    searchKeyword,
+                    validMinProgress,
+                    validMaxProgress,
+                    pageable
+                );
+            } else {
+                // Use optimized query with JOIN (no keyword, better performance)
+                pageResult = taskAssignmentRepository.findAllByManagerWithFiltersOptimized(
+                    managerUserId,
+                    allowedContractStatuses,
+                    statusEnum, 
+                    taskTypeEnum,
+                    validMinProgress,
+                    validMaxProgress,
+                    pageable
+                );
+            }
         }
         List<TaskAssignment> assignments = pageResult.getContent();
 
@@ -2744,6 +2787,13 @@ public class TaskAssignmentService {
      * Verify user is manager of the contract
      */
     private void verifyManagerPermission(Contract contract) {
+        // SYSTEM_ADMIN có full quyền
+        List<String> userRoles = getCurrentUserRoles();
+        if (hasRole(userRoles, "SYSTEM_ADMIN")) {
+            return;
+        }
+        
+        // MANAGER: chỉ contracts họ quản lý
         String currentUserId = getCurrentUserId();
         if (!contract.getManagerUserId().equals(currentUserId)) {
             throw UnauthorizedException.create(
@@ -3637,5 +3687,33 @@ public class TaskAssignmentService {
             throw UserNotAuthenticatedException.create();
         }
         throw UserNotAuthenticatedException.create();
+    }
+    
+    /**
+     * Lấy danh sách roles của user hiện tại từ JWT
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getCurrentUserRoles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                // Single role: "CUSTOMER", "MANAGER", etc.
+                return List.of(scopeString);
+            } else if (scopeObject instanceof List) {
+                return (List<String>) scopeObject;
+            }
+            log.warn("scope claim not found in JWT");
+            return List.of();
+        }
+        throw UserNotAuthenticatedException.create();
+    }
+    
+    /**
+     * Kiểm tra xem user có role hay không (case-insensitive)
+     */
+    private boolean hasRole(List<String> userRoles, String role) {
+        return userRoles.stream()
+                .anyMatch(r -> r.equalsIgnoreCase(role));
     }
 }

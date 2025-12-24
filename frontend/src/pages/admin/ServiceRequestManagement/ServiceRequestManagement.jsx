@@ -2,27 +2,22 @@
 import { useState, useEffect } from 'react';
 import {
   Table,
-  Tabs,
   Tag,
   Button,
   Space,
   message,
   Card,
   Typography,
-  Badge,
   Select,
   Tooltip,
 } from 'antd';
 import {
-  CheckCircleOutlined,
   ReloadOutlined,
   FileTextOutlined,
   FileSearchOutlined,
 } from '@ant-design/icons';
 import {
   getAllServiceRequests,
-  getMyAssignedRequests,
-  assignServiceRequest,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -30,7 +25,6 @@ import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestManagement.module.css';
 
 const { Title } = Typography;
-const { TabPane } = Tabs;
 
 // Màu sắc cho từng trạng thái (lowercase từ API)
 const STATUS_COLORS = {
@@ -75,12 +69,8 @@ const REQUEST_TYPE_LABELS = {
 };
 
 export default function ServiceRequestManagement() {
-  const [activeTab, setActiveTab] = useState('my');
   const [allRequests, setAllRequests] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
   const [loadingAll, setLoadingAll] = useState(false);
-  const [loadingMy, setLoadingMy] = useState(false);
-  const [assigning, setAssigning] = useState({});
 
   // Pagination state
   const [allPagination, setAllPagination] = useState({
@@ -88,21 +78,13 @@ export default function ServiceRequestManagement() {
     pageSize: 10,
     total: 0,
   });
-  const [myPagination, setMyPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
 
   // Sort state
   const [allSort, setAllSort] = useState('createdAt,desc');
-  const [mySort, setMySort] = useState('createdAt,desc');
 
   // Filter state
   const [allRequestTypeFilter, setAllRequestTypeFilter] = useState(null);
   const [allStatusFilter, setAllStatusFilter] = useState(null);
-  const [myRequestTypeFilter, setMyRequestTypeFilter] = useState(null);
-  const [myStatusFilter, setMyStatusFilter] = useState(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -155,85 +137,12 @@ export default function ServiceRequestManagement() {
     }
   };
 
-  // Fetch requests đã được assign cho user hiện tại với phân trang
-  const fetchMyRequests = async (
-    page = 0,
-    size = 10,
-    sort = mySort,
-    requestType = myRequestTypeFilter,
-    status = myStatusFilter
-  ) => {
-    try {
-      setLoadingMy(true);
-      const response = await getMyAssignedRequests(user?.id, {
-        page: page,
-        size: size,
-        sort: sort,
-        requestType: requestType,
-        status: status,
-      });
-
-      if (response?.status === 'success') {
-        // API trả về Page object
-        const pageData = response.data;
-        const data = pageData?.content || [];
-
-        // Map field names
-        const mappedData = data.map(item => ({
-          ...item,
-          id: item.requestId || item.id,
-          contactName: item.contactName || item.userId || 'N/A',
-          contactEmail: item.contactEmail || item.userId || 'N/A',
-          contactPhone: item.contactPhone || 'N/A',
-        }));
-
-        setMyRequests(mappedData);
-        setMyPagination({
-          current: (pageData?.number || 0) + 1, // Spring Data page starts from 0
-          pageSize: pageData?.size || size,
-          total: pageData?.totalElements || 0,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching my requests:', error);
-      message.error('Failed to load assigned requests');
-    } finally {
-      setLoadingMy(false);
-    }
-  };
-
-  // Assign request
-  const handleAssign = async requestId => {
-    if (!user?.id) {
-      message.error('User ID not found');
-      return;
-    }
-
-    try {
-      setAssigning(prev => ({ ...prev, [requestId]: true }));
-      const response = await assignServiceRequest(requestId, user.id);
-
-      if (response?.status === 'success') {
-        message.success('Request assigned successfully!');
-        // Refresh cả 2 danh sách
-        fetchAllRequests();
-        fetchMyRequests();
-      } else {
-        throw new Error(response?.message || 'Failed to assign request');
-      }
-    } catch (error) {
-      console.error('Error assigning request:', error);
-      message.error(error?.message || 'Failed to assign request');
-    } finally {
-      setAssigning(prev => ({ ...prev, [requestId]: false }));
-    }
-  };
 
   // Navigate đến Contract Builder với requestId
   const handleCreateContract = record => {
     const requestId = record.requestId || record.id;
     // Navigate đến contract builder với requestId trong query params
-    navigate(`/manager/contract-builder?requestId=${requestId}`);
+    navigate(`/admin/contract-builder?requestId=${requestId}`);
   };
 
   // Điều hướng đến trang danh sách contracts của request
@@ -259,12 +168,9 @@ export default function ServiceRequestManagement() {
         fetchAllRequests(
           allPagination.current - 1,
           allPagination.pageSize,
-          allSort
-        );
-        fetchMyRequests(
-          myPagination.current - 1,
-          myPagination.pageSize,
-          mySort
+          allSort,
+          allRequestTypeFilter,
+          allStatusFilter
         );
       }
     };
@@ -273,11 +179,10 @@ export default function ServiceRequestManagement() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [allPagination, myPagination, allSort, mySort]);
+  }, [allPagination, allSort, allRequestTypeFilter, allStatusFilter]);
 
   useEffect(() => {
     fetchAllRequests(0, allPagination.pageSize, allSort);
-    fetchMyRequests(0, myPagination.pageSize, mySort);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -390,7 +295,7 @@ export default function ServiceRequestManagement() {
     },
   };
 
-  // Actions column (dùng chung)
+  // Actions column
   const actionsColumn = {
     title: 'Actions',
     key: 'actions',
@@ -398,7 +303,6 @@ export default function ServiceRequestManagement() {
     fixed: 'right',
     render: (_, record) => {
       const isAssignedToMe = record.managerUserId === user?.id;
-      const hasManager = !!record.managerUserId;
       // Sử dụng field hasContract từ response (đã được enrich từ backend)
       const hasContract = record.hasContract === true;
       const status = (record.status || '').toLowerCase();
@@ -414,18 +318,6 @@ export default function ServiceRequestManagement() {
 
       return (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
-          {!hasManager && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              loading={assigning[record.id]}
-              onClick={() => handleAssign(record.id)}
-              block
-            >
-              Assign to Me
-            </Button>
-          )}
           {isAssignedToMe && !hasContract && !isContractFlowLocked && (
             <Button
               type="default"
@@ -450,11 +342,8 @@ export default function ServiceRequestManagement() {
     },
   };
 
-  // Columns cho tab "All Requests" (có cột "Assigned To")
-  const allColumns = [...baseColumns, assignedToColumn, actionsColumn];
-
-  // Columns cho tab "My Assigned Requests" (không có cột "Assigned To")
-  const myColumns = [...baseColumns, actionsColumn];
+  // Columns (có cột "Assigned To")
+  const columns = [...baseColumns, assignedToColumn, actionsColumn];
 
   const sortOptions = [
     { value: 'createdAt,desc', label: 'Created Date (Newest)' },
@@ -502,17 +391,6 @@ export default function ServiceRequestManagement() {
     );
   };
 
-  const handleMySortChange = value => {
-    setMySort(value);
-    fetchMyRequests(
-      0,
-      myPagination.pageSize,
-      value,
-      myRequestTypeFilter,
-      myStatusFilter
-    );
-  };
-
   const handleAllRequestTypeFilterChange = value => {
     setAllRequestTypeFilter(value);
     fetchAllRequests(
@@ -535,22 +413,6 @@ export default function ServiceRequestManagement() {
     );
   };
 
-  const handleMyRequestTypeFilterChange = value => {
-    setMyRequestTypeFilter(value);
-    fetchMyRequests(0, myPagination.pageSize, mySort, value, myStatusFilter);
-  };
-
-  const handleMyStatusFilterChange = value => {
-    setMyStatusFilter(value);
-    fetchMyRequests(
-      0,
-      myPagination.pageSize,
-      mySort,
-      myRequestTypeFilter,
-      value
-    );
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -566,13 +428,6 @@ export default function ServiceRequestManagement() {
                 allRequestTypeFilter,
                 allStatusFilter
               );
-              fetchMyRequests(
-                myPagination.current - 1,
-                myPagination.pageSize,
-                mySort,
-                myRequestTypeFilter,
-                myStatusFilter
-              );
             }}
           >
             Refresh
@@ -581,177 +436,77 @@ export default function ServiceRequestManagement() {
       </div>
 
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane
-            tab={
-              <span>
-                My Assigned Requests
-                <Badge
-                  count={myPagination.total}
-                  style={{ marginLeft: 8, backgroundColor: '#1890ff' }}
-                />
-              </span>
-            }
-            key="my"
-          >
-            <div
-              style={{
-                marginBottom: 16,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <Space size="middle">
-                <span style={{ fontWeight: 500 }}>Filter:</span>
-                <Select
-                  value={myRequestTypeFilter}
-                  onChange={handleMyRequestTypeFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Request Type"
-                  allowClear
-                  options={requestTypeOptions}
-                />
-                <Select
-                  value={myStatusFilter}
-                  onChange={handleMyStatusFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Status"
-                  allowClear
-                  options={statusOptions}
-                />
-              </Space>
-              <Space>
-                <span style={{ fontWeight: 500 }}>Sort by:</span>
-                <Select
-                  value={mySort}
-                  onChange={handleMySortChange}
-                  style={{ width: 200 }}
-                  options={sortOptions}
-                />
-              </Space>
-            </div>
-            <Table
-              columns={myColumns}
-              dataSource={myRequests}
-              rowKey="id"
-              loading={loadingMy}
-              scroll={{ x: 1200 }}
-              pagination={{
-                current: myPagination.current,
-                pageSize: myPagination.pageSize,
-                total: myPagination.total,
-                showSizeChanger: true,
-                showTotal: total => `Total ${total} assigned requests`,
-                onChange: (page, pageSize) => {
-                  fetchMyRequests(
-                    page - 1,
-                    pageSize,
-                    mySort,
-                    myRequestTypeFilter,
-                    myStatusFilter
-                  ); // Spring Data page starts from 0
-                },
-                onShowSizeChange: (current, size) => {
-                  fetchMyRequests(
-                    0,
-                    size,
-                    mySort,
-                    myRequestTypeFilter,
-                    myStatusFilter
-                  );
-                },
-              }}
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <Space size="middle">
+            <span style={{ fontWeight: 500 }}>Filter:</span>
+            <Select
+              value={allRequestTypeFilter}
+              onChange={handleAllRequestTypeFilterChange}
+              style={{ width: 200 }}
+              placeholder="Request Type"
+              allowClear
+              options={requestTypeOptions}
             />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                All Requests
-                <Badge
-                  count={allPagination.total}
-                  style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
-                />
-              </span>
-            }
-            key="all"
-          >
-            <div
-              style={{
-                marginBottom: 16,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <Space size="middle">
-                <span style={{ fontWeight: 500 }}>Filter:</span>
-                <Select
-                  value={allRequestTypeFilter}
-                  onChange={handleAllRequestTypeFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Request Type"
-                  allowClear
-                  options={requestTypeOptions}
-                />
-                <Select
-                  value={allStatusFilter}
-                  onChange={handleAllStatusFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Status"
-                  allowClear
-                  options={statusOptions}
-                />
-              </Space>
-              <Space>
-                <span style={{ fontWeight: 500 }}>Sort by:</span>
-                <Select
-                  value={allSort}
-                  onChange={handleAllSortChange}
-                  style={{ width: 200 }}
-                  options={sortOptions}
-                />
-              </Space>
-            </div>
-            <Table
-              columns={allColumns}
-              dataSource={allRequests}
-              rowKey="id"
-              loading={loadingAll}
-              scroll={{ x: 1200 }}
-              pagination={{
-                current: allPagination.current,
-                pageSize: allPagination.pageSize,
-                total: allPagination.total,
-                showSizeChanger: true,
-                showTotal: total => `Total ${total} requests`,
-                onChange: (page, pageSize) => {
-                  fetchAllRequests(
-                    page - 1,
-                    pageSize,
-                    allSort,
-                    allRequestTypeFilter,
-                    allStatusFilter
-                  ); // Spring Data page starts from 0
-                },
-                onShowSizeChange: (current, size) => {
-                  fetchAllRequests(
-                    0,
-                    size,
-                    allSort,
-                    allRequestTypeFilter,
-                    allStatusFilter
-                  );
-                },
-              }}
+            <Select
+              value={allStatusFilter}
+              onChange={handleAllStatusFilterChange}
+              style={{ width: 200 }}
+              placeholder="Status"
+              allowClear
+              options={statusOptions}
             />
-          </TabPane>
-        </Tabs>
+          </Space>
+          <Space>
+            <span style={{ fontWeight: 500 }}>Sort by:</span>
+            <Select
+              value={allSort}
+              onChange={handleAllSortChange}
+              style={{ width: 200 }}
+              options={sortOptions}
+            />
+          </Space>
+        </div>
+        <Table
+          columns={columns}
+          dataSource={allRequests}
+          rowKey="id"
+          loading={loadingAll}
+          scroll={{ x: 1200 }}
+          pagination={{
+            current: allPagination.current,
+            pageSize: allPagination.pageSize,
+            total: allPagination.total,
+            showSizeChanger: true,
+            showTotal: total => `Total ${total} requests`,
+            onChange: (page, pageSize) => {
+              fetchAllRequests(
+                page - 1,
+                pageSize,
+                allSort,
+                allRequestTypeFilter,
+                allStatusFilter
+              ); // Spring Data page starts from 0
+            },
+            onShowSizeChange: (current, size) => {
+              fetchAllRequests(
+                0,
+                size,
+                allSort,
+                allRequestTypeFilter,
+                allStatusFilter
+              );
+            },
+          }}
+        />
       </Card>
     </div>
   );

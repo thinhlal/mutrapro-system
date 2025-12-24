@@ -211,4 +211,72 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
             @Param("minProgress") Integer minProgress,
             @Param("maxProgress") Integer maxProgress,
             Pageable pageable);
+    
+    /**
+     * Find all task assignments with filters (không filter theo manager) - dùng cho SYSTEM_ADMIN
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "LEFT JOIN com.mutrapro.project_service.entity.ContractMilestone cm ON ta.milestoneId = cm.milestoneId " +
+           "WHERE c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
+           "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END")
+    Page<TaskAssignment> findAllWithFiltersOptimized(
+            @Param("contractStatuses") List<ContractStatus> contractStatuses,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
+            Pageable pageable);
+    
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "LEFT JOIN com.mutrapro.project_service.entity.ContractMilestone cm ON ta.milestoneId = cm.milestoneId " +
+           "WHERE c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
+           "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistUserIdSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END")
+    Page<TaskAssignment> findAllWithFiltersAndKeywordOptimized(
+            @Param("contractStatuses") List<ContractStatus> contractStatuses,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("keyword") String keyword,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
+            Pageable pageable);
 }

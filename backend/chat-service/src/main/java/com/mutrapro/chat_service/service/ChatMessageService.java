@@ -62,11 +62,16 @@ public class ChatMessageService {
      */
     @Transactional
     public ChatMessageResponse sendMessage(SendMessageRequest request, String userId, String userName) {
-        // Verify user is participant
+        // Verify user is participant (or SYSTEM_ADMIN)
         ChatRoom chatRoom = chatRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> ChatRoomNotFoundException.byId(request.getRoomId()));
         
-        if (!chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(
+        // Check if user is SYSTEM_ADMIN (bypass participant check)
+        // Note: userId and userName are passed from WebSocket, so we need to check role from JWT
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
+        
+        if (!isSystemAdmin && !chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(
                 request.getRoomId(), userId)) {
             throw ChatRoomAccessDeniedException.create(request.getRoomId(), userId);
         }
@@ -220,7 +225,17 @@ public class ChatMessageService {
     public long getUnreadCount(String roomId) {
         String userId = getCurrentUserId();
         
-        // Get participant to check lastSeenAt
+        // Check if user is SYSTEM_ADMIN
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
+        
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: return 0 (admin doesn't need unread count)
+            log.debug("Unread count for SYSTEM_ADMIN: roomId={}, userId={}, count=0", roomId, userId);
+            return 0;
+        }
+        
+        // Normal user: Get participant to check lastSeenAt
         ChatParticipant participant = chatParticipantRepository
                 .findByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)
                 .orElseThrow(() -> ChatRoomAccessDeniedException.create(roomId, userId));
@@ -250,7 +265,17 @@ public class ChatMessageService {
     public void markAsRead(String roomId) {
         String userId = getCurrentUserId();
         
-        // Get participant
+        // Check if user is SYSTEM_ADMIN (bypass participant check for mark as read)
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
+        
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: skip mark as read (or could create a participant record if needed)
+            log.info("SYSTEM_ADMIN mark as read skipped: roomId={}, userId={}", roomId, userId);
+            return;
+        }
+        
+        // Normal user: Get participant and mark as read
         ChatParticipant participant = chatParticipantRepository
                 .findByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)
                 .orElseThrow(() -> ChatRoomAccessDeniedException.create(roomId, userId));
@@ -264,6 +289,16 @@ public class ChatMessageService {
     }
 
     private void verifyParticipantAccess(String roomId, String userId) {
+        // Check if user is SYSTEM_ADMIN
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
+        
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: bypass participant check
+            return;
+        }
+        
+        // Normal user: verify participant access
         if (!chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)) {
             throw ChatRoomAccessDeniedException.create(roomId, userId);
         }
@@ -401,6 +436,25 @@ public class ChatMessageService {
             return jwt.getClaim("userId");
         }
         throw UnauthorizedException.create();
+    }
+
+    /**
+     * Get current user's role from JWT token
+     * Note: The "scope" claim in JWT token contains the role value (SYSTEM_ADMIN, MANAGER, CUSTOMER, etc.)
+     * Identity-service sets: .claim("scope", usersAuth.getRole()) where role is an enum
+     */
+    private String getCurrentUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                return scopeString;
+            } else if (scopeObject != null) {
+                // If it's an enum or other type, convert to string
+                return scopeObject.toString();
+            }
+        }
+        return null;
     }
 }
 

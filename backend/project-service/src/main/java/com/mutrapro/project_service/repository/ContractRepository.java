@@ -7,6 +7,8 @@ import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,6 +51,17 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
             @Param("managerUserId") String managerUserId,
             @Param("statuses") List<ContractStatus> statuses);
     
+    /**
+     * Query tất cả contracts với status filter (không filter theo manager) - dùng cho SYSTEM_ADMIN
+     */
+    @Query("SELECT c.contractId as contractId, c.contractNumber as contractNumber, " +
+           "c.contractType as contractType, c.nameSnapshot as nameSnapshot, " +
+           "c.status as status, c.createdAt as createdAt " +
+           "FROM Contract c WHERE c.status IN :statuses " +
+           "ORDER BY c.createdAt DESC")
+    List<ContractBasicInfo> findBasicInfoByStatusIn(
+            @Param("statuses") List<ContractStatus> statuses);
+    
     // Tối ưu: Chỉ fetch contractId và revisionDeadlineDays (cho getRevisionRequestsByManager)
     @Query("SELECT c.contractId as contractId, c.revisionDeadlineDays as revisionDeadlineDays " +
            "FROM Contract c WHERE c.contractId IN :contractIds")
@@ -67,18 +80,31 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "     LOWER(c.nameSnapshot) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "AND (:contractType IS NULL OR c.contractType = :contractType) " +
            "AND (:status IS NULL OR c.status = :status) " +
-           "AND (:currency IS NULL OR c.currency = :currency) " +
-           "AND (:startDate IS NULL OR c.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR c.createdAt <= :endDate) " +
-           "ORDER BY c.createdAt DESC")
-    List<Contract> findMyManagedContractsWithFilters(
+           "AND (:currency IS NULL OR c.currency = :currency)")
+    Page<Contract> findMyManagedContractsWithFilters(
             @Param("managerUserId") String managerUserId,
             @Param("search") String search,
             @Param("contractType") ContractType contractType,
             @Param("status") ContractStatus status,
             @Param("currency") CurrencyType currency,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            Pageable pageable);
+    
+    /**
+     * Query tất cả contracts với filters (không filter theo manager) - dùng cho SYSTEM_ADMIN
+     */
+    @Query("SELECT c FROM Contract c WHERE " +
+           "(:search IS NULL OR :search = '' OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "     LOWER(c.nameSnapshot) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:contractType IS NULL OR c.contractType = :contractType) " +
+           "AND (:status IS NULL OR c.status = :status) " +
+           "AND (:currency IS NULL OR c.currency = :currency)")
+    Page<Contract> findAllContractsWithFilters(
+            @Param("search") String search,
+            @Param("contractType") ContractType contractType,
+            @Param("status") ContractStatus status,
+            @Param("currency") CurrencyType currency,
+            Pageable pageable);
     
     List<Contract> findByStatus(ContractStatus status);
     

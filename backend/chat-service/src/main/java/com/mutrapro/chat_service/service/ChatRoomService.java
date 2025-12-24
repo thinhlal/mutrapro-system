@@ -95,6 +95,7 @@ public class ChatRoomService {
         if (existingRoom.isPresent()) {
             log.info("Chat room already exists for request: requestId={}, roomId={}", 
                     requestId, existingRoom.get().getRoomId());
+            // existingRoom đã được load với JOIN FETCH từ findByRoomTypeAndContextId
             return chatRoomMapper.toResponse(existingRoom.get());
         }
         
@@ -149,6 +150,7 @@ public class ChatRoomService {
         if (existingRoom.isPresent()) {
             log.info("Chat room already exists for contract: contractId={}, roomId={}", 
                     contractId, existingRoom.get().getRoomId());
+            // existingRoom đã được load với JOIN FETCH từ findByRoomTypeAndContextId
             return chatRoomMapper.toResponse(existingRoom.get());
         }
         
@@ -295,10 +297,22 @@ public class ChatRoomService {
 
     @Transactional(readOnly = true)
     public ChatRoomResponse getChatRoom(String roomId) {
-        String userId = getCurrentUserId();
+        // Check if user is SYSTEM_ADMIN
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
         
-        ChatRoom chatRoom = chatRoomRepository.findByRoomIdAndParticipantUserId(roomId, userId)
+        ChatRoom chatRoom;
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: có thể xem bất kỳ room nào
+            // Use query with JOIN FETCH to load participants
+            chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+                    .orElseThrow(() -> ChatRoomNotFoundException.byId(roomId));
+        } else {
+            // Normal user: chỉ rooms mà họ là participant
+            String userId = getCurrentUserId();
+            chatRoom = chatRoomRepository.findByRoomIdAndParticipantUserId(roomId, userId)
                 .orElseThrow(() -> ChatRoomAccessDeniedException.create(roomId, userId));
+        }
         
         return chatRoomMapper.toResponse(chatRoom);
     }
@@ -326,20 +340,32 @@ public class ChatRoomService {
 
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getUserChatRooms(RoomType roomType) {
-        String userId = getCurrentUserId();
+        // Check if user is SYSTEM_ADMIN
+        String role = getCurrentUserRole();
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(role);
         
         List<ChatRoom> rooms;
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả chat rooms (không filter theo participant)
+            rooms = chatRoomRepository.findAllByRoomType(roomType);
+        } else {
+            // Normal user: chỉ rooms mà họ là participant
+            String userId = getCurrentUserId();
         if (roomType != null) {
             rooms = chatRoomRepository.findAllByParticipantUserIdAndRoomType(userId, roomType);
         } else {
             rooms = chatRoomRepository.findAllByParticipantUserId(userId);
+            }
         }
         
-        return rooms.stream()
+        // Map rooms to responses
+        List<ChatRoomResponse> responses = rooms.stream()
                 .map(chatRoomMapper::toResponse)
                 .collect(Collectors.toList());
+        
+        return responses;
     }
-
+    
     @Transactional
     public ChatRoomResponse addParticipant(String roomId, AddParticipantRequest request) {
         String currentUserId = getCurrentUserId();
@@ -434,12 +460,19 @@ public class ChatRoomService {
 
     /**
      * Get current user's role from JWT token
-     * Note: The "scope" claim in JWT token actually contains the role value (ADMIN, MANAGER, CUSTOMER, etc.)
+     * Note: The "scope" claim in JWT token contains the role value (SYSTEM_ADMIN, MANAGER, CUSTOMER, etc.)
+     * Identity-service sets: .claim("scope", usersAuth.getRole()) where role is an enum
      */
     private String getCurrentUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getClaim("scope"); // scope claim contains role
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                return scopeString;
+            } else if (scopeObject != null) {
+                // If it's an enum or other type, convert to string
+                return scopeObject.toString();
+            }
         }
         return null;
     }

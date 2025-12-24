@@ -415,6 +415,7 @@ export const API_ENDPOINTS = {
     ADD_PARTICIPANT: roomId => `${CHAT_PATH}/chat-rooms/${roomId}/participants`,
     REMOVE_PARTICIPANT: (roomId, userId) =>
       `${CHAT_PATH}/chat-rooms/${roomId}/participants/${userId}`,
+    DEACTIVATE_ROOM: roomId => `${CHAT_PATH}/chat-rooms/${roomId}/deactivate`,
 
     // Messages (read-only via REST, send via WebSocket)
     GET_MESSAGES: roomId => `${CHAT_PATH}/messages/room/${roomId}`,

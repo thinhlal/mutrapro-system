@@ -331,6 +331,37 @@ public class ServiceRequestService {
         throw UserNotAuthenticatedException.create();
     }
     
+    /**
+     * Lấy danh sách roles của user hiện tại từ JWT
+     * Identity-service set: .claim("scope", usersAuth.getRole())
+     * Role là enum: CUSTOMER, MANAGER, SYSTEM_ADMIN, TRANSCRIPTION, ARRANGEMENT, RECORDING_ARTIST
+     * Mỗi user chỉ có 1 role duy nhất
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getCurrentUserRoles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                // Single role: "CUSTOMER", "MANAGER", etc.
+                return List.of(scopeString);
+            } else if (scopeObject instanceof List) {
+                return (List<String>) scopeObject;
+            }
+            log.warn("scope claim not found in JWT");
+            return List.of();
+        }
+        throw UserNotAuthenticatedException.create();
+    }
+    
+    /**
+     * Kiểm tra xem user có role cụ thể không
+     */
+    private boolean hasRole(List<String> userRoles, String role) {
+        return userRoles.stream()
+                .anyMatch(r -> r.equalsIgnoreCase(role));
+    }
+    
     private boolean isAudioFile(String contentType) {
         if (contentType == null) {
             return false;
@@ -429,6 +460,8 @@ public class ServiceRequestService {
     
     /**
      * Lấy tất cả service requests với các filter tùy chọn (có phân trang)
+     * SYSTEM_ADMIN: trả về tất cả service requests (không filter theo managerUserId)
+     * MANAGER: mặc định chỉ lấy những request chưa assign, hoặc filter theo managerUserId nếu được chỉ định
      * 
      * @param status Filter theo status (optional)
      * @param requestType Filter theo request type (optional)
@@ -443,32 +476,51 @@ public class ServiceRequestService {
             Pageable pageable) {
         Page<ServiceRequest> requestsPage;
         
-        if (status != null && requestType != null && managerUserId != null) {
-            // Filter theo cả 3 tham số
-            requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
-                    status, requestType, managerUserId, pageable);
-        } else if (status != null && requestType != null && managerUserId == null) {
-            // Filter theo status và requestType, chỉ lấy những request chưa assign
-            requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserIdIsNull(
-                    status, requestType, pageable);
-        } else if (status != null && managerUserId != null) {
-            // Filter theo status và managerUserId
-            requestsPage = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId, pageable);
-        } else if (requestType != null && managerUserId != null) {
-            // Filter theo requestType và managerUserId
-            requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId, pageable);
-        } else if (status != null && managerUserId == null) {
-            // Filter theo status, chỉ lấy những request chưa assign
-            requestsPage = serviceRequestRepository.findByStatusAndManagerUserIdIsNull(status, pageable);
-        } else if (requestType != null && managerUserId == null) {
-            // Filter theo requestType, chỉ lấy những request chưa assign
-            requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserIdIsNull(requestType, pageable);
-        } else if (managerUserId != null) {
-            // Filter theo managerUserId (lấy những request đã assign cho manager này)
-            requestsPage = serviceRequestRepository.findByManagerUserId(managerUserId, pageable);
+        // Check if user is SYSTEM_ADMIN
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả service requests (không filter theo managerUserId)
+            if (status != null && requestType != null) {
+                requestsPage = serviceRequestRepository.findByStatusAndRequestType(status, requestType, pageable);
+            } else if (status != null) {
+                requestsPage = serviceRequestRepository.findByStatus(status, pageable);
+            } else if (requestType != null) {
+                requestsPage = serviceRequestRepository.findByRequestType(requestType, pageable);
+            } else {
+                // Không có filter, lấy tất cả
+                requestsPage = serviceRequestRepository.findAll(pageable);
+            }
         } else {
-            // Mặc định: chỉ lấy những request chưa assign (managerUserId IS NULL)
-            requestsPage = serviceRequestRepository.findByManagerUserIdIsNull(pageable);
+            // MANAGER: logic cũ (chỉ lấy requests chưa assign hoặc của manager cụ thể)
+            if (status != null && requestType != null && managerUserId != null) {
+                // Filter theo cả 3 tham số
+                requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
+                        status, requestType, managerUserId, pageable);
+            } else if (status != null && requestType != null && managerUserId == null) {
+                // Filter theo status và requestType, chỉ lấy những request chưa assign
+                requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserIdIsNull(
+                        status, requestType, pageable);
+            } else if (status != null && managerUserId != null) {
+                // Filter theo status và managerUserId
+                requestsPage = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId, pageable);
+            } else if (requestType != null && managerUserId != null) {
+                // Filter theo requestType và managerUserId
+                requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId, pageable);
+            } else if (status != null && managerUserId == null) {
+                // Filter theo status, chỉ lấy những request chưa assign
+                requestsPage = serviceRequestRepository.findByStatusAndManagerUserIdIsNull(status, pageable);
+            } else if (requestType != null && managerUserId == null) {
+                // Filter theo requestType, chỉ lấy những request chưa assign
+                requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserIdIsNull(requestType, pageable);
+            } else if (managerUserId != null) {
+                // Filter theo managerUserId (lấy những request đã assign cho manager này)
+                requestsPage = serviceRequestRepository.findByManagerUserId(managerUserId, pageable);
+            } else {
+                // Mặc định: chỉ lấy những request chưa assign (managerUserId IS NULL)
+                requestsPage = serviceRequestRepository.findByManagerUserIdIsNull(pageable);
+            }
         }
         
         log.info("Retrieved {} service requests (page {}/{}) with filters: status={}, requestType={}, managerUserId={}", 

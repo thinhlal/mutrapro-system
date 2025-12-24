@@ -152,7 +152,7 @@ export const getMyManagedContracts = async () => {
 };
 
 /**
- * Lấy tất cả contracts (dùng endpoint my-managed-contracts cho manager/admin)
+ * Lấy tất cả contracts (dùng endpoint my-managed-contracts cho manager/admin) với pagination
  * GET /contracts/my-managed-contracts
  *
  * @param {Object} filters - Filter parameters
@@ -160,9 +160,9 @@ export const getMyManagedContracts = async () => {
  * @param {string} filters.contractType - Filter by contract type
  * @param {string} filters.status - Filter by status
  * @param {string} filters.currency - Filter by currency
- * @param {string} filters.startDate - Start date (ISO string)
- * @param {string} filters.endDate - End date (ISO string)
- * @returns {Promise} ApiResponse với danh sách contracts
+ * @param {number} filters.page - Page number (0-indexed, default: 0)
+ * @param {number} filters.size - Page size (default: 10)
+ * @returns {Promise} ApiResponse với PageResponse chứa danh sách contracts
  */
 export const getAllContracts = async (filters = {}) => {
   try {
@@ -171,8 +171,8 @@ export const getAllContracts = async (filters = {}) => {
     if (filters.contractType) params.contractType = filters.contractType;
     if (filters.status) params.status = filters.status;
     if (filters.currency) params.currency = filters.currency;
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.page !== undefined) params.page = filters.page;
+    if (filters.size !== undefined) params.size = filters.size;
 
     const response = await axiosInstance.get(
       API_ENDPOINTS.CONTRACTS.MY_MANAGED_CONTRACTS,

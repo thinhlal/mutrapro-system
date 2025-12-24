@@ -118,5 +118,16 @@ public class ChatRoomController {
         log.info("Removing participant from room: roomId={}, userId={}", roomId, userId);
         chatRoomService.removeParticipant(roomId, userId);
     }
+
+    @PutMapping("/{roomId}/deactivate")
+    @Operation(summary = "Đóng phòng chat (Admin only)")
+    public ApiResponse<Void> deactivateRoom(@PathVariable String roomId) {
+        log.info("Deactivating chat room: roomId={}", roomId);
+        chatRoomService.deactivateRoom(roomId);
+        return ApiResponse.<Void>builder()
+                .message("Chat room deactivated successfully")
+                .statusCode(200)
+                .build();
+    }
 }
 

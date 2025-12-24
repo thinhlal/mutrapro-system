@@ -41,8 +41,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -1113,8 +1117,12 @@ public class RevisionRequestService {
         Contract contract = contractRepository.findById(assignment.getContractId())
                 .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
         
-        if (userRoles.stream().anyMatch(role -> 
-                role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("SYSTEM_ADMIN"))) {
+        // Check SYSTEM_ADMIN first (has full access)
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả revision requests, không cần check managerUserId
+        } else if (hasRole(userRoles, "MANAGER")) {
+            // MANAGER: chỉ contracts họ quản lý
             if (!contract.getManagerUserId().equals(userId)) {
                 throw UnauthorizedException.create("You can only view revision requests from your contracts");
             }
@@ -1147,6 +1155,8 @@ public class RevisionRequestService {
     
     /**
      * Get all revision requests for a manager (with optional status filter)
+     * SYSTEM_ADMIN: trả về tất cả revision requests (không filter theo manager)
+     * MANAGER: chỉ trả về revision requests của contracts họ quản lý
      * Tối ưu: Filter ở database level và batch fetch contracts để tránh N+1 query
      */
     public List<RevisionRequestResponse> getRevisionRequestsByManager(
@@ -1154,12 +1164,26 @@ public class RevisionRequestService {
             RevisionRequestStatus status) {
         log.info("Getting revision requests for manager: {}, status: {}", managerId, status);
         
+        // Check if user is SYSTEM_ADMIN
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
         // Tối ưu: Filter status ở database level thay vì filter ở memory
         List<RevisionRequest> revisionRequests;
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả revision requests (không filter theo manager)
+            if (status != null) {
+                revisionRequests = revisionRequestRepository.findByStatus(status);
+            } else {
+                revisionRequests = revisionRequestRepository.findAll();
+            }
+        } else {
+            // MANAGER: chỉ revision requests của contracts họ quản lý
         if (status != null) {
             revisionRequests = revisionRequestRepository.findByManagerIdAndStatus(managerId, status);
         } else {
             revisionRequests = revisionRequestRepository.findByManagerId(managerId);
+            }
         }
         
         if (revisionRequests.isEmpty()) {
@@ -1230,8 +1254,11 @@ public class RevisionRequestService {
         }
         
         // Verify user has permission at contract level
-        if (userRoles.stream().anyMatch(role -> 
-                role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("SYSTEM_ADMIN"))) {
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        if (isSystemAdmin) {
+            // SYSTEM_ADMIN: xem tất cả revision requests, không cần check managerUserId
+        } else if (hasRole(userRoles, "MANAGER")) {
+            // MANAGER: chỉ contracts họ quản lý
             if (!contract.getManagerUserId().equals(userId)) {
                 throw UnauthorizedException.create("You can only view revision requests from your contracts");
             }
@@ -1475,6 +1502,34 @@ public class RevisionRequestService {
             log.error("Failed to link arrangement submission to recording milestone: arrangementMilestoneId={}, submissionId={}, contractId={}, error={}",
                     arrangementMilestone.getMilestoneId(), submissionId, contractId, e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Lấy danh sách roles của user hiện tại từ JWT
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getCurrentUserRoles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                // Single role: "CUSTOMER", "MANAGER", etc.
+                return List.of(scopeString);
+            } else if (scopeObject instanceof List) {
+                return (List<String>) scopeObject;
+            }
+            log.warn("scope claim not found in JWT");
+            return List.of();
+        }
+        throw UserNotAuthenticatedException.create();
+    }
+    
+    /**
+     * Kiểm tra xem user có role hay không (case-insensitive)
+     */
+    private boolean hasRole(List<String> userRoles, String role) {
+        return userRoles.stream()
+                .anyMatch(r -> r.equalsIgnoreCase(role));
     }
 }
 

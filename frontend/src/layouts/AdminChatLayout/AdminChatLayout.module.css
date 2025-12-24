@@ -1,0 +1,250 @@
+/* Admin Chat Layout Wrapper */
+.adminChatLayoutWrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.headerSection {
+  position: relative;
+  z-index: 1000;
+}
+
+.adminHeaderActions {
+  position: absolute;
+  top: 88px;
+  right: 20px;
+  z-index: 1001;
+}
+
+/* Main Chat Layout - Outer wrapper */
+.adminChatLayout {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background: #f5f5f5;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Inner Chat Container with max-width 1600px */
+.chatContainer {
+  display: flex;
+  padding-top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background: white;
+  margin: 0 auto;
+}
+
+/* Left Sidebar */
+.sidebar {
+  width: 380px;
+  background: #ffffff;
+  border-right: 1px solid #e8eaed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+.sidebarHeader {
+  padding: 20px;
+  border-bottom: 1px solid #e8eaed;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.headerTitle h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: #262626;
+}
+
+.totalUnreadBadge {
+  margin-left: 12px;
+}
+
+.searchBox {
+  width: 100%;
+}
+
+.searchInput {
+  border-radius: 24px;
+  background-color: #f0f2f5;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.searchInput:hover {
+  background-color: #e8eaed;
+  border-color: #d0d3d6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.searchInput:focus,
+.searchInput:focus-within {
+  background-color: white;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+/* Rooms List */
+.roomsList {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.roomsList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.roomsList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.roomsList::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 4px;
+}
+
+.roomsList::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Room Item */
+.roomItem {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.roomItem:hover {
+  background-color: #f8f9fa;
+}
+
+.roomItem.active {
+  background-color: #e6f7ff;
+  border-left: 3px solid #1890ff;
+}
+
+.roomItem.inactive {
+  opacity: 0.7;
+  background-color: #fafafa;
+}
+
+.roomInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roomTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.roomName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+
+.roomTime {
+  font-size: 12px;
+  color: #8c8c8c;
+  white-space: nowrap;
+}
+
+.roomBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lastMessage {
+  font-size: 13px;
+  color: #595959;
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.senderName {
+  font-weight: 600;
+  color: #262626;
+}
+
+.unreadBadge {
+  flex-shrink: 0;
+}
+
+/* Loading Container */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.emptyContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+/* Main Content - Chat Conversation */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.emptyConversation {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #8c8c8c;
+}
+
+.emptyConversation h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #595959;
+}
+
+.emptyConversation p {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+

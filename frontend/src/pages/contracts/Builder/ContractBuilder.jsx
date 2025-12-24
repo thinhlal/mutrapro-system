@@ -417,6 +417,9 @@ const ContractBuilder = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Determine base path (manager or admin) from current location
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
   const { contractId } = useParams(); // For edit mode
   const requestId = searchParams.get('requestId');
   const copyFromContract = location.state?.copyFromContract; // Data từ contract cũ để copy
@@ -556,8 +559,9 @@ const ContractBuilder = () => {
         'Request ID is required. Please navigate from Service Request Management page.'
       );
       // Redirect về trang manage requests sau 2 giây
+      const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
       setTimeout(() => {
-        navigate('/manager/service-requests');
+        navigate(`${basePath}/service-requests`);
       }, 2000);
     }
   }, [requestId, form, navigate]);
@@ -839,8 +843,9 @@ const ContractBuilder = () => {
         if (contract.status?.toLowerCase() !== 'draft') {
           setError('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
           message.error('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
+          const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
           setTimeout(() => {
-            navigate('/manager/contracts');
+            navigate(`${basePath}/contracts`);
           }, 2000);
           return;
         }
@@ -1264,7 +1269,8 @@ const ContractBuilder = () => {
       message.error(
         'Request ID is required. Please create contract from Service Request Management page.'
       );
-      navigate('/manager/service-requests');
+      const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+      navigate(`${basePath}/service-requests`);
       return;
     }
 
@@ -1512,7 +1518,7 @@ const ContractBuilder = () => {
           placement: 'topRight',
         });
         // Navigate to contracts list
-        navigate('/manager/contracts');
+        navigate(`${basePath}/contracts`);
       } else {
         const errorMessage =
           response?.message ||
@@ -1621,7 +1627,7 @@ const ContractBuilder = () => {
           />
           <Button
             type="primary"
-            onClick={() => navigate('/manager/service-requests')}
+            onClick={() => navigate(`${basePath}/service-requests`)}
           >
             Quay lại Service Requests
           </Button>
@@ -1690,7 +1696,7 @@ const ContractBuilder = () => {
                   <Button
                     size="small"
                     type="primary"
-                    onClick={() => navigate('/manager/service-requests')}
+                    onClick={() => navigate(`${basePath}/service-requests`)}
                   >
                     Go to Service Requests
                   </Button>
