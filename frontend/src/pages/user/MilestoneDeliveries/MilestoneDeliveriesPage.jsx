@@ -59,10 +59,10 @@ const SUBMISSION_STATUS_COLORS = {
 };
 
 const SUBMISSION_STATUS_LABELS = {
-  delivered: 'Đã gửi',
-  revision_requested: 'Yêu cầu chỉnh sửa',
-  customer_accepted: 'Đã chấp nhận',
-  customer_rejected: 'Đã từ chối - Yêu cầu chỉnh sửa',
+  delivered: 'Sent',
+  revision_requested: 'Revision Requested',
+  customer_accepted: 'Accepted',
+  customer_rejected: 'Rejected - Revision Requested',
 };
 
 // Contract Status
@@ -443,8 +443,8 @@ const MilestoneDeliveriesPage = () => {
       if (response?.status === 'success') {
         message.success(
           reviewAction === 'accept'
-            ? 'Đã chấp nhận submission'
-            : 'Đã yêu cầu chỉnh sửa submission'
+            ? 'Submission accepted'
+            : 'Revision requested'
         );
         setSubmissionReviewModalVisible(false);
         setSelectedSubmission(null);
@@ -1229,7 +1229,7 @@ const MilestoneDeliveriesPage = () => {
                                     handleOpenReviewModal(submission, 'rate')
                                   }
                                 >
-                                  {existingReview ? 'Xem đánh giá' : 'Đánh giá'}
+                                  {existingReview ? 'Watch Review' : 'Rate'}
                                 </Button>
                               );
                             }
@@ -1880,8 +1880,8 @@ const MilestoneDeliveriesPage = () => {
       <Modal
         title={
           reviewAction === 'accept'
-            ? 'Xác nhận chấp nhận submission'
-            : 'Yêu cầu chỉnh sửa submission'
+            ? 'Confirm submission'
+            : 'Request revision'
         }
         open={submissionReviewModalVisible}
         onCancel={() => {

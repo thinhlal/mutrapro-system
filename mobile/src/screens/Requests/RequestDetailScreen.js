@@ -29,6 +29,12 @@ import ContractCard from "../../components/ContractCard";
 import FileItem from "../../components/FileItem";
 import { getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
 import { formatPrice } from "../../services/pricingMatrixService";
+import ReviewModal from "../../components/ReviewModal";
+import {
+  createRequestReview,
+  createParticipantReview,
+  getRequestReviews,
+} from "../../services/reviewService";
 
 // Booking Status
 const BOOKING_STATUS_COLORS = {
@@ -70,6 +76,16 @@ const RequestDetailScreen = ({ navigation, route }) => {
   
   // Toggle state for request information
   const [showRequestDetails, setShowRequestDetails] = useState(false);
+
+  // Review states
+  const [requestReviewModalVisible, setRequestReviewModalVisible] = useState(false);
+  const [participantReviewModalVisible, setParticipantReviewModalVisible] = useState(false);
+  const [requestReviewLoading, setRequestReviewLoading] = useState(false);
+  const [participantReviewLoading, setParticipantReviewLoading] = useState(false);
+  const [existingRequestReview, setExistingRequestReview] = useState(null);
+  const [participantReviews, setParticipantReviews] = useState({});
+  const [selectedParticipantIdForReview, setSelectedParticipantIdForReview] = useState(null);
+  const [existingParticipantReview, setExistingParticipantReview] = useState(null);
 
   useEffect(() => {
     loadRequestDetail();
@@ -335,6 +351,149 @@ const RequestDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  // Load request review when request is completed
+  useEffect(() => {
+    if (request?.status?.toLowerCase() === 'completed') {
+      loadRequestReview();
+      // Load participant reviews ONLY for recording requests with booking participants
+      if (
+        request?.requestType === 'recording' &&
+        booking?.participants &&
+        booking.participants.length > 0
+      ) {
+        loadParticipantReviews();
+      }
+    } else {
+      setExistingRequestReview(null);
+      setParticipantReviews({});
+    }
+  }, [request?.status, request?.requestType, requestId, booking?.participants]);
+
+  // Load request review
+  const loadRequestReview = async () => {
+    if (!requestId) return;
+    try {
+      const response = await getRequestReviews(requestId);
+      if (response?.status === 'success' && response?.data) {
+        // Filter REQUEST type review (should be only one)
+        const requestReviewList = Array.isArray(response.data)
+          ? response.data.filter(r => r.reviewType === 'REQUEST')
+          : [];
+        
+        if (requestReviewList.length > 0) {
+          setExistingRequestReview(requestReviewList[0]);
+        } else {
+          setExistingRequestReview(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading request review:', error);
+      setExistingRequestReview(null);
+    }
+  };
+
+  // Load participant reviews
+  const loadParticipantReviews = async () => {
+    if (!requestId) return;
+    try {
+      const response = await getRequestReviews(requestId);
+      if (response?.status === 'success' && response?.data) {
+        // Filter PARTICIPANT type reviews
+        const participantReviewsList = Array.isArray(response.data)
+          ? response.data.filter(r => r.reviewType === 'PARTICIPANT')
+          : [];
+
+        // Map participantId -> review
+        const reviewsMap = {};
+        participantReviewsList.forEach(review => {
+          if (review.participantId) {
+            reviewsMap[review.participantId] = review;
+          }
+        });
+        setParticipantReviews(reviewsMap);
+      }
+    } catch (error) {
+      console.error('Error loading participant reviews:', error);
+      setParticipantReviews({});
+    }
+  };
+
+  // Handle rate request
+  const handleRateRequest = () => {
+    setRequestReviewModalVisible(true);
+  };
+
+  // Handle rate participant
+  const handleRateParticipant = (participantId) => {
+    setSelectedParticipantIdForReview(participantId);
+    setExistingParticipantReview(participantReviews[participantId] || null);
+    setParticipantReviewModalVisible(true);
+  };
+
+  // Handle submit request review
+  const handleSubmitRequestReview = async (reviewData) => {
+    if (!requestId) {
+      Alert.alert('Error', 'Request ID không tồn tại');
+      return;
+    }
+
+    try {
+      setRequestReviewLoading(true);
+      const response = await createRequestReview(requestId, reviewData);
+
+      if (response?.status === 'success') {
+        Alert.alert('Success', 'Request review submitted successfully');
+        setExistingRequestReview(response.data);
+        setRequestReviewModalVisible(false);
+      } else {
+        Alert.alert('Error', response?.message || 'Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Error submitting request review:', error);
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to submit request review'
+      );
+    } finally {
+      setRequestReviewLoading(false);
+    }
+  };
+
+  // Handle submit participant review
+  const handleSubmitParticipantReview = async (reviewData) => {
+    if (!selectedParticipantIdForReview) return;
+
+    try {
+      setParticipantReviewLoading(true);
+      const response = await createParticipantReview(
+        selectedParticipantIdForReview,
+        reviewData
+      );
+
+      if (response?.status === 'success') {
+        Alert.alert('Success', 'Participant review submitted successfully');
+        // Update participant reviews map
+        setParticipantReviews(prev => ({
+          ...prev,
+          [selectedParticipantIdForReview]: response.data,
+        }));
+        setExistingParticipantReview(response.data);
+        setParticipantReviewModalVisible(false);
+        setSelectedParticipantIdForReview(null);
+      } else {
+        Alert.alert('Error', response?.message || 'Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Error submitting participant review:', error);
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to submit participant review'
+      );
+    } finally {
+      setParticipantReviewLoading(false);
+    }
+  };
+
   const getStatusConfig = (status, hasManager) => {
     const configs = {
       pending: {
@@ -456,7 +615,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   if (!request) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={80} color={COLORS.textSecondary} />
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textSecondary} />
         <Text style={styles.emptyText}>Request not found</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -488,8 +647,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
             <Text style={styles.titleLabel}>Title:</Text>
             <Text style={styles.title}>{request.title}</Text>
           </View>
-          <View style={styles.serviceInfoRow}>
-            <Text style={styles.serviceLabel}>Service:</Text>
+          <View style={styles.statusInfoRowVertical}>
+            <Text style={styles.statusLabel}>Service:</Text>
             <View style={styles.typeBadge}>
               <Text style={styles.typeBadgeText}>
                 {getRequestTypeText(request.requestType)}
@@ -518,7 +677,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <>
-                  <Ionicons name="chatbubbles" size={18} color={COLORS.white} />
+                  <Ionicons name="chatbubbles" size={16} color={COLORS.white} />
                   <Text style={styles.chatButtonText}>Open Chat with Manager</Text>
                 </>
               )}
@@ -849,6 +1008,26 @@ const RequestDetailScreen = ({ navigation, route }) => {
             label="Last Updated"
             value={formatDate(request.updatedAt)}
           />
+
+          {/* Review Button - Only show when request is completed */}
+          {request.status?.toLowerCase() === 'completed' && (
+            <View style={styles.reviewSection}>
+              <TouchableOpacity
+                style={styles.reviewButton}
+                onPress={handleRateRequest}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name={existingRequestReview ? "star" : "star-outline"} 
+                  size={16} 
+                  color={COLORS.white} 
+                />
+                <Text style={styles.reviewButtonText}>
+                  {existingRequestReview ? 'View Request Review' : 'Rate Request'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Booking Info (Recording) */}
@@ -929,6 +1108,10 @@ const RequestDetailScreen = ({ navigation, route }) => {
                             ? Number(p.participantFee)
                             : 0;
 
+                        const participantReview = participantReviews[p.participantId];
+                        const canReview = request?.status?.toLowerCase() === 'completed' && 
+                                          booking?.status === 'COMPLETED';
+
                         return (
                           <View key={idx} style={styles.itemCard}>
                             <View style={styles.itemHeader}>
@@ -953,6 +1136,23 @@ const RequestDetailScreen = ({ navigation, route }) => {
                                 <Text style={styles.itemFeeText}>
                                   {feeNumber.toLocaleString("vi-VN")} VND
                                 </Text>
+                              )}
+                              {/* Participant Review Button - Only for completed bookings */}
+                              {canReview && p.participantId && (
+                                <TouchableOpacity
+                                  style={styles.participantReviewButton}
+                                  onPress={() => handleRateParticipant(p.participantId)}
+                                  activeOpacity={0.8}
+                                >
+                                  <Ionicons 
+                                    name={participantReview ? "star" : "star-outline"} 
+                                    size={16} 
+                                    color={COLORS.primary} 
+                                  />
+                                  <Text style={styles.participantReviewButtonText}>
+                                    {participantReview ? 'View Review' : 'Rate Artist'}
+                                  </Text>
+                                </TouchableOpacity>
                               )}
                             </View>
                           </View>
@@ -1067,7 +1267,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 {booking.totalCost && (
                   <View style={styles.tableRowVertical}>
                     <Text style={styles.tableLabelVertical}>Total Cost</Text>
-                    <Text style={[styles.tableValueVertical, { color: COLORS.error, fontWeight: "700", fontSize: FONT_SIZES.lg }]}>
+                    <Text style={[styles.tableValueVertical, { color: COLORS.error, fontWeight: "700", fontSize: FONT_SIZES.base }]}>
                       {booking.totalCost.toLocaleString("vi-VN")} VND
                     </Text>
                   </View>
@@ -1277,6 +1477,32 @@ const RequestDetailScreen = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Request Review Modal */}
+      <ReviewModal
+        visible={requestReviewModalVisible}
+        onCancel={() => {
+          setRequestReviewModalVisible(false);
+        }}
+        onConfirm={handleSubmitRequestReview}
+        loading={requestReviewLoading}
+        type="request"
+        existingReview={existingRequestReview}
+      />
+
+      {/* Participant Review Modal */}
+      <ReviewModal
+        visible={participantReviewModalVisible}
+        onCancel={() => {
+          setParticipantReviewModalVisible(false);
+          setSelectedParticipantIdForReview(null);
+          setExistingParticipantReview(null);
+        }}
+        onConfirm={handleSubmitParticipantReview}
+        loading={participantReviewLoading}
+        type="participant"
+        existingReview={existingParticipantReview}
+      />
     </View>
   );
 };
@@ -1324,7 +1550,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
@@ -1333,13 +1559,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   titleSection: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1348,18 +1574,18 @@ const styles = StyleSheet.create({
   },
   titleInfoRow: {
     flexDirection: "row",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     alignItems: "flex-start",
   },
   titleLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 60,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1394,7 +1620,7 @@ const styles = StyleSheet.create({
   },
   typeBadge: {
     backgroundColor: COLORS.primary + "20",
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
@@ -1420,10 +1646,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
     gap: SPACING.xs,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
@@ -1440,8 +1666,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1452,10 +1678,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1507,8 +1733,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   tableRowVertical: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -1549,10 +1775,10 @@ const styles = StyleSheet.create({
     marginRight: SPACING.xs / 2,
   },
   instrumentTagText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
-    lineHeight: FONT_SIZES.xs * 1.2,
+    lineHeight: FONT_SIZES.sm * 1.2,
   },
   mainInstrumentTagText: {
     color: COLORS.warning,
@@ -1570,7 +1796,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   genreTagText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
   },
@@ -1595,7 +1821,7 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   managerName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1613,7 +1839,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   managerStatusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
   },
@@ -1627,19 +1853,19 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   contractsSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   contractsLoading: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
   },
@@ -1651,12 +1877,12 @@ const styles = StyleSheet.create({
   noContracts: {
     alignItems: "center",
     justifyContent: "center",
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
   },
   noContractsText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
   },
@@ -1670,25 +1896,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   modalTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
   },
   modalDescription: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
-    marginBottom: SPACING.md,
-    lineHeight: 22,
+    marginBottom: SPACING.sm,
+    lineHeight: 18,
   },
   modalContractNumber: {
     fontWeight: "700",
@@ -1697,10 +1923,10 @@ const styles = StyleSheet.create({
   modalTextArea: {
     backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.base,
+    padding: SPACING.sm,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
-    minHeight: 120,
+    minHeight: 100,
     marginBottom: SPACING.xs,
   },
   charCount: {
@@ -1756,8 +1982,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
   backButtonText: {
@@ -1815,7 +2041,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "20",
   },
   roleBadgeText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
   },
   quantityBadge: {
@@ -1825,9 +2051,47 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   quantityBadgeText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.warning,
+  },
+  // Review section styles
+  reviewSection: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs,
+  },
+  reviewButtonText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  participantReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.primary + "15",
+    borderRadius: BORDER_RADIUS.sm,
+    alignSelf: 'flex-start',
+    gap: SPACING.xs,
+  },
+  participantReviewButtonText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });
 

@@ -49,8 +49,8 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Error fetching profile:', error);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể tải thông tin profile',
+        text1: 'Error',
+        text2: 'Unable to load profile information',
       });
     } finally {
       setLoading(false);
@@ -65,12 +65,12 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = () => {
     Alert.alert(
-      'Đăng xuất',
-      'Bạn có chắc chắn muốn đăng xuất?',
+      'Logout',
+      'Are you sure you want to logout?',
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Đăng xuất',
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -85,7 +85,7 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Đang tải profile..." />;
+    return <LoadingScreen message="Loading profile..." />;
   }
 
   return (

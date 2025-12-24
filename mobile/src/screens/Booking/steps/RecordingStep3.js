@@ -347,7 +347,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
         {/* Slot info */}
         {bookingDate && bookingStartTime && bookingEndTime && (
           <View style={styles.alertContainer}>
-            <Ionicons name="information-circle" size={20} color={COLORS.info} />
+            <Ionicons name="information-circle" size={18} color={COLORS.info} />
             <View style={styles.alertContent}>
               <Text style={styles.alertTitle}>Selected Slot</Text>
               <View style={styles.slotInfoRow}>
@@ -373,7 +373,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
           </Text>
           {vocalChoice === 'NONE' && (
             <View style={styles.warningContainer}>
-              <Ionicons name="warning" size={20} color={COLORS.warning} />
+              <Ionicons name="warning" size={18} color={COLORS.warning} />
               <View style={styles.warningContent}>
                 <Text style={styles.warningTitle}>
                   Required: At least one instrument needed
@@ -503,7 +503,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                         <TouchableOpacity
                           onPress={() => handleRemoveCustomInstrument(inst)}
                         >
-                          <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                          <Ionicons name="close-circle" size={20} color={COLORS.error} />
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -546,7 +546,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                         style={styles.addCustomButton}
                         onPress={() => setShowCustomInstrumentInput(true)}
                       >
-                        <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+                        <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
                         <Text style={styles.addCustomButtonText}>Add Custom Instrument</Text>
                       </TouchableOpacity>
                       <Text style={styles.helperText}>
@@ -575,6 +575,19 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                           )
                         }
                         navigation={navigation}
+                        onSaveState={async () => {
+                          // Save current state including selectedInstruments and hasLiveInstruments
+                          try {
+                            const stored = await getItem('recordingFlowData') || {};
+                            stored.step3 = {
+                              hasLiveInstruments,
+                              instruments: selectedInstruments,
+                            };
+                            await setItem('recordingFlowData', stored);
+                          } catch (error) {
+                            console.error('Error saving flow data:', error);
+                          }
+                        }}
                       />
                     ))}
                   </View>
@@ -599,7 +612,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
             disabled={hasLiveInstruments === null || loadingSkills}
             activeOpacity={0.8}
           >
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+            <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
             <Text style={styles.continueButtonText}>Continue to Review</Text>
           </TouchableOpacity>
         </View>
@@ -616,6 +629,7 @@ function InstrumentConfig({
   bookingEndTime,
   onUpdate,
   navigation,
+  onSaveState,
 }) {
   const [availableInstrumentalists, setAvailableInstrumentalists] = useState([]);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -813,7 +827,7 @@ function InstrumentConfig({
                 </View>
               ) : (
                 <View style={configStyles.alertContainer}>
-                  <Ionicons name="information-circle" size={16} color={COLORS.info} />
+                  <Ionicons name="information-circle" size={14} color={COLORS.info} />
                   <Text style={configStyles.alertText}>
                     Click 'Browse All Instrumentalists' to select an instrumentalist
                   </Text>
@@ -821,9 +835,12 @@ function InstrumentConfig({
               )}
               <TouchableOpacity
                 style={configStyles.browseButton}
-                onPress={() => {
+                onPress={async () => {
                   // Save current state to storage before navigating
-                  const saveState = async () => {
+                  if (onSaveState) {
+                    await onSaveState();
+                  } else {
+                    // Fallback: save basic state
                     try {
                       const stored = await getItem('recordingFlowData') || {};
                       if (!stored.step3) {
@@ -833,8 +850,7 @@ function InstrumentConfig({
                     } catch (error) {
                       console.error('Error saving flow data:', error);
                     }
-                  };
-                  saveState();
+                  }
 
                   // Navigate to instrumentalist selection screen in HomeStack
                   navigation.navigate('Home', {
@@ -851,7 +867,7 @@ function InstrumentConfig({
                   });
                 }}
               >
-                <Ionicons name="search" size={16} color={COLORS.primary} />
+                <Ionicons name="search" size={14} color={COLORS.primary} />
                 <Text style={configStyles.browseButtonText}>
                   {instrument.specialistId
                     ? 'Change Instrumentalist'
@@ -1016,7 +1032,7 @@ const configStyles = StyleSheet.create({
   },
   instrumentName: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontWeight: '400',
     color: COLORS.text,
     marginLeft: SPACING.xs,
   },
@@ -1029,7 +1045,7 @@ const configStyles = StyleSheet.create({
   },
   tagText: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontWeight: '400',
     color: COLORS.info,
   },
   tagSuccess: {
@@ -1047,7 +1063,7 @@ const configStyles = StyleSheet.create({
     marginVertical: SPACING.md,
   },
   configLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
@@ -1085,7 +1101,7 @@ const configStyles = StyleSheet.create({
   },
   radioLabel: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
     flex: 1,
     flexWrap: 'wrap',
@@ -1098,12 +1114,12 @@ const configStyles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   selectedItemName: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   selectedItemDetail: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -1117,7 +1133,7 @@ const configStyles = StyleSheet.create({
   },
   alertText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     flex: 1,
   },
@@ -1133,8 +1149,8 @@ const configStyles = StyleSheet.create({
   },
   browseButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.primary,
   },
   equipmentContainer: {
@@ -1152,12 +1168,12 @@ const configStyles = StyleSheet.create({
     backgroundColor: COLORS.primary + '10',
   },
   equipmentName: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   equipmentPrice: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -1170,7 +1186,7 @@ const configStyles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   quantityLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
     marginRight: SPACING.sm,
   },
@@ -1181,15 +1197,15 @@ const configStyles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: SPACING.xs,
     paddingVertical: SPACING.xs / 2,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
   },
   rentalFeeText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   emptyText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
@@ -1202,9 +1218,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    margin: SPACING.lg,
+    margin: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1212,7 +1228,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xl,
@@ -1221,9 +1237,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   alertContainer: {
     flexDirection: 'row',
@@ -1239,13 +1255,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   alertTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   alertText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   slotInfoRow: {
@@ -1254,26 +1270,26 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   slotInfoLabel: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 50,
   },
   slotInfoValue: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
   },
   liveInstrumentsSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   warningContainer: {
     flexDirection: 'row',
@@ -1289,13 +1305,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   warningTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   warningText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   radioGroup: {
@@ -1304,7 +1320,7 @@ const styles = StyleSheet.create({
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
@@ -1341,8 +1357,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   radioLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   tag: {
@@ -1352,8 +1368,8 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   tagText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   tagInfo: {
@@ -1379,16 +1395,16 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING.lg,
   },
   emptyText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
   },
   skillsGrid: {
@@ -1414,7 +1430,8 @@ const styles = StyleSheet.create({
   },
   skillText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   skillTextSelected: {
@@ -1436,7 +1453,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   customInstrumentName: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
   },
   customInputWrapper: {
@@ -1455,7 +1472,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
@@ -1473,27 +1490,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.white,
   },
   cancelButton: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     backgroundColor: COLORS.gray[200],
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   addCustomButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: COLORS.primary,
@@ -1503,12 +1520,12 @@ const styles = StyleSheet.create({
   },
   addCustomButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.primary,
   },
   helperText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     fontStyle: 'italic',
@@ -1524,12 +1541,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'column',
-    marginTop: SPACING.xl,
-    gap: SPACING.md,
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
   },
   backButton: {
     width: '100%',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1537,8 +1554,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   continueButton: {
@@ -1547,7 +1564,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md + 4,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
   },
   continueButtonDisabled: {
@@ -1556,8 +1573,8 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.white,
   },
 });

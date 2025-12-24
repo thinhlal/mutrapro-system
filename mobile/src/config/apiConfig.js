@@ -229,6 +229,33 @@ export const API_ENDPOINTS = {
       return `${STUDIO_BOOKINGS_PATH}${params.toString() ? `?${params.toString()}` : ''}`;
     },
   },
+
+  // === Reviews Management ===
+  REVIEWS: {
+    // POST /reviews/assignments/{assignmentId}
+    CREATE_TASK_REVIEW: assignmentId =>
+      `${PROJECT_PATH}/reviews/assignments/${assignmentId}`,
+    // GET /reviews/assignments/{assignmentId}
+    GET_TASK_REVIEW: assignmentId =>
+      `${PROJECT_PATH}/reviews/assignments/${assignmentId}`,
+    // POST /reviews/requests/{requestId}
+    CREATE_REQUEST_REVIEW: requestId =>
+      `${PROJECT_PATH}/reviews/requests/${requestId}`,
+    // POST /reviews/participants/{participantId}
+    CREATE_PARTICIPANT_REVIEW: participantId =>
+      `${PROJECT_PATH}/reviews/participants/${participantId}`,
+    // GET /reviews/specialists/{specialistId}
+    GET_SPECIALIST_REVIEWS: specialistId =>
+      `${PROJECT_PATH}/reviews/specialists/${specialistId}`,
+    // GET /reviews/requests/{requestId}
+    GET_REQUEST_REVIEWS: requestId =>
+      `${PROJECT_PATH}/reviews/requests/${requestId}`,
+    // GET /reviews/specialists/{specialistId}/average-rating
+    GET_SPECIALIST_AVERAGE_RATING: specialistId =>
+      `${PROJECT_PATH}/reviews/specialists/${specialistId}/average-rating`,
+    // GET /reviews/admin/all (Admin only)
+    GET_ALL_REVIEWS: `${PROJECT_PATH}/reviews/admin/all`,
+  },
 };
 
 // Log configuration in development
