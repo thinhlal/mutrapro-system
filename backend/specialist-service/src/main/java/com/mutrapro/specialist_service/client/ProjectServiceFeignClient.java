@@ -25,5 +25,13 @@ public interface ProjectServiceFeignClient {
         @RequestBody TaskStatsRequest request
     );
 
+    /**
+     * Lấy average rating của specialist từ reviews
+     */
+    @org.springframework.web.bind.annotation.GetMapping("/reviews/specialists/{specialistId}/average-rating")
+    Double getAverageRatingBySpecialistId(
+        @org.springframework.web.bind.annotation.PathVariable String specialistId
+    );
+
 }
 

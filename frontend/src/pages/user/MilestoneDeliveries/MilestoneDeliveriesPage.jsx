@@ -37,9 +37,11 @@ import {
 import { getStudioBookings } from '../../../services/studioBookingService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractRevisionStats } from '../../../services/revisionRequestService';
+import { createTaskReview, getTaskReview } from '../../../services/reviewService';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
+import ReviewModal from '../../../components/modal/ReviewModal/ReviewModal';
 import styles from './MilestoneDeliveriesPage.module.css';
 import { useDocumentTitle } from '../../../hooks';
 
@@ -141,12 +143,16 @@ const MilestoneDeliveriesPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [submissionReviewModalVisible, setSubmissionReviewModalVisible] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewAction, setReviewAction] = useState(''); // 'accept' or 'request_revision'
   const [revisionTitle, setRevisionTitle] = useState('');
   const [revisionDescription, setRevisionDescription] = useState('');
   const [revisionRequests, setRevisionRequests] = useState([]); // Track revision requests để check xem đã request chưa
   const [revisionStats, setRevisionStats] = useState(null); // Thống kê free/paid revisions của contract
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [selectedAssignmentForReview, setSelectedAssignmentForReview] = useState(null);
+  const [existingReviews, setExistingReviews] = useState({}); // Map assignmentId -> review
 
   const milestoneName =
     milestoneInfo?.name || location.state?.milestoneName || 'Milestone';
@@ -256,6 +262,9 @@ const MilestoneDeliveriesPage = () => {
           ? data.submissions
           : [];
         setSubmissions(allSubmissions);
+
+        // Load existing reviews cho các assignments đã accepted
+        loadExistingReviews(allSubmissions);
       } else {
         setContractInfo(null);
         setMilestoneInfo(null);
@@ -334,12 +343,69 @@ const MilestoneDeliveriesPage = () => {
     }
   };
 
+  const loadExistingReviews = async submissions => {
+    // Load reviews cho các submissions đã accepted
+    const acceptedSubmissions = submissions.filter(
+      s => s.status?.toLowerCase() === 'customer_accepted' && s.assignmentId
+    );
+
+    const reviewsMap = {};
+    for (const submission of acceptedSubmissions) {
+      try {
+        const reviewResponse = await getTaskReview(submission.assignmentId);
+        if (reviewResponse?.status === 'success' && reviewResponse?.data) {
+          reviewsMap[submission.assignmentId] = reviewResponse.data;
+        }
+      } catch (error) {
+        // Nếu không có review hoặc lỗi, bỏ qua (có thể chưa rate)
+        console.log(`No review found for assignment ${submission.assignmentId}`);
+      }
+    }
+    setExistingReviews(reviewsMap);
+  };
+
   const handleOpenReviewModal = (submission, action) => {
-    setSelectedSubmission(submission);
-    setReviewAction(action);
-    setRevisionTitle('');
-    setRevisionDescription('');
-    setReviewModalVisible(true);
+    if (action === 'rate') {
+      // Mở review modal để rate task assignment
+      setSelectedAssignmentForReview(submission.assignmentId);
+      setReviewModalVisible(true);
+    } else {
+      // Mở review modal cho accept/revision (existing logic)
+      setSelectedSubmission(submission);
+      setReviewAction(action);
+      setRevisionTitle('');
+      setRevisionDescription('');
+      setSubmissionReviewModalVisible(true);
+    }
+  };
+
+  const handleSubmitReview = async reviewData => {
+    if (!selectedAssignmentForReview) return;
+
+    try {
+      setReviewLoading(true);
+      const response = await createTaskReview(selectedAssignmentForReview, reviewData);
+
+      if (response?.status === 'success') {
+        message.success('Đã gửi đánh giá thành công');
+        // Update existing reviews map
+        setExistingReviews(prev => ({
+          ...prev,
+          [selectedAssignmentForReview]: response.data,
+        }));
+        setReviewModalVisible(false);
+        setSelectedAssignmentForReview(null);
+      } else {
+        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi gửi đánh giá'
+      );
+    } finally {
+      setReviewLoading(false);
+    }
   };
 
   const handleReviewSubmission = async () => {
@@ -372,7 +438,7 @@ const MilestoneDeliveriesPage = () => {
             ? 'Đã chấp nhận submission'
             : 'Đã yêu cầu chỉnh sửa submission'
         );
-        setReviewModalVisible(false);
+        setSubmissionReviewModalVisible(false);
         setSelectedSubmission(null);
         setRevisionTitle('');
         setRevisionDescription('');
@@ -1140,10 +1206,21 @@ const MilestoneDeliveriesPage = () => {
                             const submissionStatus =
                               submission.status?.toLowerCase();
 
-                            // ƯU TIÊN 1: Nếu submission đã được customer accept → không hiển thị gì ở extra
-                            // (status tag đã được hiển thị ở title rồi)
+                            // ƯU TIÊN 1: Nếu submission đã được customer accept → hiển thị nút Rate
                             if (submissionStatus === 'customer_accepted') {
-                              return null;
+                              const assignmentId = submission.assignmentId;
+                              const existingReview = existingReviews[assignmentId];
+                              
+                              return (
+                                <Button
+                                  type="default"
+                                  icon={<StarFilled />}
+                                  size="small"
+                                  onClick={() => handleOpenReviewModal(submission, 'rate')}
+                                >
+                                  {existingReview ? 'Xem đánh giá' : 'Đánh giá'}
+                                </Button>
+                              );
                             }
 
                             // ƯU TIÊN 2: Nếu submission đã bị customer reject → không hiển thị gì ở extra
@@ -1795,9 +1872,9 @@ const MilestoneDeliveriesPage = () => {
             ? 'Xác nhận chấp nhận submission'
             : 'Yêu cầu chỉnh sửa submission'
         }
-        open={reviewModalVisible}
+        open={submissionReviewModalVisible}
         onCancel={() => {
-          setReviewModalVisible(false);
+          setSubmissionReviewModalVisible(false);
           setSelectedSubmission(null);
           setRevisionTitle('');
           setRevisionDescription('');
@@ -1806,7 +1883,7 @@ const MilestoneDeliveriesPage = () => {
           <Button
             key="cancel"
             onClick={() => {
-              setReviewModalVisible(false);
+              setSubmissionReviewModalVisible(false);
               setSelectedSubmission(null);
               setRevisionTitle('');
               setRevisionDescription('');
@@ -1879,6 +1956,23 @@ const MilestoneDeliveriesPage = () => {
           />
         )}
       </Modal>
+
+      {/* Review Modal - Để rate task assignment */}
+      <ReviewModal
+        open={reviewModalVisible}
+        onCancel={() => {
+          setReviewModalVisible(false);
+          setSelectedAssignmentForReview(null);
+        }}
+        onConfirm={handleSubmitReview}
+        loading={reviewLoading}
+        type="task"
+        existingReview={
+          selectedAssignmentForReview
+            ? existingReviews[selectedAssignmentForReview]
+            : null
+        }
+      />
 
       {/* Chat Popup - Chat về milestone này với contextType = MILESTONE */}
       {contractInfo?.contractId && milestoneId && (

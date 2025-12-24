@@ -96,6 +96,11 @@ const menuItems = [
     icon: <UnorderedListOutlined />,
     label: <Link to="/admin/tasks">Tasks</Link>,
   },
+  {
+    key: '/admin/reviews',
+    icon: <StarOutlined />,
+    label: <Link to="/admin/reviews">Review Management</Link>,
+  },
 ];
 
 const AdminLayout = () => {

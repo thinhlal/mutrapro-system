@@ -66,6 +66,7 @@ app:
     mappings:
       slot.booked: slot-booked-events
       slot.released: slot-released-events
+      review.created: review-created-events
 
 # Management & Actuator
 management:

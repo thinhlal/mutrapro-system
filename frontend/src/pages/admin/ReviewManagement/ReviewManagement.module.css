@@ -1,0 +1,12 @@
+.reviewManagement {
+  padding: 24px;
+}
+
+.reviewManagement .ant-card {
+  margin-bottom: 16px;
+}
+
+.reviewManagement .ant-table {
+  margin-top: 16px;
+}
+

@@ -22,6 +22,7 @@ import {
   ExclamationCircleOutlined,
   FileTextOutlined,
   StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
@@ -39,10 +40,12 @@ import {
   requestChangeContract,
   cancelContract,
 } from '../../../services/contractService';
+import { createRequestReview, getRequestReviews, createParticipantReview } from '../../../services/reviewService';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
 import FileList from '../../../components/common/FileList/FileList';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
+import ReviewModal from '../../../components/modal/ReviewModal/ReviewModal';
 import styles from './RequestDetailPage.module.css';
 import { useDocumentTitle } from '../../../hooks';
 
@@ -85,6 +88,18 @@ const RequestDetailPage = () => {
   const [changeReason, setChangeReason] = useState('');
   const { instruments: instrumentsData, fetchInstruments } =
     useInstrumentStore();
+
+  // Request review state
+  const [requestReviewModalVisible, setRequestReviewModalVisible] = useState(false);
+  const [requestReviewLoading, setRequestReviewLoading] = useState(false);
+  const [existingRequestReview, setExistingRequestReview] = useState(null);
+
+  // Participant review state
+  const [participantReviews, setParticipantReviews] = useState({}); // Map participantId -> review
+  const [participantReviewModalVisible, setParticipantReviewModalVisible] = useState(false);
+  const [participantReviewLoading, setParticipantReviewLoading] = useState(false);
+  const [selectedParticipantIdForReview, setSelectedParticipantIdForReview] = useState(null);
+  const [existingParticipantReview, setExistingParticipantReview] = useState(null);
 
   useEffect(() => {
     fetchInstruments();
@@ -148,7 +163,8 @@ const RequestDetailPage = () => {
         setLoadingContracts(true);
         const response = await getContractsByRequestId(requestId);
         if (response.status === 'success' && response.data) {
-          setContracts(response.data || []);
+          const contractsData = response.data || [];
+          setContracts(contractsData);
         }
       } catch (error) {
         console.error('Error loading contracts:', error);
@@ -160,6 +176,139 @@ const RequestDetailPage = () => {
 
     loadContracts();
   }, [requestId]);
+
+  // Load request review
+  const loadRequestReview = async () => {
+    if (!requestId) return;
+    try {
+      const response = await getRequestReviews(requestId);
+      if (response?.status === 'success' && response?.data) {
+        // Find REQUEST type review
+        const requestReview = Array.isArray(response.data)
+          ? response.data.find(r => r.reviewType === 'REQUEST')
+          : null;
+        setExistingRequestReview(requestReview || null);
+      }
+    } catch (error) {
+      console.error('Error loading request review:', error);
+      setExistingRequestReview(null);
+    }
+  };
+
+  // Load request review when request is completed
+  useEffect(() => {
+    if (request?.status?.toLowerCase() === 'completed') {
+      loadRequestReview();
+      // Load participant reviews ONLY for recording requests with booking participants
+      if (
+        request?.requestType === 'recording' &&
+        booking?.participants &&
+        booking.participants.length > 0
+      ) {
+        loadParticipantReviews();
+      }
+    } else {
+      setExistingRequestReview(null);
+      setParticipantReviews({});
+    }
+  }, [request?.status, request?.requestType, requestId, booking?.participants]);
+
+  // Load participant reviews
+  const loadParticipantReviews = async () => {
+    if (!requestId) return;
+    try {
+      const response = await getRequestReviews(requestId);
+      if (response?.status === 'success' && response?.data) {
+        // Filter PARTICIPANT type reviews
+        const participantReviewsList = Array.isArray(response.data)
+          ? response.data.filter(r => r.reviewType === 'PARTICIPANT')
+          : [];
+        
+        // Map participantId -> review
+        const reviewsMap = {};
+        participantReviewsList.forEach(review => {
+          if (review.participantId) {
+            reviewsMap[review.participantId] = review;
+          }
+        });
+        setParticipantReviews(reviewsMap);
+      }
+    } catch (error) {
+      console.error('Error loading participant reviews:', error);
+      setParticipantReviews({});
+    }
+  };
+
+  // Handle rate request
+  const handleRateRequest = () => {
+    setRequestReviewModalVisible(true);
+  };
+
+  // Handle rate participant
+  const handleRateParticipant = participantId => {
+    setSelectedParticipantIdForReview(participantId);
+    setExistingParticipantReview(participantReviews[participantId] || null);
+    setParticipantReviewModalVisible(true);
+  };
+
+  // Handle submit participant review
+  const handleSubmitParticipantReview = async reviewData => {
+    if (!selectedParticipantIdForReview) return;
+
+    try {
+      setParticipantReviewLoading(true);
+      const response = await createParticipantReview(selectedParticipantIdForReview, reviewData);
+
+      if (response?.status === 'success') {
+        message.success('Đã gửi đánh giá participant thành công');
+        // Update participant reviews map
+        setParticipantReviews(prev => ({
+          ...prev,
+          [selectedParticipantIdForReview]: response.data,
+        }));
+        setExistingParticipantReview(response.data);
+        setParticipantReviewModalVisible(false);
+        setSelectedParticipantIdForReview(null);
+      } else {
+        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+      }
+    } catch (error) {
+      console.error('Error submitting participant review:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi gửi đánh giá participant'
+      );
+    } finally {
+      setParticipantReviewLoading(false);
+    }
+  };
+
+  // Handle submit request review
+  const handleSubmitRequestReview = async reviewData => {
+    if (!requestId) {
+      message.error('Request ID không tồn tại');
+      return;
+    }
+
+    try {
+      setRequestReviewLoading(true);
+      const response = await createRequestReview(requestId, reviewData);
+
+      if (response?.status === 'success') {
+        message.success('Đã gửi đánh giá request thành công');
+        setExistingRequestReview(response.data);
+        setRequestReviewModalVisible(false);
+      } else {
+        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+      }
+    } catch (error) {
+      console.error('Error submitting request review:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi gửi đánh giá request'
+      );
+    } finally {
+      setRequestReviewLoading(false);
+    }
+  };
 
   const getStatusConfig = status => {
     const hasManager = !!request?.managerUserId;
@@ -396,6 +545,17 @@ const RequestDetailPage = () => {
               >
                 {statusConfig.text}
               </Tag>
+              {/* Rate Request Button - When request is completed */}
+              {request.status?.toLowerCase() === 'completed' && (
+                <Button
+                  type="primary"
+                  icon={<StarOutlined />}
+                  size="small"
+                  onClick={handleRateRequest}
+                >
+                  {existingRequestReview ? 'View Review' : 'Rate Request'}
+                </Button>
+              )}
             </Space>
           </div>
 
@@ -733,22 +893,42 @@ const RequestDetailPage = () => {
                               ? Number(p.participantFee)
                               : 0;
 
+                        // Chỉ hiển thị button rate cho recording requests, INTERNAL_ARTIST và khi request completed
+                        const canRate = 
+                          request?.requestType === 'recording' &&
+                          request?.status?.toLowerCase() === 'completed' &&
+                          p.performerSource === 'INTERNAL_ARTIST' &&
+                          p.participantId;
+                        const existingReview = p.participantId ? participantReviews[p.participantId] : null;
+
                         return (
-                          <div key={index}>
-                            <Tag
-                              color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
-                              style={{ marginRight: 8 }}
-                            >
-                              {roleLabel}
-                            </Tag>
-                            <span>
-                              {performerLabel}
-                              {skillLabel}
-                            </span>
-                            {feeNumber > 0 && (
-                              <span style={{ marginLeft: 8, color: '#666' }}>
-                                - {feeNumber.toLocaleString('vi-VN')} VND
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <Tag
+                                color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
+                                style={{ marginRight: 8 }}
+                              >
+                                {roleLabel}
+                              </Tag>
+                              <span>
+                                {performerLabel}
+                                {skillLabel}
                               </span>
+                              {feeNumber > 0 && (
+                                <span style={{ marginLeft: 8, color: '#666' }}>
+                                  - {feeNumber.toLocaleString('vi-VN')} VND
+                                </span>
+                              )}
+                            </div>
+                            {canRate && (
+                              <Button
+                                type="default"
+                                icon={<StarOutlined />}
+                                size="small"
+                                onClick={() => handleRateParticipant(p.participantId)}
+                              >
+                                {existingReview ? 'View Review' : 'Rate'}
+                              </Button>
                             )}
                           </div>
                         );
@@ -933,6 +1113,30 @@ const RequestDetailPage = () => {
         {requestId && (
           <ChatPopup requestId={requestId} roomType="REQUEST_CHAT" />
         )}
+
+        {/* Request Review Modal */}
+        <ReviewModal
+          open={requestReviewModalVisible}
+          onCancel={() => {
+            setRequestReviewModalVisible(false);
+          }}
+          onConfirm={handleSubmitRequestReview}
+          loading={requestReviewLoading}
+          type="request"
+          existingReview={existingRequestReview}
+        />
+        <ReviewModal
+          open={participantReviewModalVisible}
+          onCancel={() => {
+            setParticipantReviewModalVisible(false);
+            setSelectedParticipantIdForReview(null);
+            setExistingParticipantReview(null);
+          }}
+          onConfirm={handleSubmitParticipantReview}
+          loading={participantReviewLoading}
+          type="participant"
+          existingReview={existingParticipantReview}
+        />
       </div>
     );
   };

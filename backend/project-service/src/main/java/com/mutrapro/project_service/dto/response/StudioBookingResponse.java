@@ -56,6 +56,22 @@ public class StudioBookingResponse {
     // Arrangement submission info (cho recording milestones)
     ArrangementSubmissionInfo sourceArrangementSubmission;
     
+    // Recording supervisor info (cho recording milestones)
+    SupervisorInfo supervisor;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class SupervisorInfo {
+        String assignmentId;
+        String specialistId;
+        String specialistName;
+        String specialistEmail;
+        String status;  // AssignmentStatus enum as String
+    }
+    
     @Data
     @Builder
     @NoArgsConstructor

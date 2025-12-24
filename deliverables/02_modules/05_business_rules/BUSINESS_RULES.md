@@ -688,9 +688,57 @@ Tài liệu này mô tả tất cả các Business Rules (Quy tắc nghiệp v�
 
 ---
 
+## ⭐ REVIEW & RATING RULES
+
+### BR-119
+**Only customers can create reviews, and only for their own contracts/tasks.**
+- Chỉ customer mới có thể tạo review
+- Customer chỉ có thể review các task assignment/contract thuộc về họ
+- Customer phải là owner của contract để có thể review
+
+### BR-120
+**Rating must be between 1 and 5 stars; comment is optional (max 1000 characters).**
+- Rating bắt buộc phải từ 1 đến 5 sao
+- Comment là tùy chọn, tối đa 1000 ký tự
+- Rating không thể null hoặc 0
+
+### BR-121
+**Each customer can only rate once per assignment/contract/participant.**
+- Mỗi customer chỉ có thể rate 1 lần cho mỗi task assignment (theo review_type)
+- Mỗi customer chỉ có thể rate 1 lần cho mỗi contract (CONTRACT review)
+- Mỗi customer chỉ có thể rate 1 lần cho mỗi participant (PARTICIPANT review)
+- Unique constraint đảm bảo không có duplicate reviews
+
+### BR-122
+**Task assignment must be completed before customer can rate it.**
+- Customer chỉ có thể rate task assignment sau khi assignment đã completed
+- Không thể rate task assignment đang in_progress, pending, hoặc cancelled
+
+### BR-123
+**Reviews automatically update specialist average rating via event-driven architecture.**
+- Khi tạo review cho task assignment hoặc participant có specialist_id, hệ thống tự động publish ReviewCreatedEvent
+- Specialist-service consume event và cập nhật average rating và total reviews
+- Event-driven đảm bảo eventual consistency giữa project-service và specialist-service
+
+### BR-124
+**Review types: TASK (for transcription/arrangement specialist), CONTRACT (for overall project), PARTICIPANT (for recording artist).**
+- **TASK**: Review cho transcription/arrangement specialist khi họ làm task assignment
+  - Chỉ dành cho taskType = transcription hoặc arrangement
+  - KHÔNG dùng cho recording_supervision task (recording supervision dùng PARTICIPANT review)
+  - Mỗi task assignment chỉ có thể được rate 1 lần
+- **CONTRACT**: Review tổng thể cho contract/project (không gắn với specialist cụ thể)
+  - Customer đánh giá tổng thể về toàn bộ project
+  - Mỗi contract chỉ có thể được rate 1 lần bởi 1 customer
+- **PARTICIPANT**: Review cho recording artist (vocalist/instrumentalist) trong recording booking
+  - Chỉ dành cho recording artist tham gia recording session
+  - KHÔNG dùng cho transcription/arrangement specialist
+  - Mỗi participant chỉ có thể được rate 1 lần bởi 1 customer
+
+---
+
 ## 📊 SUMMARY
 
-**Tổng số Business Rules: 118**
+**Tổng số Business Rules: 124**
 
 ### Phân loại:
 - **Authentication & User Management:** BR-01 đến BR-27 (27 rules)
@@ -711,6 +759,8 @@ Tài liệu này mô tả tất cả các Business Rules (Quy tắc nghiệp v�
 - **Status Transition Rules:** BR-86 đến BR-89 (4 rules)
 - **Validation Rules:** BR-90 đến BR-92 (3 rules)
 - **Integration Rules:** BR-93 đến BR-95 (3 rules)
+- **Review & Rating Rules:** BR-119 đến BR-124 (6 rules)
+- **Review & Rating Rules:** BR-119 đến BR-124 (6 rules)
 
 ---
 

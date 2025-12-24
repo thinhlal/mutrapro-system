@@ -1891,18 +1891,20 @@ const ContractDetailPage = () => {
               <Text strong>{contract.contractNumber || 'N/A'}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag
-                color={statusConfig.color}
-                style={{
-                  whiteSpace: 'normal',
-                  lineHeight: 2,
-                  textAlign: 'center',
-                  minWidth: 0,
-                  display: 'inline-block',
-                }}
-              >
-                {statusConfig.text}
-              </Tag>
+              <Space>
+                <Tag
+                  color={statusConfig.color}
+                  style={{
+                    whiteSpace: 'normal',
+                    lineHeight: 2,
+                    textAlign: 'center',
+                    minWidth: 0,
+                    display: 'inline-block',
+                  }}
+                >
+                  {statusConfig.text}
+                </Tag>
+              </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Contract Type">
               <Tag color="blue">

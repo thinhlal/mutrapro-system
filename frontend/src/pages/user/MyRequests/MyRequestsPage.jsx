@@ -17,12 +17,15 @@ import {
   SyncOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
 import { getBookingByRequestId } from '../../../services/studioBookingService';
+import { createRequestReview, getRequestReviews } from '../../../services/reviewService';
+import ReviewModal from '../../../components/modal/ReviewModal/ReviewModal';
 import {
   getGenreLabel,
   getPurposeLabel,
@@ -47,12 +50,18 @@ const MyRequestsContent = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [bookings, setBookings] = useState({}); // Map requestId -> booking data
-  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [loadingBookings, setLoadingBookings] = useState({}); // Map requestId -> loading state
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+
+  // Request review state
+  const [requestReviews, setRequestReviews] = useState({}); // Map requestId -> review
+  const [requestReviewModalVisible, setRequestReviewModalVisible] = useState(false);
+  const [requestReviewLoading, setRequestReviewLoading] = useState(false);
+  const [selectedRequestIdForReview, setSelectedRequestIdForReview] = useState(null);
 
   // Load requests with pagination
   const loadRequests = async (
@@ -129,11 +138,14 @@ const MyRequestsContent = () => {
         setRequests(data);
         setPagination(paginationInfo);
 
-        // Clear old bookings and load bookings for recording requests
+        // Load reviews for completed requests
+        const completedRequests = data.filter(r => r.status?.toLowerCase() === 'completed');
+        if (completedRequests.length > 0) {
+          loadRequestReviews(completedRequests.map(r => r.requestId));
+        }
+
         setBookings({});
-        const recordingRequests = data.filter(
-          r => r.requestType === 'recording'
-        );
+        const recordingRequests = data.filter(r => r.requestType === 'recording');
         if (recordingRequests.length > 0) {
           loadBookings(recordingRequests.map(r => r.requestId));
         }
@@ -148,38 +160,98 @@ const MyRequestsContent = () => {
     }
   };
 
-  // Load bookings for recording requests
+  // Load request reviews for completed requests (non-blocking, parallel)
+  const loadRequestReviews = async requestIds => {
+    if (!requestIds || requestIds.length === 0) return;
+
+    const reviewsMap = {};
+    const reviewPromises = requestIds.map(async requestId => {
+      try {
+        const response = await getRequestReviews(requestId);
+        if (response?.status === 'success' && response?.data) {
+          // Find REQUEST type review
+          const requestReview = Array.isArray(response.data)
+            ? response.data.find(r => r.reviewType === 'REQUEST')
+            : null;
+          if (requestReview) {
+            reviewsMap[requestId] = requestReview;
+          }
+        }
+      } catch (error) {
+        console.error(`Error loading review for request ${requestId}:`, error);
+      }
+    });
+
+    // Wait for all promises to resolve (parallel execution)
+    Promise.all(reviewPromises).then(() => {
+      setRequestReviews(prev => ({ ...prev, ...reviewsMap }));
+    });
+  };
+
+  // Load bookings for recording requests (non-blocking, parallel)
   const loadBookings = async requestIds => {
     if (!requestIds || requestIds.length === 0) return;
 
-    try {
-      setLoadingBookings(true);
-      const bookingPromises = requestIds.map(async requestId => {
-        try {
-          const response = await getBookingByRequestId(requestId);
-          if (response.status === 'success' && response.data) {
-            return { requestId, booking: response.data };
-          }
-        } catch (error) {
-          // Do not show error because booking may not exist yet
-          console.log(`No booking found for requestId: ${requestId}`);
-        }
-        return null;
-      });
+    // Set loading state for all requestIds
+    const loadingMap = {};
+    requestIds.forEach(requestId => {
+      loadingMap[requestId] = true;
+    });
+    setLoadingBookings(prev => ({ ...prev, ...loadingMap }));
 
-      const results = await Promise.all(bookingPromises);
-      const bookingsMap = {};
-      results.forEach(result => {
-        if (result && result.booking) {
-          bookingsMap[result.requestId] = result.booking;
+    // Load all bookings in parallel (non-blocking)
+    const bookingPromises = requestIds.map(async requestId => {
+      try {
+        const response = await getBookingByRequestId(requestId);
+        if (response.status === 'success' && response.data) {
+          return { requestId, booking: response.data };
         }
+      } catch (error) {
+        // Do not show error because booking may not exist yet (404 is expected for requests without booking)
+        // Only log non-404 errors
+        if (error?.response?.status !== 404) {
+          console.error(`Error loading booking for requestId ${requestId}:`, error);
+        }
+        // Silently handle 404 - booking doesn't exist yet, which is normal
+      }
+      return null;
+    });
+
+    // Wait for all promises to resolve (parallel execution)
+    Promise.all(bookingPromises)
+      .then(results => {
+        const bookingsMap = {};
+        const loadingCompleteMap = {};
+        
+        results.forEach(result => {
+          if (result && result.booking) {
+            bookingsMap[result.requestId] = result.booking;
+          }
+          // Mark as loaded (even if no booking found)
+          loadingCompleteMap[result?.requestId] = false;
+        });
+        
+        // Update bookings and clear loading states
+        setBookings(prev => ({ ...prev, ...bookingsMap }));
+        setLoadingBookings(prev => {
+          const updated = { ...prev };
+          requestIds.forEach(requestId => {
+            updated[requestId] = false;
+          });
+          return updated;
+        });
+      })
+      .catch(error => {
+        console.error('Error loading bookings:', error);
+        // Clear loading states on error
+        setLoadingBookings(prev => {
+          const updated = { ...prev };
+          requestIds.forEach(requestId => {
+            updated[requestId] = false;
+          });
+          return updated;
+        });
       });
-      setBookings(bookingsMap);
-    } catch (error) {
-      console.error('Error loading bookings:', error);
-    } finally {
-      setLoadingBookings(false);
-    }
   };
 
   // Load data on first mount
@@ -209,6 +281,42 @@ const MyRequestsContent = () => {
 
   const handlePageChange = (page, pageSize) => {
     loadRequests(selectedStatus, selectedServiceType, page - 1, pageSize); // Spring Data page starts from 0
+  };
+
+  // Handle rate request
+  const handleRateRequest = requestId => {
+    setSelectedRequestIdForReview(requestId);
+    setRequestReviewModalVisible(true);
+  };
+
+  // Handle submit request review
+  const handleSubmitRequestReview = async reviewData => {
+    if (!selectedRequestIdForReview) return;
+
+    try {
+      setRequestReviewLoading(true);
+      const response = await createRequestReview(selectedRequestIdForReview, reviewData);
+
+      if (response?.status === 'success') {
+        message.success('Đã gửi đánh giá request thành công');
+        // Update reviews map
+        setRequestReviews(prev => ({
+          ...prev,
+          [selectedRequestIdForReview]: response.data,
+        }));
+        setRequestReviewModalVisible(false);
+        setSelectedRequestIdForReview(null);
+      } else {
+        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+      }
+    } catch (error) {
+      console.error('Error submitting request review:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi gửi đánh giá request'
+      );
+    } finally {
+      setRequestReviewLoading(false);
+    }
   };
 
   const getStatusConfig = (status, hasManager) => {
@@ -487,54 +595,64 @@ const MyRequestsContent = () => {
                       )}
 
                     {/* Show basic booking info for recording requests */}
-                    {request.requestType === 'recording' &&
-                      bookings[request.requestId] && (
-                        <>
-                          {bookings[request.requestId].bookingDate && (
-                            <div className={styles.infoRow}>
-                              <span className={styles.infoLabel}>Date:</span>
-                              <span className={styles.infoValue}>
-                                {formatBookingDate(
-                                  bookings[request.requestId].bookingDate
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          {bookings[request.requestId].startTime &&
-                            bookings[request.requestId].endTime && (
+                    {request.requestType === 'recording' && (
+                      <>
+                        {loadingBookings[request.requestId] ? (
+                          <div className={styles.infoRow}>
+                            <span className={styles.infoLabel}>Booking:</span>
+                            <span className={styles.infoValue}>
+                              <Spin size="small" /> Loading...
+                            </span>
+                          </div>
+                        ) : bookings[request.requestId] ? (
+                          <>
+                            {bookings[request.requestId].bookingDate && (
                               <div className={styles.infoRow}>
-                                <span className={styles.infoLabel}>
-                                  Time Slot:
-                                </span>
+                                <span className={styles.infoLabel}>Date:</span>
                                 <span className={styles.infoValue}>
-                                  {bookings[request.requestId].startTime} -{' '}
-                                  {bookings[request.requestId].endTime}
+                                  {formatBookingDate(
+                                    bookings[request.requestId].bookingDate
+                                  )}
                                 </span>
                               </div>
                             )}
-                          {bookings[request.requestId].totalCost !==
-                            undefined && (
-                            <div className={styles.infoRow}>
-                              <span className={styles.infoLabel}>
-                                Total Cost:
-                              </span>
-                              <span
-                                className={styles.infoValue}
-                                style={{
-                                  fontWeight: 600,
-                                  color: '#52c41a',
-                                  fontSize: '16px',
-                                }}
-                              >
-                                {bookings[
-                                  request.requestId
-                                ].totalCost?.toLocaleString('vi-VN')}{' '}
-                                VND
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
+                            {bookings[request.requestId].startTime &&
+                              bookings[request.requestId].endTime && (
+                                <div className={styles.infoRow}>
+                                  <span className={styles.infoLabel}>
+                                    Time Slot:
+                                  </span>
+                                  <span className={styles.infoValue}>
+                                    {bookings[request.requestId].startTime} -{' '}
+                                    {bookings[request.requestId].endTime}
+                                  </span>
+                                </div>
+                              )}
+                            {bookings[request.requestId].totalCost !==
+                              undefined && (
+                              <div className={styles.infoRow}>
+                                <span className={styles.infoLabel}>
+                                  Total Cost:
+                                </span>
+                                <span
+                                  className={styles.infoValue}
+                                  style={{
+                                    fontWeight: 600,
+                                    color: '#52c41a',
+                                    fontSize: '16px',
+                                  }}
+                                >
+                                  {bookings[
+                                    request.requestId
+                                  ].totalCost?.toLocaleString('vi-VN')}{' '}
+                                  VND
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        ) : null}
+                      </>
+                    )}
                   </div>
 
                   <div className={styles.cardFooter}>
@@ -545,20 +663,31 @@ const MyRequestsContent = () => {
                     <div className={styles.dateInfo}>
                       Updated: {formatDate(request.updatedAt)}
                     </div>
-                    <Button
-                      type="primary"
-                      icon={<EyeOutlined />}
-                      onClick={() =>
-                        navigate(`/my-requests/${request.requestId}`)
-                      }
-                      className={styles.viewDetailBtn}
-                      style={{
-                        backgroundColor: '#ec8a1c',
-                        borderColor: '#ec8a1c',
-                      }}
-                    >
-                      View Details
-                    </Button>
+                    <Space>
+                      {request.status?.toLowerCase() === 'completed' && (
+                        <Button
+                          type="primary"
+                          icon={<StarOutlined />}
+                          onClick={() => handleRateRequest(request.requestId)}
+                        >
+                          {requestReviews[request.requestId] ? 'View Review' : 'Rate Request'}
+                        </Button>
+                      )}
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={() =>
+                          navigate(`/my-requests/${request.requestId}`)
+                        }
+                        className={styles.viewDetailBtn}
+                        style={{
+                          backgroundColor: '#ec8a1c',
+                          borderColor: '#ec8a1c',
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </Space>
                   </div>
                 </Card>
               );
@@ -580,6 +709,21 @@ const MyRequestsContent = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Request Review Modal */}
+      {selectedRequestIdForReview && (
+        <ReviewModal
+          open={requestReviewModalVisible}
+          onCancel={() => {
+            setRequestReviewModalVisible(false);
+            setSelectedRequestIdForReview(null);
+          }}
+          onConfirm={handleSubmitRequestReview}
+          loading={requestReviewLoading}
+          type="request"
+          existingReview={requestReviews[selectedRequestIdForReview]}
+        />
       )}
     </div>
   );

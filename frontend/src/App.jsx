@@ -98,6 +98,7 @@ import SpecialistManagement from './pages/admin/SpecialistManagement/SpecialistM
 import SkillManagement from './pages/admin/SkillManagement/SkillManagement';
 import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
 import PricingMatrixManagement from './pages/admin/PricingMatrixManagement/PricingMatrixManagement';
+import ReviewManagement from './pages/admin/ReviewManagement/ReviewManagement';
 import StudioManagement from './pages/admin/StudioManagement/StudioManagement';
 
 // Manager Pages
@@ -575,6 +576,7 @@ function App() {
               element={<ManagerContractDetailPage />}
             />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="reviews" element={<ReviewManagement />} />
             <Route path="settings" element={<Dashboard />} />
             <Route path="profile" element={<AdminProfile />} />
           </Route>

@@ -73,6 +73,7 @@ app:
       chat.system.message: ${KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE:chat-system-message-events}
       slot.booked: ${KAFKA_TOPIC_SLOT_BOOKED:slot-booked-events}
       slot.released: ${KAFKA_TOPIC_SLOT_RELEASED:slot-released-events}
+      review.created: ${KAFKA_TOPIC_REVIEW_CREATED:review-created-events}
   late-discount:
     policy-version: ${LATE_DISCOUNT_POLICY_VERSION:late_discount_v1}
     grace-hours: ${LATE_DISCOUNT_GRACE_HOURS:6}

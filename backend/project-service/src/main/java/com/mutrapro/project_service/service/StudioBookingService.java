@@ -1961,7 +1961,7 @@ public class StudioBookingService {
         
         StudioBookingResponse response = mapToResponse(booking);
         
-        // Enrich với arrangement submission info nếu là recording milestone
+        // Enrich với arrangement submission info và supervisor info nếu là recording milestone
         // (không cần check contract access vì đây là internal call từ studio booking)
         if (booking.getMilestoneId() != null && !booking.getMilestoneId().isEmpty()) {
             try {
@@ -1969,6 +1969,7 @@ public class StudioBookingService {
                     .orElse(null);
                 
                 if (milestone != null && milestone.getMilestoneType() == MilestoneType.recording) {
+                    // Load arrangement submission info
                     TaskAssignmentResponse.ArrangementSubmissionInfo arrangementInfo = 
                         contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
                     
@@ -1992,9 +1993,26 @@ public class StudioBookingService {
                                 .build();
                         response.setSourceArrangementSubmission(mappedInfo);
                     }
+                    
+                    // Load recording supervision task (supervisor info) - chỉ lấy basic info từ task assignment
+                    // Frontend sẽ fetch full specialist info nếu cần (để tránh làm chậm API response)
+                    taskAssignmentRepository.findByMilestoneIdAndTaskType(
+                        booking.getMilestoneId(), TaskType.recording_supervision
+                    ).ifPresent(supervisorTask -> {
+                        StudioBookingResponse.SupervisorInfo supervisorInfo = 
+                            StudioBookingResponse.SupervisorInfo.builder()
+                                .assignmentId(supervisorTask.getAssignmentId())
+                                .specialistId(supervisorTask.getSpecialistId())
+                                .specialistName(supervisorTask.getSpecialistNameSnapshot())
+                                .specialistEmail(supervisorTask.getSpecialistEmailSnapshot())
+                                .status(supervisorTask.getStatus() != null 
+                                    ? supervisorTask.getStatus().name() : null)
+                                .build();
+                        response.setSupervisor(supervisorInfo);
+                    });
                 }
             } catch (Exception e) {
-                log.warn("Failed to enrich studio booking with arrangement submission: bookingId={}, milestoneId={}, error={}",
+                log.warn("Failed to enrich studio booking with milestone info: bookingId={}, milestoneId={}, error={}",
                     bookingId, booking.getMilestoneId(), e.getMessage(), e);
                 // Không throw error, chỉ log warning
             }
@@ -2026,7 +2044,40 @@ public class StudioBookingService {
             booking.getStudio().getStudioName();
         }
         
-        return mapToResponse(booking);
+        StudioBookingResponse response = mapToResponse(booking);
+        
+        // Enrich với supervisor info (chỉ basic info, frontend sẽ fetch full info nếu cần)
+        if (booking.getMilestoneId() != null && !booking.getMilestoneId().isEmpty()) {
+            try {
+                ContractMilestone milestone = contractMilestoneRepository.findById(booking.getMilestoneId())
+                    .orElse(null);
+                
+                if (milestone != null && milestone.getMilestoneType() == MilestoneType.recording) {
+                    // Load recording supervision task (supervisor info) - chỉ lấy basic info từ task assignment
+                    // Frontend sẽ fetch full specialist info nếu cần (để tránh làm chậm API response)
+                    taskAssignmentRepository.findByMilestoneIdAndTaskType(
+                        booking.getMilestoneId(), TaskType.recording_supervision
+                    ).ifPresent(supervisorTask -> {
+                        StudioBookingResponse.SupervisorInfo supervisorInfo = 
+                            StudioBookingResponse.SupervisorInfo.builder()
+                                .assignmentId(supervisorTask.getAssignmentId())
+                                .specialistId(supervisorTask.getSpecialistId())
+                                .specialistName(supervisorTask.getSpecialistNameSnapshot())
+                                .specialistEmail(supervisorTask.getSpecialistEmailSnapshot())
+                                .status(supervisorTask.getStatus() != null 
+                                    ? supervisorTask.getStatus().name() : null)
+                                .build();
+                        response.setSupervisor(supervisorInfo);
+                    });
+                }
+            } catch (Exception e) {
+                log.warn("Failed to enrich studio booking with supervisor info: requestId={}, milestoneId={}, error={}",
+                    requestId, booking.getMilestoneId(), e.getMessage(), e);
+                // Không throw error, chỉ log warning
+            }
+        }
+        
+        return response;
     }
     
     /**

@@ -1,12 +1,14 @@
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import { Button, Rate, Tabs, Typography, Tag, Spin, message } from 'antd';
+import { Button, Rate, Tabs, Typography, Tag, Spin, message, Space } from 'antd';
 import { PlayCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import { SINGER_DETAIL_DATA as staticSingerData } from '../../../../constants/index';
 import { getSpecialistDetail } from '../../../../services/specialistService';
+import { getSpecialistAverageRating, getSpecialistReviews } from '../../../../services/reviewService';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
+import RatingStars from '../../../../components/common/RatingStars/RatingStars';
 import styles from './SingerDetailPage.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -98,14 +100,94 @@ const ProfileTab = ({ specialist, skills, demos }) => (
   </div>
 );
 
-const ReviewsTab = ({ reviewsCount }) => (
+const ReviewsTab = ({ reviews, loading }) => {
+  if (loading) {
+    return (
+      <div className={styles.tabContent}>
+        <Spin />
+      </div>
+    );
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <div className={styles.tabContent}>
+        <Title level={4} className={styles.sectionTitle}>
+          {reviews?.length || 0} Reviews
+        </Title>
+        <Text type="secondary">Chưa có review nào cho specialist này.</Text>
+      </div>
+    );
+  }
+
+  return (
   <div className={styles.tabContent}>
     <Title level={4} className={styles.sectionTitle}>
-      {reviewsCount || 0} Reviews
+        {reviews.length} Reviews
     </Title>
-    <Text>Reviews feature coming soon...</Text>
+      <div style={{ marginTop: 24 }}>
+        {reviews.map(review => (
+          <div
+            key={review.reviewId}
+            style={{
+              padding: 16,
+              marginBottom: 16,
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+            }}
+          >
+            <div style={{ marginBottom: 8 }}>
+              <Space>
+                <RatingStars rating={review.rating} disabled size="small" />
+                <Text strong>{review.rating} / 5</Text>
+                {review.specialistName && (
+                  <Text type="secondary">by {review.specialistName}</Text>
+                )}
+              </Space>
+            </div>
+            {review.comment && (
+              <Text style={{ display: 'block', marginTop: 8 }}>
+                {review.comment}
+              </Text>
+            )}
+            {review.reviewType === 'TASK' && review.assignmentId && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Task Assignment:{' '}
+                  <a
+                    onClick={e => {
+                      e.preventDefault();
+                      // Link đến task detail (cần contractId, nhưng có thể navigate đến assignment)
+                      // Note: Cần contractId để navigate, nhưng có thể hiển thị assignmentId
+                    }}
+                    style={{ cursor: 'pointer', color: '#1890ff', fontSize: 12 }}
+                  >
+                    {review.assignmentId.substring(0, 8)}...
+                  </a>
+                </Text>
+              </div>
+            )}
+            {review.reviewType === 'PARTICIPANT' && review.bookingId && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Participant Review - Booking ID: {review.bookingId.substring(0, 8)}...
+                </Text>
+              </div>
+            )}
+            {review.createdAt && (
+              <Text
+                type="secondary"
+                style={{ display: 'block', marginTop: 8, fontSize: 12 }}
+              >
+                {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+              </Text>
+            )}
+          </div>
+        ))}
+      </div>
   </div>
 );
+};
 
 const DemosTab = ({ demos }) => (
   <div className={styles.tabContent}>
@@ -181,6 +263,9 @@ export default function SingerDetailPage() {
 
   const [loading, setLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
+  const [averageRating, setAverageRating] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const handleBack = () => {
     if (fromFlow && returnTo) {
@@ -213,6 +298,11 @@ export default function SingerDetailPage() {
             if (specialistDetailData.specialist) {
               // Đúng structure, dùng trực tiếp
               setDetailData(specialistDetailData);
+              // Load rating và reviews từ review service
+              const specialistId = specialistDetailData.specialist.specialistId;
+              if (specialistId) {
+                loadRatingAndReviews(specialistId);
+              }
             } else {
               // Fallback: nếu không có structure đúng, coi như toàn bộ data là specialist object
               // (trường hợp này không nên xảy ra với endpoint mới)
@@ -221,6 +311,11 @@ export default function SingerDetailPage() {
                 skills: [],
                 demos: [],
               });
+              // Load rating và reviews từ review service
+              const specialistId = specialistDetailData.specialistId;
+              if (specialistId) {
+                loadRatingAndReviews(specialistId);
+              }
             }
           }
         } catch (error) {
@@ -235,10 +330,51 @@ export default function SingerDetailPage() {
     fetchDetail();
   }, [id, specialistData]);
 
+  const loadRatingAndReviews = async specialistId => {
+    try {
+      // Load average rating
+      const ratingValue = await getSpecialistAverageRating(specialistId);
+      console.log('Loaded average rating for specialist:', specialistId, 'rating:', ratingValue);
+      
+      if (ratingValue !== null && ratingValue !== undefined && !isNaN(ratingValue)) {
+        setAverageRating(ratingValue);
+      } else {
+        // Nếu không có rating, set về null để fallback về specialist.rating
+        setAverageRating(null);
+      }
+
+      // Load reviews
+      setReviewsLoading(true);
+      const reviewsResponse = await getSpecialistReviews(specialistId, {
+        page: 0,
+        size: 10,
+      });
+      if (reviewsResponse?.status === 'success' && reviewsResponse?.data) {
+        // Nếu là paged response
+        if (reviewsResponse.data.content) {
+          setReviews(reviewsResponse.data.content);
+        } else if (Array.isArray(reviewsResponse.data)) {
+          setReviews(reviewsResponse.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading rating and reviews:', error);
+      // Set rating về null để fallback về specialist.rating từ backend
+      setAverageRating(null);
+      // Không hiển thị error message vì đây là optional feature
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   const specialist = detailData?.specialist;
   const skills = detailData?.skills || [];
   const demos = detailData?.demos || [];
   const [activeTab, setActiveTab] = useState('1');
+
+  // Use average rating from review service if available, otherwise fallback to specialist.rating
+  const displayRating = averageRating !== null ? averageRating : (specialist?.rating ? parseFloat(specialist.rating) : 0);
+  const displayReviewsCount = reviews.length > 0 ? reviews.length : (specialist?.reviews || 0);
 
   const tabItems = [
     {
@@ -250,8 +386,8 @@ export default function SingerDetailPage() {
     },
     {
       key: '2',
-      label: `Reviews (${specialist?.reviews || 0})`,
-      children: <ReviewsTab reviewsCount={specialist?.reviews} />,
+      label: `Reviews (${displayReviewsCount})`,
+      children: <ReviewsTab reviews={reviews} loading={reviewsLoading} />,
     },
     {
       key: '3',
@@ -364,11 +500,12 @@ export default function SingerDetailPage() {
               </Text>
 
               <div className={styles.ratingLocation}>
-                <Rate
+                <RatingStars
+                  rating={displayRating}
                   disabled
-                  value={specialist.rating ? parseFloat(specialist.rating) : 0}
+                  size="default"
                 />
-                <Text>{specialist.reviews || 0} Verified Reviews</Text>
+                <Text>{displayReviewsCount} Verified Reviews</Text>
               </div>
 
               {specialist.experienceYears > 0 && (

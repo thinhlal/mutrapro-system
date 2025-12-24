@@ -4,12 +4,18 @@ import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.project_service.entity.BookingParticipant;
+import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
+import com.mutrapro.project_service.enums.PerformerSource;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.project_service.enums.AssignmentStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import com.mutrapro.project_service.exception.FileNotFoundException;
 import com.mutrapro.project_service.exception.FileUploadException;
 import com.mutrapro.project_service.exception.InvalidBookingStatusException;
@@ -18,6 +24,7 @@ import com.mutrapro.project_service.exception.InvalidFileTypeForTaskException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
+import com.mutrapro.project_service.repository.BookingParticipantRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
@@ -49,6 +56,7 @@ public class FileService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     StudioBookingRepository studioBookingRepository;
+    BookingParticipantRepository bookingParticipantRepository;
     S3Service s3Service;
     FileAccessService fileAccessService;
 
@@ -169,6 +177,7 @@ public class FileService {
             }
             
             // Check SPECIALIST ownership - nếu specialist có assignment thuộc contract của request này
+            // HOẶC recording artist là participant trong booking của request này
             if (!skipFileAccessCheck) {
                 boolean isSpecialist = userRoles.stream().anyMatch(role -> 
                     role.equalsIgnoreCase("TRANSCRIPTION") || 
@@ -190,6 +199,35 @@ public class FileService {
                         skipFileAccessCheck = true;
                         log.debug("Request {} belongs to contract with assignments for specialist {}, skipping per-file access check", 
                                 requestId, userId);
+                    } else {
+                        // Nếu không có assignment, check xem recording artist có phải là participant trong booking không
+                        boolean isRecordingArtist = userRoles.stream().anyMatch(role -> 
+                            role.equalsIgnoreCase("RECORDING_ARTIST")
+                        );
+                        
+                        if (isRecordingArtist) {
+                            // Lấy specialistId từ userId (từ JWT token)
+                            String specialistId = getSpecialistIdFromUserId(userId);
+                            if (specialistId != null && !specialistId.isEmpty()) {
+                                // Tìm bookings của request này
+                                List<StudioBooking> bookings = studioBookingRepository.findByRequestId(requestId);
+                                for (StudioBooking booking : bookings) {
+                                    // Check xem recording artist có phải là participant trong booking này không
+                                    List<BookingParticipant> participants = bookingParticipantRepository
+                                            .findByBooking_BookingId(booking.getBookingId());
+                                    boolean isParticipant = participants.stream()
+                                            .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                                            .anyMatch(bp -> specialistId.equals(bp.getSpecialistId()));
+                                    
+                                    if (isParticipant) {
+                                        skipFileAccessCheck = true;
+                                        log.debug("Recording artist {} (specialistId={}) is participant in booking {} for request {}, skipping per-file access check", 
+                                                userId, specialistId, booking.getBookingId(), requestId);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -744,6 +782,35 @@ public class FileService {
         
         return getFileInfo(saved.getFileId(), userId, userRoles);
     }
-
+    
+    /**
+     * Lấy specialistId từ userId (từ JWT token)
+     * Tương tự như FileAccessService.getSpecialistIdFromUserId()
+     */
+    private String getSpecialistIdFromUserId(String userId) {
+        try {
+            // Thử lấy từ JWT token (nếu identity-service set specialistId claim)
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+                // Verify userId từ JWT khớp với userId parameter
+                String jwtUserId = jwt.getClaimAsString("userId");
+                if (jwtUserId != null && jwtUserId.equals(userId)) {
+                    String specialistId = jwt.getClaimAsString("specialistId");
+                    if (specialistId != null && !specialistId.isEmpty()) {
+                        log.debug("Got specialistId from JWT token: {} for userId: {}", specialistId, userId);
+                        return specialistId;
+                    }
+                } else {
+                    log.warn("UserId mismatch: JWT userId={}, parameter userId={}", jwtUserId, userId);
+                }
+            }
+            
+            // Không có fallback - bắt buộc phải có trong JWT token
+            log.debug("SpecialistId not found in JWT token for userId: {}", userId);
+        } catch (Exception e) {
+            log.warn("Failed to get specialistId from JWT token for userId {}: {}", userId, e.getMessage());
+        }
+        return null;
+    }
 }
 

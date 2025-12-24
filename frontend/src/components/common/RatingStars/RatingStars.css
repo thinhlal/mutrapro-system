@@ -1,0 +1,24 @@
+/* RatingStars component styles */
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+}
+
+.rating-stars .ant-rate {
+  color: #faad14;
+}
+
+.rating-stars .ant-rate-star {
+  margin-right: 4px;
+}
+
+.rating-stars .ant-rate-star-full .ant-rate-star-first,
+.rating-stars .ant-rate-star-full .ant-rate-star-second {
+  color: #faad14;
+}
+
+.rating-stars .ant-rate-star-zero .ant-rate-star-first,
+.rating-stars .ant-rate-star-zero .ant-rate-star-second {
+  color: #d9d9d9;
+}
+
