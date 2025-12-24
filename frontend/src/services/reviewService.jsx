@@ -159,25 +159,27 @@ export const getSpecialistAverageRating = async specialistId => {
     const response = await axiosInstance.get(
       API_ENDPOINTS.REVIEWS.GET_SPECIALIST_AVERAGE_RATING(specialistId)
     );
-    
+
     // Backend trả về Double trực tiếp (không wrap trong ApiResponse)
     // Axios sẽ parse JSON number thành JavaScript number
     const rating = response.data;
-    
+
     // Handle null/undefined - nếu chưa có review, backend trả về null
     if (rating === null || rating === undefined) {
       return null;
     }
-    
+
     // Convert to number nếu cần (có thể là string từ JSON)
     const numRating = typeof rating === 'string' ? parseFloat(rating) : rating;
-    
+
     // Validate range
     if (isNaN(numRating) || numRating < 1 || numRating > 5) {
-      console.warn(`Invalid rating value: ${rating} for specialist ${specialistId}`);
+      console.warn(
+        `Invalid rating value: ${rating} for specialist ${specialistId}`
+      );
       return null;
     }
-    
+
     return numRating;
   } catch (error) {
     console.error('Error getting specialist average rating:', error);
@@ -223,4 +225,3 @@ export const getAllReviews = async (params = {}) => {
     );
   }
 };
-

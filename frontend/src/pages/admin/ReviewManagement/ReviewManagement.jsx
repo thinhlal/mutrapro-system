@@ -71,9 +71,7 @@ const ReviewManagement = () => {
         }));
       }
     } catch (error) {
-      message.error(
-        error?.message || 'Không thể tải danh sách reviews'
-      );
+      message.error(error?.message || 'Không thể tải danh sách reviews');
     } finally {
       setLoading(false);
     }
@@ -83,11 +81,11 @@ const ReviewManagement = () => {
     fetchReviews(0, pagination.pageSize);
   }, [filters]);
 
-  const handleTableChange = (newPagination) => {
+  const handleTableChange = newPagination => {
     fetchReviews(newPagination.current - 1, newPagination.pageSize);
   };
 
-  const handleViewDetail = (review) => {
+  const handleViewDetail = review => {
     setSelectedReview(review);
     setDetailModalVisible(true);
   };
@@ -112,7 +110,7 @@ const ReviewManagement = () => {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
-  const getReviewTypeColor = (type) => {
+  const getReviewTypeColor = type => {
     switch (type) {
       case 'TASK':
         return 'blue';
@@ -125,7 +123,7 @@ const ReviewManagement = () => {
     }
   };
 
-  const getReviewTypeLabel = (type) => {
+  const getReviewTypeLabel = type => {
     switch (type) {
       case 'TASK':
         return 'Task Review';
@@ -144,12 +142,8 @@ const ReviewManagement = () => {
       dataIndex: 'reviewId',
       key: 'reviewId',
       width: 200,
-      render: (text) => (
-        <Text
-          code
-          copyable={{ text }}
-          style={{ fontSize: '12px' }}
-        >
+      render: text => (
+        <Text code copyable={{ text }} style={{ fontSize: '12px' }}>
           {text?.substring(0, 8)}...
         </Text>
       ),
@@ -159,10 +153,8 @@ const ReviewManagement = () => {
       dataIndex: 'reviewType',
       key: 'reviewType',
       width: 140,
-      render: (type) => (
-        <Tag color={getReviewTypeColor(type)}>
-          {getReviewTypeLabel(type)}
-        </Tag>
+      render: type => (
+        <Tag color={getReviewTypeColor(type)}>{getReviewTypeLabel(type)}</Tag>
       ),
     },
     {
@@ -170,7 +162,7 @@ const ReviewManagement = () => {
       dataIndex: 'rating',
       key: 'rating',
       width: 100,
-      render: (rating) => (
+      render: rating => (
         <Space>
           <StarFilled style={{ color: '#faad14' }} />
           <Text strong>{rating}</Text>
@@ -187,11 +179,7 @@ const ReviewManagement = () => {
       render: (id, record) => (
         <div>
           {id ? (
-            <Text
-              code
-              copyable={{ text: id }}
-              style={{ fontSize: '11px' }}
-            >
+            <Text code copyable={{ text: id }} style={{ fontSize: '11px' }}>
               {id?.substring(0, 8)}...
             </Text>
           ) : (
@@ -212,13 +200,9 @@ const ReviewManagement = () => {
       dataIndex: 'requestId',
       key: 'requestId',
       width: 150,
-      render: (id) =>
+      render: id =>
         id ? (
-          <Text
-            code
-            copyable={{ text: id }}
-            style={{ fontSize: '11px' }}
-          >
+          <Text code copyable={{ text: id }} style={{ fontSize: '11px' }}>
             {id?.substring(0, 8)}...
           </Text>
         ) : (
@@ -230,12 +214,8 @@ const ReviewManagement = () => {
       dataIndex: 'customerId',
       key: 'customerId',
       width: 150,
-      render: (id) => (
-        <Text
-          code
-          copyable={{ text: id }}
-          style={{ fontSize: '11px' }}
-        >
+      render: id => (
+        <Text code copyable={{ text: id }} style={{ fontSize: '11px' }}>
           {id?.substring(0, 8)}...
         </Text>
       ),
@@ -245,7 +225,7 @@ const ReviewManagement = () => {
       dataIndex: 'comment',
       key: 'comment',
       ellipsis: true,
-      render: (text) =>
+      render: text =>
         text ? (
           <Text ellipsis style={{ maxWidth: 200 }}>
             {text}
@@ -259,7 +239,7 @@ const ReviewManagement = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (date) =>
+      render: date =>
         date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
       sorter: (a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
@@ -307,7 +287,7 @@ const ReviewManagement = () => {
                 placeholder="All Types"
                 allowClear
                 value={filters.reviewType}
-                onChange={(value) => handleFilterChange('reviewType', value)}
+                onChange={value => handleFilterChange('reviewType', value)}
               >
                 <Option value="TASK">Task Review</Option>
                 <Option value="REQUEST">Request Review</Option>
@@ -323,7 +303,7 @@ const ReviewManagement = () => {
                 placeholder="Min"
                 style={{ width: 80 }}
                 value={filters.minRating}
-                onChange={(value) => handleFilterChange('minRating', value)}
+                onChange={value => handleFilterChange('minRating', value)}
               />
             </div>
 
@@ -335,7 +315,7 @@ const ReviewManagement = () => {
                 placeholder="Max"
                 style={{ width: 80 }}
                 value={filters.maxRating}
-                onChange={(value) => handleFilterChange('maxRating', value)}
+                onChange={value => handleFilterChange('maxRating', value)}
               />
             </div>
 
@@ -345,7 +325,7 @@ const ReviewManagement = () => {
                 placeholder="Enter specialist ID"
                 style={{ width: 200 }}
                 value={filters.specialistId}
-                onChange={(e) =>
+                onChange={e =>
                   handleFilterChange('specialistId', e.target.value)
                 }
                 allowClear
@@ -358,9 +338,7 @@ const ReviewManagement = () => {
                 placeholder="Enter request ID"
                 style={{ width: 200 }}
                 value={filters.requestId}
-                onChange={(e) =>
-                  handleFilterChange('requestId', e.target.value)
-                }
+                onChange={e => handleFilterChange('requestId', e.target.value)}
                 allowClear
               />
             </div>
@@ -371,9 +349,7 @@ const ReviewManagement = () => {
                 placeholder="Enter customer ID"
                 style={{ width: 200 }}
                 value={filters.customerId}
-                onChange={(e) =>
-                  handleFilterChange('customerId', e.target.value)
-                }
+                onChange={e => handleFilterChange('customerId', e.target.value)}
                 allowClear
               />
             </div>
@@ -382,7 +358,9 @@ const ReviewManagement = () => {
             <Button
               type="primary"
               icon={<ReloadOutlined />}
-              onClick={() => fetchReviews(pagination.current - 1, pagination.pageSize)}
+              onClick={() =>
+                fetchReviews(pagination.current - 1, pagination.pageSize)
+              }
             >
               Refresh
             </Button>
@@ -398,7 +376,7 @@ const ReviewManagement = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} reviews`,
+            showTotal: total => `Total ${total} reviews`,
           }}
           onChange={handleTableChange}
           scroll={{ x: 1500 }}
@@ -515,16 +493,12 @@ const ReviewManagement = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Created At">
               {selectedReview.createdAt
-                ? dayjs(selectedReview.createdAt).format(
-                    'YYYY-MM-DD HH:mm:ss'
-                  )
+                ? dayjs(selectedReview.createdAt).format('YYYY-MM-DD HH:mm:ss')
                 : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Updated At">
               {selectedReview.updatedAt
-                ? dayjs(selectedReview.updatedAt).format(
-                    'YYYY-MM-DD HH:mm:ss'
-                  )
+                ? dayjs(selectedReview.updatedAt).format('YYYY-MM-DD HH:mm:ss')
                 : 'N/A'}
             </Descriptions.Item>
           </Descriptions>
@@ -535,4 +509,3 @@ const ReviewManagement = () => {
 };
 
 export default ReviewManagement;
-

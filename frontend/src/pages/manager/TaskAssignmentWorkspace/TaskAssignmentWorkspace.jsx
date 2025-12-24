@@ -1290,7 +1290,12 @@ export default function TaskAssignmentWorkspace() {
                                 <Tag color="gold" icon={<StarFilled />}>
                                   {item.rating.toFixed(1)}
                                   {item.reviews != null && item.reviews > 0 && (
-                                    <span style={{ marginLeft: 4, fontSize: '11px' }}>
+                                    <span
+                                      style={{
+                                        marginLeft: 4,
+                                        fontSize: '11px',
+                                      }}
+                                    >
                                       ({item.reviews})
                                     </span>
                                   )}
@@ -1401,16 +1406,18 @@ export default function TaskAssignmentWorkspace() {
                               {selectedSpecialist.experienceYears || 0} years
                               exp
                             </Tag>
-                            {selectedSpecialist.rating != null && selectedSpecialist.rating > 0 && (
-                              <Tag color="gold" icon={<StarFilled />}>
-                                Rating: {selectedSpecialist.rating.toFixed(1)}
-                                {selectedSpecialist.reviews != null && selectedSpecialist.reviews > 0 && (
-                                  <span style={{ marginLeft: 4 }}>
-                                    ({selectedSpecialist.reviews} reviews)
-                                  </span>
-                                )}
-                              </Tag>
-                            )}
+                            {selectedSpecialist.rating != null &&
+                              selectedSpecialist.rating > 0 && (
+                                <Tag color="gold" icon={<StarFilled />}>
+                                  Rating: {selectedSpecialist.rating.toFixed(1)}
+                                  {selectedSpecialist.reviews != null &&
+                                    selectedSpecialist.reviews > 0 && (
+                                      <span style={{ marginLeft: 4 }}>
+                                        ({selectedSpecialist.reviews} reviews)
+                                      </span>
+                                    )}
+                                </Tag>
+                              )}
                             <Tag color="green">
                               Load: {selectedSpecialist.totalOpenTasks ?? 0}/
                               {selectedSpecialist.maxConcurrentTasks || 1}

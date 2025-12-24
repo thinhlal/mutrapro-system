@@ -1,11 +1,23 @@
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import { Button, Rate, Tabs, Typography, Tag, Spin, message, Space } from 'antd';
+import {
+  Button,
+  Rate,
+  Tabs,
+  Typography,
+  Tag,
+  Spin,
+  message,
+  Space,
+} from 'antd';
 import { PlayCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import { SINGER_DETAIL_DATA as staticSingerData } from '../../../../constants/index';
 import { getSpecialistDetail } from '../../../../services/specialistService';
-import { getSpecialistAverageRating, getSpecialistReviews } from '../../../../services/reviewService';
+import {
+  getSpecialistAverageRating,
+  getSpecialistReviews,
+} from '../../../../services/reviewService';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import RatingStars from '../../../../components/common/RatingStars/RatingStars';
@@ -121,10 +133,10 @@ const ReviewsTab = ({ reviews, loading }) => {
   }
 
   return (
-  <div className={styles.tabContent}>
-    <Title level={4} className={styles.sectionTitle}>
+    <div className={styles.tabContent}>
+      <Title level={4} className={styles.sectionTitle}>
         {reviews.length} Reviews
-    </Title>
+      </Title>
       <div style={{ marginTop: 24 }}>
         {reviews.map(review => (
           <div
@@ -160,7 +172,11 @@ const ReviewsTab = ({ reviews, loading }) => {
                       // Link đến task detail (cần contractId, nhưng có thể navigate đến assignment)
                       // Note: Cần contractId để navigate, nhưng có thể hiển thị assignmentId
                     }}
-                    style={{ cursor: 'pointer', color: '#1890ff', fontSize: 12 }}
+                    style={{
+                      cursor: 'pointer',
+                      color: '#1890ff',
+                      fontSize: 12,
+                    }}
                   >
                     {review.assignmentId.substring(0, 8)}...
                   </a>
@@ -170,7 +186,8 @@ const ReviewsTab = ({ reviews, loading }) => {
             {review.reviewType === 'PARTICIPANT' && review.bookingId && (
               <div style={{ marginTop: 8 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Participant Review - Booking ID: {review.bookingId.substring(0, 8)}...
+                  Participant Review - Booking ID:{' '}
+                  {review.bookingId.substring(0, 8)}...
                 </Text>
               </div>
             )}
@@ -185,8 +202,8 @@ const ReviewsTab = ({ reviews, loading }) => {
           </div>
         ))}
       </div>
-  </div>
-);
+    </div>
+  );
 };
 
 const DemosTab = ({ demos }) => (
@@ -334,9 +351,18 @@ export default function SingerDetailPage() {
     try {
       // Load average rating
       const ratingValue = await getSpecialistAverageRating(specialistId);
-      console.log('Loaded average rating for specialist:', specialistId, 'rating:', ratingValue);
-      
-      if (ratingValue !== null && ratingValue !== undefined && !isNaN(ratingValue)) {
+      console.log(
+        'Loaded average rating for specialist:',
+        specialistId,
+        'rating:',
+        ratingValue
+      );
+
+      if (
+        ratingValue !== null &&
+        ratingValue !== undefined &&
+        !isNaN(ratingValue)
+      ) {
         setAverageRating(ratingValue);
       } else {
         // Nếu không có rating, set về null để fallback về specialist.rating
@@ -373,8 +399,14 @@ export default function SingerDetailPage() {
   const [activeTab, setActiveTab] = useState('1');
 
   // Use average rating from review service if available, otherwise fallback to specialist.rating
-  const displayRating = averageRating !== null ? averageRating : (specialist?.rating ? parseFloat(specialist.rating) : 0);
-  const displayReviewsCount = reviews.length > 0 ? reviews.length : (specialist?.reviews || 0);
+  const displayRating =
+    averageRating !== null
+      ? averageRating
+      : specialist?.rating
+        ? parseFloat(specialist.rating)
+        : 0;
+  const displayReviewsCount =
+    reviews.length > 0 ? reviews.length : specialist?.reviews || 0;
 
   const tabItems = [
     {
@@ -500,11 +532,7 @@ export default function SingerDetailPage() {
               </Text>
 
               <div className={styles.ratingLocation}>
-                <RatingStars
-                  rating={displayRating}
-                  disabled
-                  size="default"
-                />
+                <RatingStars rating={displayRating} disabled size="default" />
                 <Text>{displayReviewsCount} Verified Reviews</Text>
               </div>
 

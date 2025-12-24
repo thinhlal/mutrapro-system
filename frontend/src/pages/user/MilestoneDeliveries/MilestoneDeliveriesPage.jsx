@@ -37,7 +37,10 @@ import {
 import { getStudioBookings } from '../../../services/studioBookingService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractRevisionStats } from '../../../services/revisionRequestService';
-import { createTaskReview, getTaskReview } from '../../../services/reviewService';
+import {
+  createTaskReview,
+  getTaskReview,
+} from '../../../services/reviewService';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
@@ -143,7 +146,8 @@ const MilestoneDeliveriesPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
-  const [submissionReviewModalVisible, setSubmissionReviewModalVisible] = useState(false);
+  const [submissionReviewModalVisible, setSubmissionReviewModalVisible] =
+    useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewAction, setReviewAction] = useState(''); // 'accept' or 'request_revision'
   const [revisionTitle, setRevisionTitle] = useState('');
@@ -151,7 +155,8 @@ const MilestoneDeliveriesPage = () => {
   const [revisionRequests, setRevisionRequests] = useState([]); // Track revision requests để check xem đã request chưa
   const [revisionStats, setRevisionStats] = useState(null); // Thống kê free/paid revisions của contract
   const [reviewLoading, setReviewLoading] = useState(false);
-  const [selectedAssignmentForReview, setSelectedAssignmentForReview] = useState(null);
+  const [selectedAssignmentForReview, setSelectedAssignmentForReview] =
+    useState(null);
   const [existingReviews, setExistingReviews] = useState({}); // Map assignmentId -> review
 
   const milestoneName =
@@ -358,7 +363,9 @@ const MilestoneDeliveriesPage = () => {
         }
       } catch (error) {
         // Nếu không có review hoặc lỗi, bỏ qua (có thể chưa rate)
-        console.log(`No review found for assignment ${submission.assignmentId}`);
+        console.log(
+          `No review found for assignment ${submission.assignmentId}`
+        );
       }
     }
     setExistingReviews(reviewsMap);
@@ -384,7 +391,10 @@ const MilestoneDeliveriesPage = () => {
 
     try {
       setReviewLoading(true);
-      const response = await createTaskReview(selectedAssignmentForReview, reviewData);
+      const response = await createTaskReview(
+        selectedAssignmentForReview,
+        reviewData
+      );
 
       if (response?.status === 'success') {
         message.success('Đã gửi đánh giá thành công');
@@ -400,9 +410,7 @@ const MilestoneDeliveriesPage = () => {
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi đánh giá'
-      );
+      message.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá');
     } finally {
       setReviewLoading(false);
     }
@@ -1209,14 +1217,17 @@ const MilestoneDeliveriesPage = () => {
                             // ƯU TIÊN 1: Nếu submission đã được customer accept → hiển thị nút Rate
                             if (submissionStatus === 'customer_accepted') {
                               const assignmentId = submission.assignmentId;
-                              const existingReview = existingReviews[assignmentId];
-                              
+                              const existingReview =
+                                existingReviews[assignmentId];
+
                               return (
                                 <Button
                                   type="default"
                                   icon={<StarFilled />}
                                   size="small"
-                                  onClick={() => handleOpenReviewModal(submission, 'rate')}
+                                  onClick={() =>
+                                    handleOpenReviewModal(submission, 'rate')
+                                  }
                                 >
                                   {existingReview ? 'Xem đánh giá' : 'Đánh giá'}
                                 </Button>

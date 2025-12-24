@@ -40,7 +40,11 @@ import {
   requestChangeContract,
   cancelContract,
 } from '../../../services/contractService';
-import { createRequestReview, getRequestReviews, createParticipantReview } from '../../../services/reviewService';
+import {
+  createRequestReview,
+  getRequestReviews,
+  createParticipantReview,
+} from '../../../services/reviewService';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
 import FileList from '../../../components/common/FileList/FileList';
@@ -90,16 +94,21 @@ const RequestDetailPage = () => {
     useInstrumentStore();
 
   // Request review state
-  const [requestReviewModalVisible, setRequestReviewModalVisible] = useState(false);
+  const [requestReviewModalVisible, setRequestReviewModalVisible] =
+    useState(false);
   const [requestReviewLoading, setRequestReviewLoading] = useState(false);
   const [existingRequestReview, setExistingRequestReview] = useState(null);
 
   // Participant review state
   const [participantReviews, setParticipantReviews] = useState({}); // Map participantId -> review
-  const [participantReviewModalVisible, setParticipantReviewModalVisible] = useState(false);
-  const [participantReviewLoading, setParticipantReviewLoading] = useState(false);
-  const [selectedParticipantIdForReview, setSelectedParticipantIdForReview] = useState(null);
-  const [existingParticipantReview, setExistingParticipantReview] = useState(null);
+  const [participantReviewModalVisible, setParticipantReviewModalVisible] =
+    useState(false);
+  const [participantReviewLoading, setParticipantReviewLoading] =
+    useState(false);
+  const [selectedParticipantIdForReview, setSelectedParticipantIdForReview] =
+    useState(null);
+  const [existingParticipantReview, setExistingParticipantReview] =
+    useState(null);
 
   useEffect(() => {
     fetchInstruments();
@@ -223,7 +232,7 @@ const RequestDetailPage = () => {
         const participantReviewsList = Array.isArray(response.data)
           ? response.data.filter(r => r.reviewType === 'PARTICIPANT')
           : [];
-        
+
         // Map participantId -> review
         const reviewsMap = {};
         participantReviewsList.forEach(review => {
@@ -257,7 +266,10 @@ const RequestDetailPage = () => {
 
     try {
       setParticipantReviewLoading(true);
-      const response = await createParticipantReview(selectedParticipantIdForReview, reviewData);
+      const response = await createParticipantReview(
+        selectedParticipantIdForReview,
+        reviewData
+      );
 
       if (response?.status === 'success') {
         message.success('Đã gửi đánh giá participant thành công');
@@ -894,18 +906,29 @@ const RequestDetailPage = () => {
                               : 0;
 
                         // Chỉ hiển thị button rate cho recording requests, INTERNAL_ARTIST và khi request completed
-                        const canRate = 
+                        const canRate =
                           request?.requestType === 'recording' &&
                           request?.status?.toLowerCase() === 'completed' &&
                           p.performerSource === 'INTERNAL_ARTIST' &&
                           p.participantId;
-                        const existingReview = p.participantId ? participantReviews[p.participantId] : null;
+                        const existingReview = p.participantId
+                          ? participantReviews[p.participantId]
+                          : null;
 
                         return (
-                          <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div
+                            key={index}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
                             <div>
                               <Tag
-                                color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
+                                color={
+                                  p.roleType === 'VOCAL' ? 'blue' : 'purple'
+                                }
                                 style={{ marginRight: 8 }}
                               >
                                 {roleLabel}
@@ -925,7 +948,9 @@ const RequestDetailPage = () => {
                                 type="default"
                                 icon={<StarOutlined />}
                                 size="small"
-                                onClick={() => handleRateParticipant(p.participantId)}
+                                onClick={() =>
+                                  handleRateParticipant(p.participantId)
+                                }
                               >
                                 {existingReview ? 'View Review' : 'Rate'}
                               </Button>

@@ -51,7 +51,10 @@ import {
   deleteMyDemo,
   uploadDemoFile,
 } from '../../../services/specialistService';
-import { getSpecialistAverageRating, getSpecialistReviews } from '../../../services/reviewService';
+import {
+  getSpecialistAverageRating,
+  getSpecialistReviews,
+} from '../../../services/reviewService';
 import { useAuth } from '../../../contexts/AuthContext';
 import RatingStars from '../../../components/common/RatingStars/RatingStars';
 import { MUSIC_GENRES } from '../../../constants/musicOptionsConstants';
@@ -140,7 +143,7 @@ const SpecialistProfile = () => {
           genres: specialist?.genres || [],
           credits: specialist?.credits || [],
         });
-        
+
         // Load rating và reviews nếu có specialistId
         if (specialist?.specialistId) {
           loadRatingAndReviews(specialist.specialistId);
@@ -153,17 +156,21 @@ const SpecialistProfile = () => {
     }
   };
 
-  const loadRatingAndReviews = async (specialistId) => {
+  const loadRatingAndReviews = async specialistId => {
     if (!specialistId) {
       const currentSpecialistId = profileDetail?.specialist?.specialistId;
       if (!currentSpecialistId) return;
       specialistId = currentSpecialistId;
     }
-    
+
     try {
       // Load average rating
       const ratingValue = await getSpecialistAverageRating(specialistId);
-      if (ratingValue !== null && ratingValue !== undefined && !isNaN(ratingValue)) {
+      if (
+        ratingValue !== null &&
+        ratingValue !== undefined &&
+        !isNaN(ratingValue)
+      ) {
         setAverageRating(ratingValue);
       } else {
         setAverageRating(null);
@@ -962,16 +969,32 @@ const SpecialistProfile = () => {
                       </Descriptions.Item>
                       <Descriptions.Item label="Rating">
                         <RatingStars
-                          rating={averageRating !== null ? averageRating : (profileDetail?.specialist?.rating ? parseFloat(profileDetail.specialist.rating) : 0)}
+                          rating={
+                            averageRating !== null
+                              ? averageRating
+                              : profileDetail?.specialist?.rating
+                                ? parseFloat(profileDetail.specialist.rating)
+                                : 0
+                          }
                           disabled
                           allowHalf
                         />
                         <span style={{ marginLeft: 8 }}>
-                          {averageRating !== null ? averageRating.toFixed(1) : (profileDetail?.specialist?.rating || 0)} / 5.0
+                          {averageRating !== null
+                            ? averageRating.toFixed(1)
+                            : profileDetail?.specialist?.rating || 0}{' '}
+                          / 5.0
                         </span>
                         {reviews.length > 0 && (
-                          <span style={{ marginLeft: 8, color: '#666', fontSize: 12 }}>
-                            ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                          <span
+                            style={{
+                              marginLeft: 8,
+                              color: '#666',
+                              fontSize: 12,
+                            }}
+                          >
+                            ({reviews.length}{' '}
+                            {reviews.length === 1 ? 'review' : 'reviews'})
                           </span>
                         )}
                       </Descriptions.Item>
@@ -1160,27 +1183,44 @@ const SpecialistProfile = () => {
                     {reviews.length === 0 ? (
                       <Card>
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                          <StarOutlined style={{ fontSize: 48, color: '#ccc' }} />
+                          <StarOutlined
+                            style={{ fontSize: 48, color: '#ccc' }}
+                          />
                           <p style={{ marginTop: 16, color: '#999' }}>
-                            Chưa có review nào. Bạn sẽ nhận được reviews từ khách hàng sau khi hoàn thành các task assignments.
+                            Chưa có review nào. Bạn sẽ nhận được reviews từ
+                            khách hàng sau khi hoàn thành các task assignments.
                           </p>
                         </div>
                       </Card>
                     ) : (
                       <div>
                         <Title level={4} style={{ marginBottom: 16 }}>
-                          {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
+                          {reviews.length}{' '}
+                          {reviews.length === 1 ? 'Review' : 'Reviews'}
                         </Title>
-                        <Space direction="vertical" style={{ width: '100%' }} size="large">
+                        <Space
+                          direction="vertical"
+                          style={{ width: '100%' }}
+                          size="large"
+                        >
                           {reviews.map(review => (
                             <Card key={review.reviewId} size="small">
                               <div style={{ marginBottom: 8 }}>
                                 <Space>
-                                  <RatingStars rating={review.rating} disabled size="small" />
+                                  <RatingStars
+                                    rating={review.rating}
+                                    disabled
+                                    size="small"
+                                  />
                                   <Text strong>{review.rating} / 5</Text>
                                   {review.createdAt && (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      {new Date(review.createdAt).toLocaleDateString('vi-VN', {
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 12 }}
+                                    >
+                                      {new Date(
+                                        review.createdAt
+                                      ).toLocaleDateString('vi-VN', {
                                         year: 'numeric',
                                         month: 'long',
                                         day: 'numeric',
@@ -1196,66 +1236,105 @@ const SpecialistProfile = () => {
                               )}
                               {review.assignmentId && (
                                 <div style={{ marginTop: 8 }}>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
                                     Task Assignment:{' '}
                                     <a
                                       onClick={e => {
                                         e.preventDefault();
                                         // Chỉ TRANSCRIPTION và ARRANGEMENT có task assignments
                                         // RECORDING_ARTIST không có task assignments (chỉ có participant reviews)
-                                        const specialization = profileDetail?.specialist?.specialization;
-                                        
-                                        if (specialization === 'TRANSCRIPTION') {
-                                          navigate(`/transcription/my-tasks/${review.assignmentId}`);
-                                        } else if (specialization === 'ARRANGEMENT') {
-                                          navigate(`/arrangement/my-tasks/${review.assignmentId}`);
+                                        const specialization =
+                                          profileDetail?.specialist
+                                            ?.specialization;
+
+                                        if (
+                                          specialization === 'TRANSCRIPTION'
+                                        ) {
+                                          navigate(
+                                            `/transcription/my-tasks/${review.assignmentId}`
+                                          );
+                                        } else if (
+                                          specialization === 'ARRANGEMENT'
+                                        ) {
+                                          navigate(
+                                            `/arrangement/my-tasks/${review.assignmentId}`
+                                          );
                                         } else {
                                           // Nếu không phải TRANSCRIPTION/ARRANGEMENT, không nên có assignmentId
                                           // Nhưng để an toàn, fallback về transcription route
-                                          navigate(`/transcription/my-tasks/${review.assignmentId}`);
+                                          navigate(
+                                            `/transcription/my-tasks/${review.assignmentId}`
+                                          );
                                         }
                                       }}
-                                      style={{ cursor: 'pointer', color: '#1890ff' }}
+                                      style={{
+                                        cursor: 'pointer',
+                                        color: '#1890ff',
+                                      }}
                                     >
                                       {review.assignmentId}
                                     </a>
                                   </Text>
                                 </div>
                               )}
-                              {review.reviewType === 'PARTICIPANT' && review.participantId && (
-                                <div style={{ marginTop: 8 }}>
-                                  <Space>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      Participant Review
-                                    </Text>
-                                    {review.bookingId && (
-                                      <>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>
-                                          Booking:{' '}
-                                        </Text>
-                                        <a
-                                          onClick={e => {
-                                            e.preventDefault();
-                                            // Link đến booking detail dựa trên role của user
-                                            // Recording artist có route riêng, manager có route riêng
-                                            const specialization = profileDetail?.specialist?.specialization;
-                                            if (specialization === 'RECORDING_ARTIST') {
-                                              navigate(`/recording-artist/studio-bookings/${review.bookingId}`);
-                                            } else {
-                                              // Fallback: có thể là manager hoặc admin xem
-                                              // Hoặc chỉ hiển thị bookingId mà không link
-                                              navigate(`/manager/studio-bookings/${review.bookingId}`);
-                                            }
-                                          }}
-                                          style={{ cursor: 'pointer', color: '#1890ff', fontSize: 12 }}
-                                        >
-                                          {review.bookingId.substring(0, 8)}...
-                                        </a>
-                                      </>
-                                    )}
-                                  </Space>
-                                </div>
-                              )}
+                              {review.reviewType === 'PARTICIPANT' &&
+                                review.participantId && (
+                                  <div style={{ marginTop: 8 }}>
+                                    <Space>
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        Participant Review
+                                      </Text>
+                                      {review.bookingId && (
+                                        <>
+                                          <Text
+                                            type="secondary"
+                                            style={{ fontSize: 12 }}
+                                          >
+                                            Booking:{' '}
+                                          </Text>
+                                          <a
+                                            onClick={e => {
+                                              e.preventDefault();
+                                              // Link đến booking detail dựa trên role của user
+                                              // Recording artist có route riêng, manager có route riêng
+                                              const specialization =
+                                                profileDetail?.specialist
+                                                  ?.specialization;
+                                              if (
+                                                specialization ===
+                                                'RECORDING_ARTIST'
+                                              ) {
+                                                navigate(
+                                                  `/recording-artist/studio-bookings/${review.bookingId}`
+                                                );
+                                              } else {
+                                                // Fallback: có thể là manager hoặc admin xem
+                                                // Hoặc chỉ hiển thị bookingId mà không link
+                                                navigate(
+                                                  `/manager/studio-bookings/${review.bookingId}`
+                                                );
+                                              }
+                                            }}
+                                            style={{
+                                              cursor: 'pointer',
+                                              color: '#1890ff',
+                                              fontSize: 12,
+                                            }}
+                                          >
+                                            {review.bookingId.substring(0, 8)}
+                                            ...
+                                          </a>
+                                        </>
+                                      )}
+                                    </Space>
+                                  </div>
+                                )}
                             </Card>
                           ))}
                         </Space>

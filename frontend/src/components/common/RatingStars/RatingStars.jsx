@@ -23,10 +23,13 @@ const RatingStars = ({
   // Determine the value to display
   // If value is provided (controlled), use it; otherwise use rating prop
   // Handle undefined/null/NaN by defaulting to 0
-  const displayValue = value !== undefined 
-    ? (value || 0) 
-    : (rating !== undefined && rating !== null && !isNaN(rating) ? rating : 0);
-  
+  const displayValue =
+    value !== undefined
+      ? value || 0
+      : rating !== undefined && rating !== null && !isNaN(rating)
+        ? rating
+        : 0;
+
   return (
     <Rate
       value={displayValue}
@@ -48,4 +51,3 @@ RatingStars.propTypes = {
 };
 
 export default RatingStars;
-

@@ -123,12 +123,12 @@ const StudioBookingDetailPage = () => {
     // Load request info và artists info parallel (không phụ thuộc nhau)
     const loadAllData = async () => {
       const promises = [];
-      
+
       // Load request info nếu có requestId
       if (booking.requestId) {
         promises.push(loadRequestInfo());
       }
-      
+
       // Load artists info nếu có INTERNAL_ARTIST participants
       const internalArtists =
         booking?.participants?.filter(
@@ -137,12 +137,12 @@ const StudioBookingDetailPage = () => {
       if (internalArtists.length > 0) {
         promises.push(loadArtistsInfo());
       }
-      
+
       // Load supervisor info nếu có supervisor
       if (booking.supervisor) {
         promises.push(loadSupervisor());
       }
-      
+
       // Chạy tất cả parallel
       await Promise.allSettled(promises);
     };
@@ -236,7 +236,10 @@ const StudioBookingDetailPage = () => {
               setSupervisor(booking.supervisor);
             }
           } catch (error) {
-            console.warn('Error loading specialist info for supervisor:', error);
+            console.warn(
+              'Error loading specialist info for supervisor:',
+              error
+            );
             // Fallback: use supervisor info from booking response
             setSupervisor(booking.supervisor);
           }
@@ -325,9 +328,7 @@ const StudioBookingDetailPage = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Context">
-              <Tag
-                color={bookingContextColors[booking.context] || 'default'}
-              >
+              <Tag color={bookingContextColors[booking.context] || 'default'}>
                 {bookingContextLabels[booking.context] ||
                   booking.context ||
                   'N/A'}
@@ -398,7 +399,8 @@ const StudioBookingDetailPage = () => {
                             ? 'Transcription'
                             : request.requestType === 'arrangement'
                               ? 'Arrangement'
-                              : request.requestType === 'arrangement_with_recording'
+                              : request.requestType ===
+                                  'arrangement_with_recording'
                                 ? 'Arrangement with Recording'
                                 : request.requestType === 'recording'
                                   ? 'Recording'
@@ -443,58 +445,67 @@ const StudioBookingDetailPage = () => {
                   </Descriptions>
 
                   {/* Request Files (for PRE_CONTRACT_HOLD bookings) */}
-                  {booking?.context === 'PRE_CONTRACT_HOLD' && (() => {
-                    // Filter chỉ lấy customer_upload files từ request.files
-                    // Contract PDF được lấy riêng ở contract detail page
-                    const customerUploadFiles =
-                      request?.files?.filter(
-                        file => file.fileSource === 'customer_upload'
-                      ) || [];
-                    
-                    return customerUploadFiles.length > 0 ? (
-                      <div style={{ marginTop: 16 }}>
-                        <Title level={5} style={{ marginBottom: 8 }}>
-                          Uploaded Files
-                        </Title>
-                        <div
-                          style={{
-                            padding: 12,
-                            background: '#f5f5f5',
-                            borderRadius: 4,
-                          }}
-                        >
-                          <Space
-                            direction="vertical"
-                            size="small"
-                            style={{ width: '100%' }}
+                  {booking?.context === 'PRE_CONTRACT_HOLD' &&
+                    (() => {
+                      // Filter chỉ lấy customer_upload files từ request.files
+                      // Contract PDF được lấy riêng ở contract detail page
+                      const customerUploadFiles =
+                        request?.files?.filter(
+                          file => file.fileSource === 'customer_upload'
+                        ) || [];
+
+                      return customerUploadFiles.length > 0 ? (
+                        <div style={{ marginTop: 16 }}>
+                          <Title level={5} style={{ marginBottom: 8 }}>
+                            Uploaded Files
+                          </Title>
+                          <div
+                            style={{
+                              padding: 12,
+                              background: '#f5f5f5',
+                              borderRadius: 4,
+                            }}
                           >
-                            {customerUploadFiles.map((file, idx) => (
-                              <Button
-                                key={idx}
-                                type="link"
-                                size="small"
-                                icon={<FileOutlined />}
-                                onClick={() =>
-                                  downloadFileHelper(file.fileId, file.fileName)
-                                }
-                                style={{ padding: 0, height: 'auto' }}
-                              >
-                                {file.fileName}
-                                {file.fileSize && (
-                                  <Text
-                                    type="secondary"
-                                    style={{ marginLeft: 8, fontSize: '11px' }}
-                                  >
-                                    ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                  </Text>
-                                )}
-                              </Button>
-                            ))}
-                          </Space>
+                            <Space
+                              direction="vertical"
+                              size="small"
+                              style={{ width: '100%' }}
+                            >
+                              {customerUploadFiles.map((file, idx) => (
+                                <Button
+                                  key={idx}
+                                  type="link"
+                                  size="small"
+                                  icon={<FileOutlined />}
+                                  onClick={() =>
+                                    downloadFileHelper(
+                                      file.fileId,
+                                      file.fileName
+                                    )
+                                  }
+                                  style={{ padding: 0, height: 'auto' }}
+                                >
+                                  {file.fileName}
+                                  {file.fileSize && (
+                                    <Text
+                                      type="secondary"
+                                      style={{
+                                        marginLeft: 8,
+                                        fontSize: '11px',
+                                      }}
+                                    >
+                                      (
+                                      {(file.fileSize / 1024 / 1024).toFixed(2)}{' '}
+                                      MB)
+                                    </Text>
+                                  )}
+                                </Button>
+                              ))}
+                            </Space>
+                          </div>
                         </div>
-                      </div>
-                    ) : null;
-                  })()}
+                      ) : null;
+                    })()}
                 </>
               ) : (
                 !loadingRequest && (
@@ -604,12 +615,20 @@ const StudioBookingDetailPage = () => {
                   let displayName = 'N/A';
                   if (participant.performerSource === 'CUSTOMER_SELF') {
                     displayName = 'Customer (Self)';
-                  } else if (participant.performerSource === 'INTERNAL_ARTIST') {
-                    displayName = participant.specialistName || participant.specialistId || 'Internal Artist';
+                  } else if (
+                    participant.performerSource === 'INTERNAL_ARTIST'
+                  ) {
+                    displayName =
+                      participant.specialistName ||
+                      participant.specialistId ||
+                      'Internal Artist';
                   } else if (participant.performerSource === 'EXTERNAL_GUEST') {
                     displayName = participant.name || 'External Guest';
                   } else {
-                    displayName = participant.specialistName || participant.specialistId || 'N/A';
+                    displayName =
+                      participant.specialistName ||
+                      participant.specialistId ||
+                      'N/A';
                   }
 
                   return (
@@ -638,14 +657,18 @@ const StudioBookingDetailPage = () => {
                             <Text type="secondary">Source: </Text>
                             <Tag
                               color={
-                                participant.performerSource === 'INTERNAL_ARTIST'
+                                participant.performerSource ===
+                                'INTERNAL_ARTIST'
                                   ? 'green'
-                                  : participant.performerSource === 'CUSTOMER_SELF'
+                                  : participant.performerSource ===
+                                      'CUSTOMER_SELF'
                                     ? 'orange'
                                     : 'default'
                               }
                             >
-                              {performerSourceLabels[participant.performerSource] ||
+                              {performerSourceLabels[
+                                participant.performerSource
+                              ] ||
                                 participant.performerSource ||
                                 'N/A'}
                             </Tag>
@@ -657,31 +680,31 @@ const StudioBookingDetailPage = () => {
                             </div>
                           )}
                         </Space>
-                      {participant.participantFee != null &&
-                        participant.participantFee > 0 && (
-                          <div>
-                            <Text type="secondary">Fee: </Text>
-                            <Text strong style={{ color: '#1890ff' }}>
-                              {participant.participantFee.toLocaleString(
-                                'vi-VN'
-                              )}{' '}
-                              ₫
-                            </Text>
-                            <Text
-                              type="secondary"
-                              style={{ marginLeft: 8, fontSize: '12px' }}
-                            >
-                              ({booking.durationHours}h ×{' '}
-                              {(
-                                participant.participantFee /
-                                booking.durationHours
-                              ).toLocaleString('vi-VN')}{' '}
-                              ₫/h)
-                            </Text>
-                          </div>
-                        )}
-                    </Space>
-                  </Card>
+                        {participant.participantFee != null &&
+                          participant.participantFee > 0 && (
+                            <div>
+                              <Text type="secondary">Fee: </Text>
+                              <Text strong style={{ color: '#1890ff' }}>
+                                {participant.participantFee.toLocaleString(
+                                  'vi-VN'
+                                )}{' '}
+                                ₫
+                              </Text>
+                              <Text
+                                type="secondary"
+                                style={{ marginLeft: 8, fontSize: '12px' }}
+                              >
+                                ({booking.durationHours}h ×{' '}
+                                {(
+                                  participant.participantFee /
+                                  booking.durationHours
+                                ).toLocaleString('vi-VN')}{' '}
+                                ₫/h)
+                              </Text>
+                            </div>
+                          )}
+                      </Space>
+                    </Card>
                   );
                 })}
               </Space>
@@ -808,7 +831,9 @@ const StudioBookingDetailPage = () => {
                             }
                           >
                             {supervisorStatusLabels[supervisor.status] ||
-                              supervisor.status?.toUpperCase().replace('_', ' ') ||
+                              supervisor.status
+                                ?.toUpperCase()
+                                .replace('_', ' ') ||
                               'N/A'}
                           </Tag>
                         </div>

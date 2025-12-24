@@ -24,7 +24,10 @@ import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
 import { getBookingByRequestId } from '../../../services/studioBookingService';
-import { createRequestReview, getRequestReviews } from '../../../services/reviewService';
+import {
+  createRequestReview,
+  getRequestReviews,
+} from '../../../services/reviewService';
 import ReviewModal from '../../../components/modal/ReviewModal/ReviewModal';
 import {
   getGenreLabel,
@@ -59,9 +62,11 @@ const MyRequestsContent = () => {
 
   // Request review state
   const [requestReviews, setRequestReviews] = useState({}); // Map requestId -> review
-  const [requestReviewModalVisible, setRequestReviewModalVisible] = useState(false);
+  const [requestReviewModalVisible, setRequestReviewModalVisible] =
+    useState(false);
   const [requestReviewLoading, setRequestReviewLoading] = useState(false);
-  const [selectedRequestIdForReview, setSelectedRequestIdForReview] = useState(null);
+  const [selectedRequestIdForReview, setSelectedRequestIdForReview] =
+    useState(null);
 
   // Load requests with pagination
   const loadRequests = async (
@@ -139,13 +144,17 @@ const MyRequestsContent = () => {
         setPagination(paginationInfo);
 
         // Load reviews for completed requests
-        const completedRequests = data.filter(r => r.status?.toLowerCase() === 'completed');
+        const completedRequests = data.filter(
+          r => r.status?.toLowerCase() === 'completed'
+        );
         if (completedRequests.length > 0) {
           loadRequestReviews(completedRequests.map(r => r.requestId));
         }
 
         setBookings({});
-        const recordingRequests = data.filter(r => r.requestType === 'recording');
+        const recordingRequests = data.filter(
+          r => r.requestType === 'recording'
+        );
         if (recordingRequests.length > 0) {
           loadBookings(recordingRequests.map(r => r.requestId));
         }
@@ -210,7 +219,10 @@ const MyRequestsContent = () => {
         // Do not show error because booking may not exist yet (404 is expected for requests without booking)
         // Only log non-404 errors
         if (error?.response?.status !== 404) {
-          console.error(`Error loading booking for requestId ${requestId}:`, error);
+          console.error(
+            `Error loading booking for requestId ${requestId}:`,
+            error
+          );
         }
         // Silently handle 404 - booking doesn't exist yet, which is normal
       }
@@ -222,7 +234,7 @@ const MyRequestsContent = () => {
       .then(results => {
         const bookingsMap = {};
         const loadingCompleteMap = {};
-        
+
         results.forEach(result => {
           if (result && result.booking) {
             bookingsMap[result.requestId] = result.booking;
@@ -230,7 +242,7 @@ const MyRequestsContent = () => {
           // Mark as loaded (even if no booking found)
           loadingCompleteMap[result?.requestId] = false;
         });
-        
+
         // Update bookings and clear loading states
         setBookings(prev => ({ ...prev, ...bookingsMap }));
         setLoadingBookings(prev => {
@@ -295,7 +307,10 @@ const MyRequestsContent = () => {
 
     try {
       setRequestReviewLoading(true);
-      const response = await createRequestReview(selectedRequestIdForReview, reviewData);
+      const response = await createRequestReview(
+        selectedRequestIdForReview,
+        reviewData
+      );
 
       if (response?.status === 'success') {
         message.success('Đã gửi đánh giá request thành công');
@@ -670,7 +685,9 @@ const MyRequestsContent = () => {
                           icon={<StarOutlined />}
                           onClick={() => handleRateRequest(request.requestId)}
                         >
-                          {requestReviews[request.requestId] ? 'View Review' : 'Rate Request'}
+                          {requestReviews[request.requestId]
+                            ? 'View Review'
+                            : 'Rate Request'}
                         </Button>
                       )}
                       <Button

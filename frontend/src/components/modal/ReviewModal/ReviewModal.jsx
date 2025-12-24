@@ -56,7 +56,7 @@ const ReviewModal = ({
       }
 
       const values = await form.validateFields();
-      
+
       // Validate rating từ form values
       const formRating = values.rating || rating;
       if (!formRating || formRating < 1 || formRating > 5) {
@@ -68,7 +68,7 @@ const ReviewModal = ({
         rating: formRating,
         comment: values.comment || '',
       });
-      
+
       form.resetFields();
       setRating(0);
     } catch (error) {
@@ -147,12 +147,12 @@ const ReviewModal = ({
             },
           ]}
           valuePropName="value"
-          getValueFromEvent={(value) => value}
+          getValueFromEvent={value => value}
         >
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
             <RatingStars
               value={rating}
-              onChange={(value) => {
+              onChange={value => {
                 setRating(value);
                 form.setFieldsValue({ rating: value });
               }}
@@ -204,4 +204,3 @@ ReviewModal.propTypes = {
 };
 
 export default ReviewModal;
-
