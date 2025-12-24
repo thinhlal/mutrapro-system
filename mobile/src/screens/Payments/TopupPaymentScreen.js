@@ -240,7 +240,13 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       pollingIntervalRef.current = null;
     }
 
-    navigation.replace("PaymentSuccess", { orderId });
+    // Use navigate instead of replace to avoid navigation.replace is not a function error
+    // If replace is needed, check if it exists first
+    if (navigation.replace && typeof navigation.replace === 'function') {
+      navigation.replace("PaymentSuccess", { orderId });
+    } else {
+      navigation.navigate("PaymentSuccess", { orderId });
+    }
   };
 
   const handleRefresh = async () => {
