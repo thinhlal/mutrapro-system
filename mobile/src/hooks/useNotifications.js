@@ -30,12 +30,18 @@ export const useNotifications = (bannerManager = null) => {
       sharedUnreadCount = updates.unreadCount;
     }
     if (updates.notifications !== undefined) {
-      sharedNotifications = updates.notifications;
+      // Always create new array reference to ensure React detects changes
+      sharedNotifications = Array.isArray(updates.notifications) 
+        ? [...updates.notifications] 
+        : updates.notifications;
     }
     
-    // Notify all listeners
+    // Notify all listeners with new array reference
     listeners.forEach((listener) => {
-      listener({ unreadCount: sharedUnreadCount, notifications: sharedNotifications });
+      listener({ 
+        unreadCount: sharedUnreadCount, 
+        notifications: Array.isArray(sharedNotifications) ? [...sharedNotifications] : sharedNotifications
+      });
     });
   }, []);
 
@@ -138,13 +144,15 @@ export const useNotifications = (bannerManager = null) => {
     console.log('[Mobile] Notification data:', JSON.stringify(notification));
 
     // Update shared state - add to list and increase count
+    // IMPORTANT: Create new array to ensure React detects the change
     const updatedNotifications = [notification, ...sharedNotifications].slice(0, 10);
     const newCount = sharedUnreadCount + 1;
     console.log('[Mobile] Unread count increased:', sharedUnreadCount, '→', newCount);
     console.log('[Mobile] Updated notifications list length:', updatedNotifications.length);
     
+    // Update shared state with new array reference
     updateSharedState({
-      notifications: updatedNotifications,
+      notifications: [...updatedNotifications], // Create new array reference
       unreadCount: newCount
     });
 

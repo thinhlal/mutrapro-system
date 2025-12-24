@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,24 @@ const PaymentDepositScreen = ({ navigation, route }) => {
   useEffect(() => {
     loadData();
   }, [contractId]);
+
+  // Override header back button to navigate to ContractDetail
+  useLayoutEffect(() => {
+    if (contractId) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("ContractDetail", { contractId });
+            }}
+            style={{ marginLeft: 16 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+        ),
+      });
+    }
+  }, [navigation, contractId]);
 
   const loadData = async () => {
     try {
@@ -220,9 +238,18 @@ const PaymentDepositScreen = ({ navigation, route }) => {
   if (!contract || !depositInstallment) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={80} color={COLORS.textSecondary} />
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textSecondary} />
         <Text style={styles.emptyText}>Payment information not available</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => {
+            if (contractId) {
+              navigation.navigate("ContractDetail", { contractId });
+            } else {
+              navigation.goBack();
+            }
+          }}
+        >
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -239,21 +266,26 @@ const PaymentDepositScreen = ({ navigation, route }) => {
         {/* Contract Info Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Contract Information</Text>
-          <InfoRow
-            icon="document-text-outline"
-            label="Contract Number"
-            value={contract.contractNumber || "N/A"}
-          />
-          <InfoRow
-            icon="briefcase-outline"
-            label="Contract Type"
-            value={contract.contractType?.toUpperCase() || "N/A"}
-          />
-          <InfoRow
-            icon="cash-outline"
-            label="Total Price"
-            value={formatCurrency(contract.totalPrice, contract.currency)}
-          />
+          <View style={styles.tableContainer}>
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Contract Number</Text>
+              <Text style={styles.tableValueVertical}>
+                {contract.contractNumber || "N/A"}
+              </Text>
+            </View>
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Contract Type</Text>
+              <Text style={styles.tableValueVertical}>
+                {contract.contractType?.toUpperCase() || "N/A"}
+              </Text>
+            </View>
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Total Price</Text>
+              <Text style={styles.tableValueVertical}>
+                {formatCurrency(contract.totalPrice, contract.currency)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Deposit Info Card */}
@@ -298,7 +330,7 @@ const PaymentDepositScreen = ({ navigation, route }) => {
               <View style={styles.walletHeader}>
                 <Ionicons
                   name="wallet-outline"
-                  size={24}
+                  size={20}
                   color={hasSufficientBalance ? COLORS.success : COLORS.warning}
                 />
                 <Text style={styles.walletLabel}>Available Balance</Text>
@@ -308,7 +340,7 @@ const PaymentDepositScreen = ({ navigation, route }) => {
               </Text>
               {!hasSufficientBalance && (
                 <View style={styles.insufficientBadge}>
-                  <Ionicons name="alert-circle" size={16} color={COLORS.warning} />
+                  <Ionicons name="alert-circle" size={14} color={COLORS.warning} />
                   <Text style={styles.insufficientText}>
                     Insufficient balance. Need{" "}
                     {formatCurrency(depositAmount - walletBalance, wallet.currency)} more
@@ -357,7 +389,7 @@ const PaymentDepositScreen = ({ navigation, route }) => {
             <ActivityIndicator size="small" color={COLORS.white} />
           ) : (
             <>
-              <Ionicons name="card-outline" size={20} color={COLORS.white} />
+              <Ionicons name="card-outline" size={18} color={COLORS.white} />
               <Text style={styles.payButtonText}>Pay with Wallet</Text>
             </>
           )}
@@ -373,7 +405,7 @@ const PaymentDepositScreen = ({ navigation, route }) => {
               setTopupModalVisible(true);
             }}
           >
-            <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
             <Text style={styles.topupButtonText}>Top Up Wallet</Text>
           </TouchableOpacity>
         )}
@@ -391,7 +423,7 @@ const PaymentDepositScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Top Up Wallet</Text>
               <TouchableOpacity onPress={() => setTopupModalVisible(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={20} color={COLORS.text} />
               </TouchableOpacity>
             </View>
 
@@ -442,17 +474,6 @@ const PaymentDepositScreen = ({ navigation, route }) => {
   );
 };
 
-// Helper Component
-const InfoRow = ({ icon, label, value }) => (
-  <View style={styles.infoRow}>
-    <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
-    <View style={styles.infoContent}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -477,15 +498,15 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
   },
   backButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
   backButtonText: {
@@ -497,13 +518,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -514,40 +535,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   topupLink: {
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
   },
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: SPACING.md,
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
   },
-  infoContent: {
-    flex: 1,
-    marginLeft: SPACING.sm,
+  tableRowVertical: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  infoLabel: {
+  tableLabelVertical: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs / 2,
-  },
-  infoValue: {
-    fontSize: FONT_SIZES.base,
     fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  tableValueVertical: {
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
+    lineHeight: 22,
   },
   amountBox: {
     backgroundColor: COLORS.primary + "10",
-    padding: SPACING.lg,
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
     borderWidth: 2,
@@ -559,7 +587,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   amountValue: {
-    fontSize: FONT_SIZES.xxxl,
+    fontSize: FONT_SIZES.xxl,
     fontWeight: "700",
     color: COLORS.primary,
     marginVertical: SPACING.xs,
@@ -570,14 +598,14 @@ const styles = StyleSheet.create({
   },
   walletBox: {
     backgroundColor: COLORS.background,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 2,
   },
   walletHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   walletLabel: {
     fontSize: FONT_SIZES.sm,
@@ -585,20 +613,20 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   walletBalance: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: "700",
     color: COLORS.text,
   },
   insufficientBadge: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: SPACING.sm,
-    padding: SPACING.sm,
+    marginTop: SPACING.xs,
+    padding: SPACING.xs,
     backgroundColor: COLORS.warning + "15",
     borderRadius: BORDER_RADIUS.sm,
   },
   insufficientText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.warning,
     marginLeft: SPACING.xs,
     fontWeight: "600",
@@ -606,8 +634,8 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -617,7 +645,7 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   summaryLabel: {
     fontSize: FONT_SIZES.base,
@@ -631,15 +659,15 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginVertical: SPACING.sm,
+    marginVertical: SPACING.xs,
   },
   summaryLabelBold: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
   },
   summaryValueBold: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.success,
   },
@@ -648,7 +676,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.xs,
     marginBottom: SPACING.sm,
@@ -666,7 +694,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.white,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.xs,
     borderWidth: 1,
@@ -687,13 +715,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: SPACING.lg,
+    padding: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -703,7 +731,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   modalBody: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   inputLabel: {
     fontSize: FONT_SIZES.base,
@@ -715,25 +743,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   inputHint: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
   modalActions: {
     flexDirection: "row",
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     gap: SPACING.sm,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
     justifyContent: "center",

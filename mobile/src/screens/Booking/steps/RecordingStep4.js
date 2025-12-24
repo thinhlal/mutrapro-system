@@ -540,30 +540,29 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
             />
           </View>
 
-          <View style={styles.formRow}>
-            <View style={[styles.formGroup, styles.formGroupHalf]}>
-              <Text style={styles.label}>
-                Contact name <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Full name"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-            </View>
-            <View style={[styles.formGroup, styles.formGroupHalf]}>
-              <Text style={styles.label}>
-                Phone number <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="+84 ..."
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                keyboardType="phone-pad"
-              />
-            </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>
+              Contact name <Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full name"
+              value={contactName}
+              onChangeText={setContactName}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>
+              Phone number <Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="+84 ..."
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              keyboardType="phone-pad"
+            />
           </View>
 
           <View style={styles.formGroup}>
@@ -587,7 +586,7 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
             Upload File <Text style={styles.required}>*</Text>
           </Text>
           <View style={styles.alertBox}>
-            <Ionicons name="information-circle" size={16} color={COLORS.info} />
+            <Ionicons name="information-circle" size={14} color={COLORS.info} />
             <Text style={styles.alertText}>
               Please upload a reference track, backing track, or sheet music (PDF/XML)
             </Text>
@@ -597,6 +596,7 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
             selectedFile={uploadedFile}
             onClearFile={() => setUploadedFile(null)}
             allowedFileTypes={null} // Allow all file types for recording
+            compact={true}
           />
         </View>
 
@@ -622,7 +622,7 @@ const RecordingStep4 = ({ formData, onBack, onSubmit, navigation }) => {
               <ActivityIndicator size="small" color={COLORS.white} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
                 <Text style={styles.submitButtonText}>
                   Confirm & Submit Booking
                 </Text>
@@ -642,9 +642,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    margin: SPACING.lg,
+    margin: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xl,
@@ -661,13 +661,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   section: {
-    marginBottom: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    marginBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -692,15 +692,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   timeTableLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.textSecondary,
     minWidth: 100,
     marginRight: SPACING.md,
   },
   timeTableValue: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
     flex: 1,
   },
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   },
   alertText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
   },
   vocalistItem: {
@@ -736,13 +736,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   vocalistLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   vocalistValue: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   instrumentItem: {
@@ -753,13 +753,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   instrumentName: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   instrumentDetail: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -778,8 +778,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   feeLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   },
   feeValue: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: '400',
     marginBottom: SPACING.xs,
   },
   feeValueBlue: {
@@ -804,11 +804,11 @@ const styles = StyleSheet.create({
   },
   feeValueTotal: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: '700',
+    fontWeight: '400',
     color: COLORS.error,
   },
   feeNote: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   formGroup: {
@@ -822,8 +822,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
@@ -834,9 +834,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
     backgroundColor: COLORS.white,
   },
@@ -847,12 +847,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'column',
-    marginTop: SPACING.xl,
-    gap: SPACING.md,
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
   },
   backButton: {
     width: '100%',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -860,8 +860,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   submitButton: {
@@ -870,7 +870,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md + 4,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.sm,
   },
@@ -878,8 +878,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.white,
   },
 });

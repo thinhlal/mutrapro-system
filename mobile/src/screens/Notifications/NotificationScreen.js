@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, CommonActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, STORAGE_KEYS } from "../../config/constants";
 import { NotificationItem } from "../../components";
 import { useNotifications } from "../../hooks/useNotifications";
 import * as notificationApi from "../../services/notificationService";
+import notificationWebSocketService from "../../services/notificationWebSocketService";
+import { getItem } from "../../utils/storage";
 
 const NotificationScreen = ({ navigation }) => {
   // Get notification state - create separate instance for this screen
@@ -29,8 +31,71 @@ const NotificationScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all"); // all, unread, read
+  const [apiNotifications, setApiNotifications] = useState([]); // Store API notifications separately
+  
+  // Track processed notification IDs to detect new ones
+  const processedNotificationIdsRef = useRef(new Set());
+  const lastRealtimeNotificationsRef = useRef([]);
+  const wsSubscriptionRef = useRef(null);
 
-  // Fetch all notifications
+  // Merge API notifications with real-time notifications and apply filter
+  const mergeAndFilterNotifications = useCallback((apiNotifs, realtimeNotifs, currentFilter) => {
+    // Create a map of all notification IDs to avoid duplicates
+    const allNotifMap = new Map();
+    const merged = [];
+
+    // First, add all real-time notifications (they are the most up-to-date)
+    // Real-time notifications are prioritized because they are the latest
+    if (Array.isArray(realtimeNotifs) && realtimeNotifs.length > 0) {
+      realtimeNotifs.forEach(realtimeNotif => {
+        if (!allNotifMap.has(realtimeNotif.notificationId)) {
+          merged.push(realtimeNotif);
+          allNotifMap.set(realtimeNotif.notificationId, true);
+        }
+      });
+    }
+
+    // Then, add API notifications that are not in real-time list
+    // This ensures we have all notifications, not just the latest 10 from real-time
+    if (Array.isArray(apiNotifs) && apiNotifs.length > 0) {
+      apiNotifs.forEach(apiNotif => {
+        if (!allNotifMap.has(apiNotif.notificationId)) {
+          merged.push(apiNotif);
+          allNotifMap.set(apiNotif.notificationId, true);
+        } else {
+          // If notification exists in both, update with API data but keep real-time priority for status
+          const existingIndex = merged.findIndex(n => n.notificationId === apiNotif.notificationId);
+          if (existingIndex !== -1) {
+            // Merge: use API data but preserve real-time status if it's more recent
+            merged[existingIndex] = { ...apiNotif, ...merged[existingIndex] };
+          }
+        }
+      });
+    }
+
+    // Sort by createdAt (newest first) to ensure latest notifications appear first
+    merged.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.timestamp || 0);
+      const dateB = new Date(b.createdAt || b.timestamp || 0);
+      return dateB - dateA;
+    });
+
+    // Apply filter
+    let filteredNotifications = merged;
+    if (currentFilter === 'unread') {
+      // Filter for unread: isRead is falsy (false, null, undefined)
+      filteredNotifications = merged.filter(n => !n.isRead);
+    } else if (currentFilter === 'read') {
+      // Filter for read: isRead is explicitly true
+      filteredNotifications = merged.filter(n => n.isRead === true);
+    }
+    // filter === 'all' means show all, no filtering needed
+    
+    console.log(`[Mobile] Filter: ${currentFilter}, API: ${apiNotifs?.length || 0}, Realtime: ${realtimeNotifs?.length || 0}, Merged: ${merged.length}, Filtered: ${filteredNotifications.length}`);
+    return filteredNotifications;
+  }, []);
+
+  // Fetch all notifications from API
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
@@ -54,28 +119,100 @@ const NotificationScreen = ({ navigation }) => {
         notifications = [];
       }
       
-      // Always apply client-side filter to ensure it works correctly
-      // This ensures filter always works even if API doesn't support it properly
-      let filteredNotifications = notifications;
-      if (filter === 'unread') {
-        // Filter for unread: isRead is falsy (false, null, undefined)
-        filteredNotifications = notifications.filter(n => !n.isRead);
-      } else if (filter === 'read') {
-        // Filter for read: isRead is explicitly true
-        filteredNotifications = notifications.filter(n => n.isRead === true);
-      }
-      // filter === 'all' means show all, no filtering needed
+      // Store API notifications
+      setApiNotifications(notifications);
       
-      console.log(`[Mobile] Filter: ${filter}, Total: ${notifications.length}, Filtered: ${filteredNotifications.length}`);
-      setAllNotifications(filteredNotifications);
+      // Update processed IDs from API notifications
+      notifications.forEach(n => {
+        processedNotificationIdsRef.current.add(n.notificationId);
+      });
+      
+      // Merge with real-time notifications and update state
+      const merged = mergeAndFilterNotifications(notifications, realtimeNotifications, filter);
+      setAllNotifications([...merged]);
     } catch (error) {
       console.error('[Mobile] Error fetching notifications:', error);
-      setAllNotifications([]); // Ensure it's always an array on error
+      setApiNotifications([]);
+      // Still merge with real-time notifications even on error
+      const merged = mergeAndFilterNotifications([], realtimeNotifications, filter);
+      setAllNotifications(merged);
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, realtimeNotifications, mergeAndFilterNotifications]);
 
+  // Sync with real-time notifications when they change
+  // This effect ensures new notifications appear immediately when received via WebSocket
+  useEffect(() => {
+    // Create a stable key from realtimeNotifications to detect changes
+    // Use JSON.stringify to detect any changes in the array
+    const realtimeKey = realtimeNotifications 
+      ? JSON.stringify(realtimeNotifications.map(n => n.notificationId))
+      : '';
+    const lastKey = JSON.stringify(lastRealtimeNotificationsRef.current.map(n => n.notificationId));
+    
+    const hasChanged = realtimeKey !== lastKey;
+    
+    console.log('[Mobile] Real-time notifications effect triggered:', {
+      hasChanged,
+      realtimeCount: realtimeNotifications?.length || 0,
+      apiCount: apiNotifications?.length || 0,
+      filter,
+      realtimeKey: realtimeKey.substring(0, 50),
+      lastKey: lastKey.substring(0, 50)
+    });
+    
+    // Always merge to ensure UI is up to date
+    // This ensures new notifications appear immediately even if API hasn't loaded yet
+    const merged = mergeAndFilterNotifications(apiNotifications, realtimeNotifications, filter);
+    
+    console.log('[Mobile] Merged notifications count:', merged.length);
+    
+    // Always update - React will handle optimization
+    // Create new array reference to ensure re-render
+    setAllNotifications([...merged]);
+    
+    // Update last known real-time notifications (create new array to track changes)
+    lastRealtimeNotificationsRef.current = realtimeNotifications ? [...realtimeNotifications] : [];
+  }, [realtimeNotifications, filter, apiNotifications, mergeAndFilterNotifications]);
+  
+  // Subscribe directly to WebSocket to receive notifications immediately
+  // This bypasses the hook and updates UI directly
+  useEffect(() => {
+    if (!connected) return;
+    
+    const handleDirectNotification = (notification) => {
+      console.log('[Mobile] 🎉 Direct WebSocket notification in NotificationScreen:', notification.notificationId);
+      
+      // Immediately add to API notifications and merge
+      setApiNotifications(prev => {
+        const exists = prev.some(n => n.notificationId === notification.notificationId);
+        if (!exists) {
+          const updated = [notification, ...prev];
+          // Also update allNotifications immediately
+          const merged = mergeAndFilterNotifications(updated, realtimeNotifications, filter);
+          setAllNotifications([...merged]);
+          return updated;
+        }
+        return prev;
+      });
+    };
+
+    // Subscribe if WebSocket is connected
+    if (notificationWebSocketService.isConnected()) {
+      console.log('[Mobile] Subscribing directly to WebSocket in NotificationScreen');
+      const subscription = notificationWebSocketService.subscribeToNotifications(handleDirectNotification);
+      wsSubscriptionRef.current = subscription;
+    }
+
+    return () => {
+      // Note: We don't unsubscribe here to avoid breaking the main subscription
+      // The WebSocket service manages subscriptions
+      wsSubscriptionRef.current = null;
+    };
+  }, [connected, filter, realtimeNotifications, mergeAndFilterNotifications]);
+
+  // Fetch notifications on mount and when filter changes
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
@@ -83,6 +220,8 @@ const NotificationScreen = ({ navigation }) => {
   // Reload notifications when screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      // Always fetch to ensure we have latest data from API
+      // Real-time updates will automatically sync via useEffect above
       fetchNotifications();
     }, [fetchNotifications])
   );
@@ -148,11 +287,18 @@ const NotificationScreen = ({ navigation }) => {
           const roomId = url.split('/chat/')[1];
           if (roomId) {
             // Navigate to Chat tab and push ChatRoom
-            // This will push ChatRoom on top of ChatList (initial screen)
-            // So when back from ChatRoom, it will go back to ChatList
+            // First navigate to Chat tab to ensure ChatList is the initial screen
+            // Then push ChatRoom on top
+            // This ensures proper back navigation to ChatList
             navigation.navigate('Chat', {
-              screen: 'ChatRoom',
-              params: { roomId, fromNotification: true },
+              screen: 'ChatList',
+            });
+            // Use requestAnimationFrame to ensure ChatList is mounted before pushing ChatRoom
+            requestAnimationFrame(() => {
+              navigation.navigate('Chat', {
+                screen: 'ChatRoom',
+                params: { roomId, fromNotification: true },
+              });
             });
           }
         }

@@ -113,7 +113,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
         {/* Success Icon & Title */}
         <View style={styles.successHeader}>
           <View style={styles.successIconContainer}>
-            <Ionicons name="checkmark-circle" size={80} color={COLORS.success} />
+            <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
           </View>
           <Text style={styles.successTitle}>Contract Signed Successfully!</Text>
           <Text style={styles.successSubtitle}>
@@ -125,28 +125,23 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Contract Summary</Text>
           <InfoRow
-            icon="document-text-outline"
             label="Contract Number"
             value={contract.contractNumber || contract.contractId}
           />
           <InfoRow
-            icon="briefcase-outline"
             label="Service Type"
             value={contract.contractType?.toUpperCase() || "N/A"}
           />
           <InfoRow
-            icon="cash-outline"
             label="Total Price"
             value={formatCurrency(totalPrice, contract.currency)}
           />
           <InfoRow
-            icon="wallet-outline"
             label="Deposit"
             value={`${depositPercent}% = ${formatCurrency(depositAmount, contract.currency)}`}
           />
           {depositInstallment?.dueDate && (
             <InfoRow
-              icon="calendar-outline"
               label="Deposit Due Date"
               value={dayjs(depositInstallment.dueDate).format("DD/MM/YYYY HH:mm")}
             />
@@ -156,7 +151,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
         {/* Important Notice */}
         <View style={[styles.card, styles.noticeCard]}>
           <View style={styles.noticeHeader}>
-            <Ionicons name="information-circle" size={24} color={COLORS.warning} />
+            <Ionicons name="information-circle" size={20} color={COLORS.warning} />
             <Text style={styles.noticeTitle}>Important Notice</Text>
           </View>
           <Text style={styles.noticeText}>
@@ -173,7 +168,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
         {/* Payment Section */}
         <View style={styles.paymentCard}>
           <View style={styles.paymentHeader}>
-            <Ionicons name="cash" size={32} color={COLORS.primary} />
+            {/* <Ionicons name="cash" size={24} color={COLORS.primary} /> */}
             <View style={styles.paymentInfo}>
               <Text style={styles.paymentLabel}>Deposit Payment Required</Text>
               <Text style={styles.paymentAmount}>
@@ -186,7 +181,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
             style={styles.payButton}
             onPress={handlePayDeposit}
           >
-            <Ionicons name="card-outline" size={20} color={COLORS.white} />
+            <Ionicons name="card-outline" size={18} color={COLORS.white} />
             <Text style={styles.payButtonText}>Pay Deposit Now</Text>
           </TouchableOpacity>
 
@@ -194,7 +189,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
             style={styles.viewButton}
             onPress={handleViewContract}
           >
-            <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
             <Text style={styles.viewButtonText}>View Contract</Text>
           </TouchableOpacity>
 
@@ -203,7 +198,7 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
             onPress={handleGoToDashboard}
           >
             <Text style={styles.laterButtonText}>Pay Later</Text>
-            <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+            <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -212,13 +207,10 @@ const ContractSignedSuccessScreen = ({ navigation, route }) => {
 };
 
 // Helper Component
-const InfoRow = ({ icon, label, value }) => (
+const InfoRow = ({ label, value }) => (
   <View style={styles.infoRow}>
-    <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
-    <View style={styles.infoContent}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
+    <Text style={styles.infoLabel}>{label}:</Text>
+    <Text style={styles.infoValue}>{value}</Text>
   </View>
 );
 
@@ -246,7 +238,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
@@ -256,17 +248,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   successHeader: {
     alignItems: "center",
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   successIconContainer: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   successTitle: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: "700",
     color: COLORS.text,
     marginBottom: SPACING.sm,
@@ -281,8 +273,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -290,41 +282,45 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   infoRow: {
     flexDirection: "row",
-    marginBottom: SPACING.md,
-  },
-  infoContent: {
-    flex: 1,
-    marginLeft: SPACING.sm,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   infoLabel: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs / 2,
+    fontWeight: "500",
+    flex: 1,
+    marginRight: SPACING.sm,
   },
   infoValue: {
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
+    flex: 1,
+    textAlign: "right",
   },
   noticeCard: {
     backgroundColor: COLORS.warning + "10",
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.warning + "30",
   },
   noticeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   noticeTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
     marginLeft: SPACING.sm,
@@ -333,6 +329,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
     lineHeight: 22,
+    padding: SPACING.md
   },
   noticeBold: {
     fontWeight: "700",
@@ -340,7 +337,7 @@ const styles = StyleSheet.create({
   paymentCard: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -350,8 +347,8 @@ const styles = StyleSheet.create({
   paymentHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.lg,
-    paddingBottom: SPACING.md,
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   paymentAmount: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: "700",
     color: COLORS.primary,
   },
@@ -374,10 +371,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.success,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     gap: SPACING.xs,
   },
   payButtonText: {
@@ -390,11 +387,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.white,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.primary,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     gap: SPACING.xs,
   },
   viewButtonText: {
@@ -406,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     gap: SPACING.xs,
   },
   laterButtonText: {
