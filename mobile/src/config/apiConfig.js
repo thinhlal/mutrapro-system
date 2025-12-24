@@ -104,6 +104,9 @@ export const API_ENDPOINTS = {
     // GET /revision-requests/by-assignment/{assignmentId}
     BY_ASSIGNMENT: (assignmentId) =>
       `${PROJECT_PATH}/revision-requests/by-assignment/${assignmentId}`,
+    // GET /revision-requests/contract/{contractId}/stats
+    GET_CONTRACT_STATS: (contractId) =>
+      `${PROJECT_PATH}/revision-requests/contract/${contractId}/stats`,
   },
 
   // === Notifications ===
@@ -217,6 +220,14 @@ export const API_ENDPOINTS = {
     // GET /projects/studio-bookings/by-request/{requestId}
     GET_BY_REQUEST_ID: requestId =>
       `${STUDIO_BOOKINGS_PATH}/by-request/${requestId}`,
+    // GET /projects/studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
+    LIST: (contractId = null, milestoneId = null, status = null) => {
+      const params = new URLSearchParams();
+      if (contractId) params.append('contractId', contractId);
+      if (milestoneId) params.append('milestoneId', milestoneId);
+      if (status) params.append('status', status);
+      return `${STUDIO_BOOKINGS_PATH}${params.toString() ? `?${params.toString()}` : ''}`;
+    },
   },
 };
 

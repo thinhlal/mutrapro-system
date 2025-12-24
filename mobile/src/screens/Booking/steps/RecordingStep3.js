@@ -1015,7 +1015,7 @@ const configStyles = StyleSheet.create({
     gap: SPACING.xs,
   },
   instrumentName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginLeft: SPACING.xs,
@@ -1047,7 +1047,7 @@ const configStyles = StyleSheet.create({
     marginVertical: SPACING.md,
   },
   configLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
@@ -1085,7 +1085,7 @@ const configStyles = StyleSheet.create({
   },
   radioLabel: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
     flex: 1,
     flexWrap: 'wrap',
@@ -1098,7 +1098,7 @@ const configStyles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   selectedItemName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -1133,7 +1133,7 @@ const configStyles = StyleSheet.create({
   },
   browseButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.primary,
   },
@@ -1152,12 +1152,12 @@ const configStyles = StyleSheet.create({
     backgroundColor: COLORS.primary + '10',
   },
   equipmentName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
   equipmentPrice: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -1170,7 +1170,7 @@ const configStyles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   quantityLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
     marginRight: SPACING.sm,
   },
@@ -1181,15 +1181,15 @@ const configStyles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: SPACING.xs,
     paddingVertical: SPACING.xs / 2,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
   },
   rentalFeeText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
   },
   emptyText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
@@ -1215,13 +1215,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -1239,13 +1239,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   alertTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   alertText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
   },
   slotInfoRow: {
@@ -1254,14 +1254,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   slotInfoLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 50,
   },
   slotInfoValue: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
@@ -1270,7 +1270,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   sectionLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.md,
@@ -1289,13 +1289,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   warningTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   warningText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
   },
   radioGroup: {
@@ -1341,7 +1341,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   radioLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1379,7 +1379,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   emptyContainer: {
@@ -1388,7 +1388,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   skillsGrid: {
@@ -1414,7 +1414,7 @@ const styles = StyleSheet.create({
   },
   skillText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
   },
   skillTextSelected: {
@@ -1436,7 +1436,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   customInstrumentName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
   },
   customInputWrapper: {
@@ -1455,7 +1455,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
@@ -1473,7 +1473,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.white,
   },
@@ -1486,7 +1486,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1503,7 +1503,7 @@ const styles = StyleSheet.create({
   },
   addCustomButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.primary,
   },
@@ -1517,7 +1517,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   configTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.md,
@@ -1537,7 +1537,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1547,7 +1547,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.md + 4,
     borderRadius: BORDER_RADIUS.md,
   },
   continueButtonDisabled: {
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.white,
   },

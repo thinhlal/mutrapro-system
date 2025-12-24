@@ -98,3 +98,29 @@ export const getBookingByRequestId = async (requestId) => {
   }
 };
 
+/**
+ * Get list of studio bookings
+ * GET /projects/studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
+ * @param {string} contractId - Optional - Filter by contract
+ * @param {string} milestoneId - Optional - Filter by milestone
+ * @param {string} status - Optional - Filter by status
+ */
+export const getStudioBookings = async (
+  contractId = null,
+  milestoneId = null,
+  status = null
+) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.LIST(contractId, milestoneId, status)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Failed to load studio bookings',
+      }
+    );
+  }
+};
+

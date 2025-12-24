@@ -25,6 +25,8 @@ import {
 } from "../../services/fileSubmissionService";
 import { getServiceRequestById } from "../../services/serviceRequestService";
 import { getContractById } from "../../services/contractService";
+import { getStudioBookings } from "../../services/studioBookingService";
+import { getContractRevisionStats } from "../../services/revisionRequestService";
 import FileItem from "../../components/FileItem";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_CONFIG } from "../../config/apiConfig";
@@ -39,8 +41,11 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const [milestoneInfo, setMilestoneInfo] = useState(null);
   const [requestInfo, setRequestInfo] = useState(null);
   const [requestInfoLoading, setRequestInfoLoading] = useState(false);
+  const [studioBooking, setStudioBooking] = useState(null);
+  const [studioBookingLoading, setStudioBookingLoading] = useState(false);
   const [submissions, setSubmissions] = useState([]);
   const [revisionRequests, setRevisionRequests] = useState([]);
+  const [revisionStats, setRevisionStats] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Review modal states
@@ -188,6 +193,23 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
     }
   };
 
+  const loadRevisionStats = async (contractId) => {
+    if (!contractId) return;
+
+    try {
+      const response = await getContractRevisionStats(contractId);
+      if (response?.status === "success" && response?.data) {
+        setRevisionStats(response.data);
+      } else {
+        setRevisionStats(null);
+      }
+    } catch (error) {
+      console.error("Error loading revision stats:", error);
+      // Không hiển thị error message vì đây là lazy load, không ảnh hưởng đến chức năng chính
+      setRevisionStats(null);
+    }
+  };
+
   const loadDeliveries = async () => {
     try {
       setLoading(true);
@@ -208,6 +230,37 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
           setRequestInfo(null);
         }
 
+        // Load studio booking cho recording milestone (nếu có)
+        if (data.milestone?.milestoneType === "recording") {
+          try {
+            setStudioBookingLoading(true);
+            const bookingResp = await getStudioBookings(
+              data.contract?.contractId || contractId,
+              data.milestone.milestoneId,
+              null
+            );
+            if (
+              bookingResp?.status === "success" &&
+              Array.isArray(bookingResp.data) &&
+              bookingResp.data.length > 0
+            ) {
+              setStudioBooking(bookingResp.data[0]);
+            } else {
+              setStudioBooking(null);
+            }
+          } catch (e) {
+            console.error("Error loading studio booking for deliveries:", e);
+            setStudioBooking(null);
+          } finally {
+            setStudioBookingLoading(false);
+          }
+        } else {
+          setStudioBooking(null);
+        }
+
+        // Load revision stats của contract (để tính free/paid revisions chính xác)
+        loadRevisionStats(contractId);
+
         // Set revision requests
         const allRevisionRequests = Array.isArray(data.revisionRequests)
           ? data.revisionRequests
@@ -223,8 +276,10 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
         setContractInfo(null);
         setMilestoneInfo(null);
         setRequestInfo(null);
+        setStudioBooking(null);
         setSubmissions([]);
         setRevisionRequests([]);
+        setRevisionStats(null);
       }
     } catch (error) {
       console.error("Error loading deliveries:", error);
@@ -435,6 +490,12 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
   // Helper function to check if free revisions are available
   const hasFreeRevisionsLeft = () => {
+    // Sử dụng revisionStats từ API nếu có, fallback về logic cũ
+    if (revisionStats && revisionStats.freeRevisionsRemaining != null) {
+      return revisionStats.freeRevisionsRemaining > 0;
+    }
+
+    // Fallback logic cũ
     if (contractInfo?.freeRevisionsIncluded == null) {
       return false;
     }
@@ -558,6 +619,18 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                 label="Milestone Name"
                 value={milestoneInfo.name || "N/A"}
               />
+              <InfoRow
+                label="Milestone Type"
+                value={
+                  milestoneInfo.milestoneType === "transcription"
+                    ? "Transcription"
+                    : milestoneInfo.milestoneType === "arrangement"
+                      ? "Arrangement"
+                      : milestoneInfo.milestoneType === "recording"
+                        ? "Recording"
+                        : milestoneInfo.milestoneType?.toUpperCase() || "N/A"
+                }
+              />
               <View style={styles.tableRowVertical}>
                 <Text style={styles.tableLabelVertical}>Milestone Status</Text>
                 <View style={styles.statusRow}>
@@ -612,12 +685,97 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                   </Text>
                 </View>
               )}
-              {milestoneInfo.plannedDueDate && (
-                <InfoRow
-                  label="Planned Due Date"
-                  value={dayjs(milestoneInfo.plannedDueDate).format("DD/MM/YYYY")}
-                />
-              )}
+              {/* Timeline Information */}
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Timeline</Text>
+                <View style={{ marginTop: SPACING.xs }}>
+                  {/* Planned Dates */}
+                  {milestoneInfo.targetDeadline && (
+                    <View style={{ marginBottom: SPACING.sm }}>
+                      <Text style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs, color: COLORS.textSecondary }]}>
+                        Planned: {dayjs(milestoneInfo.targetDeadline).format("DD/MM/YYYY")}
+                      </Text>
+                    </View>
+                  )}
+                  {/* SLA status */}
+                  {milestoneInfo.firstSubmissionAt &&
+                    milestoneInfo.firstSubmissionLate != null && (
+                      <View style={{ marginBottom: SPACING.xs }}>
+                        <View style={[styles.revisionTag, {
+                          backgroundColor: milestoneInfo.firstSubmissionLate
+                            ? COLORS.error + "20"
+                            : COLORS.success + "20"
+                        }]}>
+                          <Text style={[styles.revisionTagText, {
+                            color: milestoneInfo.firstSubmissionLate
+                              ? COLORS.error
+                              : COLORS.success
+                          }]}>
+                            {milestoneInfo.firstSubmissionLate
+                              ? "Late submission (first version)"
+                              : "On time submission (first version)"}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  {!milestoneInfo.firstSubmissionAt &&
+                    milestoneInfo.overdueNow === true && (
+                      <View style={{ marginBottom: SPACING.xs }}>
+                        <View style={[styles.revisionTag, { backgroundColor: COLORS.error + "20" }]}>
+                          <Text style={[styles.revisionTagText, { color: COLORS.error }]}>
+                            Overdue (not submitted)
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  {/* Actual Dates */}
+                  {(milestoneInfo.actualStartAt ||
+                    milestoneInfo.firstSubmissionAt ||
+                    milestoneInfo.finalCompletedAt ||
+                    milestoneInfo.actualEndAt) && (
+                    <View style={{ marginTop: SPACING.sm }}>
+                      <Text style={[styles.tableLabelVertical, { fontSize: FONT_SIZES.xs }]}>
+                        Actual Time:
+                      </Text>
+                      {milestoneInfo.actualStartAt && (
+                        <Text style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs }]}>
+                          Start: {dayjs(milestoneInfo.actualStartAt).format("DD/MM/YYYY HH:mm")}
+                        </Text>
+                      )}
+                      {milestoneInfo.firstSubmissionAt && (
+                        <View>
+                          <Text style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs }]}>
+                            First submission: {dayjs(milestoneInfo.firstSubmissionAt).format("DD/MM/YYYY HH:mm")}
+                          </Text>
+                          <Text style={[styles.infoHint, { fontSize: FONT_SIZES.xs - 1 }]}>
+                            (First time specialist assigned work)
+                          </Text>
+                        </View>
+                      )}
+                      {milestoneInfo.finalCompletedAt && (
+                        <View>
+                          <Text style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs }]}>
+                            Work Completed: {dayjs(milestoneInfo.finalCompletedAt).format("DD/MM/YYYY HH:mm")}
+                          </Text>
+                          <Text style={[styles.infoHint, { fontSize: FONT_SIZES.xs - 1 }]}>
+                            (Customer accepted work)
+                          </Text>
+                        </View>
+                      )}
+                      {milestoneInfo.actualEndAt && (
+                        <View>
+                          <Text style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs }]}>
+                            Payment Completed: {dayjs(milestoneInfo.actualEndAt).format("DD/MM/YYYY HH:mm")}
+                          </Text>
+                          <Text style={[styles.infoHint, { fontSize: FONT_SIZES.xs - 1 }]}>
+                            (Milestone paid)
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </View>
               <InfoRow
                 label="Total Submissions"
                 value={submissions.length.toString()}
@@ -628,34 +786,181 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                   .reduce((total, sub) => total + (sub.files?.length || 0), 0)
                   .toString()}
               />
-              {contractInfo.freeRevisionsIncluded != null && (
+              {contractInfo.freeRevisionsIncluded != null && revisionStats && (
                 <>
                   <InfoRow
                     label="Free Revisions Included"
-                    value={contractInfo.freeRevisionsIncluded.toString()}
+                    value={revisionStats.freeRevisionsIncluded.toString()}
                   />
                   <View style={styles.tableRowVertical}>
                     <Text style={styles.tableLabelVertical}>Revisions Used</Text>
                     <Text style={styles.tableValueVertical}>
-                      {revisionRequests.length} / {contractInfo.freeRevisionsIncluded} (Free)
+                      {revisionStats.totalRevisionsUsed} / {revisionStats.freeRevisionsIncluded} (Free)
                     </Text>
                     <Text style={styles.infoHint}>
-                      Free:{" "}
-                      {revisionRequests.filter(
-                        (rr) =>
-                          rr.isFreeRevision === true &&
-                          rr.status?.toUpperCase() !== "REJECTED" &&
-                          rr.status?.toUpperCase() !== "CANCELED"
-                      ).length}{" "}
-                      | Paid:{" "}
-                      {revisionRequests.filter(
-                        (rr) => rr.isFreeRevision === false
-                      ).length}
+                      Used {revisionStats.freeRevisionsUsed} times for free revision, {revisionStats.paidRevisionsUsed} times for paid revision
                     </Text>
                   </View>
                 </>
               )}
             </View>
+          </View>
+        )}
+
+        {/* Studio Booking Info - Cho recording milestone */}
+        {milestoneInfo?.milestoneType === "recording" && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Studio Booking Information</Text>
+              {studioBookingLoading && (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              )}
+            </View>
+            {studioBooking ? (
+              <View style={styles.tableContainer}>
+                <InfoRow
+                  label="Booking ID"
+                  value={studioBooking.bookingId || "N/A"}
+                />
+                <InfoRow
+                  label="Studio"
+                  value={studioBooking.studioName || "N/A"}
+                />
+                <InfoRow
+                  label="Date"
+                  value={
+                    studioBooking.bookingDate
+                      ? dayjs(studioBooking.bookingDate).format("DD/MM/YYYY")
+                      : "N/A"
+                  }
+                />
+                <InfoRow
+                  label="Time"
+                  value={
+                    studioBooking.startTime && studioBooking.endTime
+                      ? `${studioBooking.startTime} - ${studioBooking.endTime}`
+                      : "N/A"
+                  }
+                />
+                <View style={styles.tableRowVertical}>
+                  <Text style={styles.tableLabelVertical}>Status</Text>
+                  <View style={styles.statusBadge}>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        {
+                          backgroundColor:
+                            studioBooking.status === "CONFIRMED" ||
+                            studioBooking.status === "COMPLETED"
+                              ? COLORS.success
+                              : studioBooking.status === "CANCELLED"
+                                ? COLORS.error
+                                : COLORS.warning,
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        {
+                          color:
+                            studioBooking.status === "CONFIRMED" ||
+                            studioBooking.status === "COMPLETED"
+                              ? COLORS.success
+                              : studioBooking.status === "CANCELLED"
+                                ? COLORS.error
+                                : COLORS.warning,
+                        },
+                      ]}
+                    >
+                      {studioBooking.status === "TENTATIVE"
+                        ? "Tentative"
+                        : studioBooking.status === "PENDING"
+                          ? "Pending"
+                          : studioBooking.status === "CONFIRMED"
+                            ? "Confirmed"
+                            : studioBooking.status === "IN_PROGRESS"
+                              ? "In Progress"
+                              : studioBooking.status === "COMPLETED"
+                                ? "Completed"
+                                : studioBooking.status === "CANCELLED"
+                                  ? "Cancelled"
+                                  : studioBooking.status || "N/A"}
+                    </Text>
+                  </View>
+                </View>
+                {studioBooking.sessionType && (
+                  <InfoRow
+                    label="Session Type"
+                    value={studioBooking.sessionType}
+                  />
+                )}
+                {/* Participants summary */}
+                {studioBooking.participants &&
+                  Array.isArray(studioBooking.participants) &&
+                  studioBooking.participants.length > 0 && (
+                    <View style={styles.tableRowVertical}>
+                      <Text style={styles.tableLabelVertical}>Participants</Text>
+                      {studioBooking.participants.map((p, idx) => {
+                        const roleLabel =
+                          p.roleType === "VOCAL"
+                            ? "Vocal"
+                            : p.roleType === "INSTRUMENT"
+                              ? "Instrument"
+                              : p.roleType || "Participant";
+
+                        let performerLabel = "";
+                        if (p.performerSource === "CUSTOMER_SELF") {
+                          const customerName = p.name || p.customerName;
+                          performerLabel = customerName
+                            ? `Customer (self) (${customerName})`
+                            : "Customer (self)";
+                        } else if (p.performerSource === "INTERNAL_ARTIST") {
+                          performerLabel = p.specialistName || "Internal artist";
+                        } else if (p.performerSource === "EXTERNAL_GUEST") {
+                          const guestName = p.name;
+                          performerLabel = guestName
+                            ? `External guest (${guestName})`
+                            : "External guest";
+                        } else {
+                          performerLabel = p.performerSource || "Unknown";
+                        }
+
+                        const skillLabel = p.skillName ? ` (${p.skillName})` : "";
+                        return (
+                          <Text
+                            key={idx}
+                            style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs, marginTop: idx > 0 ? SPACING.xs / 2 : 0 }]}
+                          >
+                            • {roleLabel} – {performerLabel}
+                            {skillLabel}
+                          </Text>
+                        );
+                      })}
+                    </View>
+                  )}
+                {/* Equipment summary */}
+                {studioBooking.requiredEquipment &&
+                  Array.isArray(studioBooking.requiredEquipment) &&
+                  studioBooking.requiredEquipment.length > 0 && (
+                    <View style={styles.tableRowVertical}>
+                      <Text style={styles.tableLabelVertical}>Equipment</Text>
+                      {studioBooking.requiredEquipment.map((eq, idx) => (
+                        <Text
+                          key={idx}
+                          style={[styles.tableValueVertical, { fontSize: FONT_SIZES.xs, marginTop: idx > 0 ? SPACING.xs / 2 : 0 }]}
+                        >
+                          • {eq.equipmentName} × {eq.quantity}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                No studio booking information available
+              </Text>
+            )}
           </View>
         )}
 

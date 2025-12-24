@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: SPACING.md,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   errorContainer: {
@@ -213,14 +213,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xxl,
   },
   errorTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.error,
     marginTop: SPACING.md,
     marginBottom: SPACING.sm,
   },
   errorText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -228,13 +228,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   studioName: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
@@ -266,17 +266,17 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   infoLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   infoValue: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
   },
   priceText: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     color: COLORS.success,
     marginBottom: SPACING.xs,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   featuresTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.md,
@@ -305,11 +305,12 @@ const styles = StyleSheet.create({
   },
   featureText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
     flex: 1,
   },
   continueButton: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   continueButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.white,
   },
