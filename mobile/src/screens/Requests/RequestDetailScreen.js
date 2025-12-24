@@ -615,7 +615,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   if (!request) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={80} color={COLORS.textSecondary} />
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textSecondary} />
         <Text style={styles.emptyText}>Request not found</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -647,8 +647,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
             <Text style={styles.titleLabel}>Title:</Text>
             <Text style={styles.title}>{request.title}</Text>
           </View>
-          <View style={styles.serviceInfoRow}>
-            <Text style={styles.serviceLabel}>Service:</Text>
+          <View style={styles.statusInfoRowVertical}>
+            <Text style={styles.statusLabel}>Service:</Text>
             <View style={styles.typeBadge}>
               <Text style={styles.typeBadgeText}>
                 {getRequestTypeText(request.requestType)}
@@ -677,7 +677,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <>
-                  <Ionicons name="chatbubbles" size={18} color={COLORS.white} />
+                  <Ionicons name="chatbubbles" size={16} color={COLORS.white} />
                   <Text style={styles.chatButtonText}>Open Chat with Manager</Text>
                 </>
               )}
@@ -1019,7 +1019,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
               >
                 <Ionicons 
                   name={existingRequestReview ? "star" : "star-outline"} 
-                  size={20} 
+                  size={16} 
                   color={COLORS.white} 
                 />
                 <Text style={styles.reviewButtonText}>
@@ -1267,7 +1267,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 {booking.totalCost && (
                   <View style={styles.tableRowVertical}>
                     <Text style={styles.tableLabelVertical}>Total Cost</Text>
-                    <Text style={[styles.tableValueVertical, { color: COLORS.error, fontWeight: "700", fontSize: FONT_SIZES.lg }]}>
+                    <Text style={[styles.tableValueVertical, { color: COLORS.error, fontWeight: "700", fontSize: FONT_SIZES.base }]}>
                       {booking.totalCost.toLocaleString("vi-VN")} VND
                     </Text>
                   </View>
@@ -1550,7 +1550,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
@@ -1559,13 +1559,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   titleSection: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1574,18 +1574,18 @@ const styles = StyleSheet.create({
   },
   titleInfoRow: {
     flexDirection: "row",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     alignItems: "flex-start",
   },
   titleLabel: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 60,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1620,7 +1620,7 @@ const styles = StyleSheet.create({
   },
   typeBadge: {
     backgroundColor: COLORS.primary + "20",
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
@@ -1646,10 +1646,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
     gap: SPACING.xs,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
@@ -1666,8 +1666,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1678,10 +1678,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1733,8 +1733,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   tableRowVertical: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -1775,10 +1775,10 @@ const styles = StyleSheet.create({
     marginRight: SPACING.xs / 2,
   },
   instrumentTagText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
-    lineHeight: FONT_SIZES.xs * 1.2,
+    lineHeight: FONT_SIZES.sm * 1.2,
   },
   mainInstrumentTagText: {
     color: COLORS.warning,
@@ -1796,7 +1796,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   genreTagText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
   },
@@ -1821,7 +1821,7 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   managerName: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
@@ -1839,7 +1839,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   managerStatusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
   },
@@ -1853,19 +1853,19 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   contractsSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   contractsLoading: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
   },
@@ -1877,12 +1877,12 @@ const styles = StyleSheet.create({
   noContracts: {
     alignItems: "center",
     justifyContent: "center",
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
   },
   noContractsText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
   },
@@ -1896,25 +1896,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   modalTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
   },
   modalDescription: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
-    marginBottom: SPACING.md,
-    lineHeight: 22,
+    marginBottom: SPACING.sm,
+    lineHeight: 18,
   },
   modalContractNumber: {
     fontWeight: "700",
@@ -1923,10 +1923,10 @@ const styles = StyleSheet.create({
   modalTextArea: {
     backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.base,
+    padding: SPACING.sm,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.text,
-    minHeight: 120,
+    minHeight: 100,
     marginBottom: SPACING.xs,
   },
   charCount: {
@@ -1982,8 +1982,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
   backButtonText: {
@@ -2041,7 +2041,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "20",
   },
   roleBadgeText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
   },
   quantityBadge: {
@@ -2051,7 +2051,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   quantityBadgeText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.warning,
   },
@@ -2067,10 +2067,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   reviewButtonText: {
     fontSize: FONT_SIZES.base,
@@ -2089,7 +2089,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   participantReviewButtonText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '600',
     color: COLORS.primary,
   },

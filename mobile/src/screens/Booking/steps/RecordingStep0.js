@@ -146,19 +146,19 @@ const RecordingStep0 = ({ data, onComplete }) => {
             <View style={styles.features}>
               <Text style={styles.featuresTitle}>Services include:</Text>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   Studio professional with modern equipment
                 </Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   Support professional technician support
                 </Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                 <Text style={styles.featureText}>
                   High-quality recording space
                 </Text>
@@ -188,9 +188,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    margin: SPACING.lg,
+    margin: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: SPACING.md,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
   },
   errorContainer: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xl,
@@ -234,21 +234,21 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   studioInfo: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   studioCard: {
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   studioHeader: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   studioName: {
     fontSize: FONT_SIZES.lg,
@@ -257,55 +257,55 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   infoSection: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   infoRow: {
-    marginBottom: SPACING.md,
-    paddingBottom: SPACING.md,
+    marginBottom: SPACING.sm,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   infoLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   infoValue: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
   },
   priceText: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: '400',
     color: COLORS.success,
     marginBottom: SPACING.xs,
   },
   priceNote: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
   features: {
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
   },
   featuresTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
-    paddingBottom: SPACING.md,
+    marginBottom: SPACING.sm,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   featureText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.text,
     flex: 1,
   },
@@ -314,13 +314,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md + 4,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.lg,
+    marginTop: SPACING.md,
   },
   continueButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.white,
   },
 });

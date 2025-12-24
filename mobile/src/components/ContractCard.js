@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   statusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     marginLeft: SPACING.xs / 2,
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     marginRight: SPACING.xs,
   },
   detailValue: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
     flex: 1,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.error,
   },
   buttonText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.white,
     marginLeft: SPACING.xs / 2,
@@ -471,15 +471,15 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   notesLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
     marginBottom: SPACING.xs / 2,
   },
   notesText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
 });
 

@@ -79,11 +79,29 @@ const ChatRoomScreen = ({ route, navigation }) => {
           } else {
             console.error('[Mobile] Failed to load room:', response.message);
             // Navigate back if room not found
-            navigation.goBack();
+            if (fromNotification) {
+              const parentNavigation = navigation.getParent();
+              if (parentNavigation) {
+                parentNavigation.navigate('Chat', { screen: 'ChatList' });
+              } else {
+                navigation.navigate('Chat', { screen: 'ChatList' });
+              }
+            } else {
+              navigation.goBack();
+            }
           }
         } catch (error) {
           console.error('[Mobile] Error fetching room:', error);
-          navigation.goBack();
+          if (fromNotification) {
+            const parentNavigation = navigation.getParent();
+            if (parentNavigation) {
+              parentNavigation.navigate('Chat', { screen: 'ChatList' });
+            } else {
+              navigation.navigate('Chat', { screen: 'ChatList' });
+            }
+          } else {
+            navigation.goBack();
+          }
         } finally {
           setLoadingRoom(false);
         }
@@ -91,7 +109,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
     };
 
     fetchRoomData();
-  }, [roomIdParam, room, navigation]);
+  }, [roomIdParam, room, navigation, fromNotification]);
 
   // Handle keyboard show/hide
   useEffect(() => {
@@ -129,12 +147,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
   const handleBack = useCallback(() => {
     if (fromNotification) {
-      // When coming from notification, ChatRoom was pushed on top of ChatList
-      // So we can safely go back to ChatList
-      if (navigation.canGoBack()) {
-        navigation.goBack();
+      // When coming from notification, always navigate to ChatList
+      // This ensures we go to ChatList instead of Home
+      // Use getParent to navigate to Chat tab's ChatList
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.navigate('Chat', {
+          screen: 'ChatList',
+        });
       } else {
-        // Fallback: navigate to ChatList if can't go back
+        // Fallback: use current navigation
         navigation.navigate('Chat', {
           screen: 'ChatList',
         });

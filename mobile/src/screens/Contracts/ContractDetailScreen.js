@@ -574,7 +574,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
   if (!contract) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={80} color={COLORS.textSecondary} />
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textSecondary} />
         <Text style={styles.emptyText}>Contract not found</Text>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -616,7 +616,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
         >
           <Ionicons
             name="information-circle-outline"
-            size={20}
+            size={18}
             color={activeTab === "details" ? COLORS.primary : COLORS.textSecondary}
           />
           <Text
@@ -634,7 +634,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
         >
           <Ionicons
             name="document-text-outline"
-            size={20}
+            size={18}
             color={activeTab === "preview" ? COLORS.primary : COLORS.textSecondary}
           />
           <Text
@@ -665,7 +665,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
         {/* Status Alert */}
         {isApproved && (
           <View style={[styles.alertBox, { backgroundColor: COLORS.success + "15" }]}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
             <Text style={[styles.alertText, { color: COLORS.success }]}>
               Contract approved! Please sign to proceed.
             </Text>
@@ -674,7 +674,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
         {isSigned && (
           <View style={[styles.alertBox, { backgroundColor: COLORS.warning + "15" }]}>
-            <Ionicons name="alert-circle" size={24} color={COLORS.warning} />
+            <Ionicons name="alert-circle" size={20} color={COLORS.warning} />
             <Text style={[styles.alertText, { color: COLORS.warning }]}>
               Contract signed! Please pay the deposit to activate.
             </Text>
@@ -683,7 +683,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
         {(isCanceled || isExpired || isNeedRevision) && (
           <View style={[styles.alertBox, { backgroundColor: COLORS.error + "15" }]}>
-            <Ionicons name="information-circle" size={24} color={COLORS.error} />
+            <Ionicons name="information-circle" size={20} color={COLORS.error} />
             <Text style={[styles.alertText, { color: COLORS.error }]}>
               {isCanceled && "This contract has been cancelled."}
               {isExpired && "This contract has expired."}
@@ -1169,7 +1169,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                             })
                           }
                         >
-                          <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
+                          <Ionicons name="eye-outline" size={14} color={COLORS.primary} />
                           <Text style={styles.viewDeliveriesButtonText}>
                             View Deliveries
                           </Text>
@@ -1196,7 +1196,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                     <ActivityIndicator size="small" color={COLORS.white} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+                      <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
                       <Text style={styles.actionButtonText}>Approve Contract</Text>
                     </>
                   )}
@@ -1206,7 +1206,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                   onPress={() => setRevisionModalVisible(true)}
                   disabled={actionLoading}
                 >
-                  <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+                  <Ionicons name="create-outline" size={18} color={COLORS.primary} />
                   <Text style={[styles.actionButtonText, { color: COLORS.primary }]}>
                     Request Revision
                   </Text>
@@ -1216,7 +1216,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                   onPress={() => setCancelModalVisible(true)}
                   disabled={actionLoading}
                 >
-                  <Ionicons name="close-circle-outline" size={20} color={COLORS.error} />
+                  <Ionicons name="close-circle-outline" size={18} color={COLORS.error} />
                   <Text style={[styles.actionButtonText, { color: COLORS.error }]}>
                     Cancel Contract
                   </Text>
@@ -1234,7 +1234,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <>
-                    <Ionicons name="create" size={20} color={COLORS.white} />
+                    <Ionicons name="create" size={18} color={COLORS.white} />
                     <Text style={styles.actionButtonText}>E-Sign Contract</Text>
                   </>
                 )}
@@ -1289,7 +1289,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Revision</Text>
               <TouchableOpacity onPress={() => setRevisionModalVisible(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={20} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalDescription}>
@@ -1342,7 +1342,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Cancel Contract</Text>
               <TouchableOpacity onPress={() => setCancelModalVisible(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={20} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalDescription}>
@@ -1397,7 +1397,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                 {isCanceled ? "Cancellation Reason" : "Revision Request"}
               </Text>
               <TouchableOpacity onPress={() => setViewReasonModalVisible(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={20} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <View style={styles.reasonBox}>
@@ -1455,15 +1455,15 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   emptyText: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
   },
   backButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
   backButtonText: {
@@ -1482,7 +1482,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     gap: SPACING.xs,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
@@ -1502,14 +1502,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   alertBox: {
     flexDirection: "row",
     alignItems: "center",
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   alertText: {
     flex: 1,
@@ -1526,8 +1526,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1537,13 +1537,13 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "column",
     alignItems: "flex-start",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   statusBadge: {
     paddingHorizontal: SPACING.sm,
@@ -1551,7 +1551,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   statusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
   },
   infoRow: {
@@ -1581,8 +1581,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   tableRowVertical: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -1600,7 +1600,7 @@ const styles = StyleSheet.create({
   paymentCard: {
     borderLeftWidth: 4,
     backgroundColor: COLORS.background,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
   },
   paymentHeader: {
@@ -1615,14 +1615,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   paymentAmount: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.primary,
   },
   paymentDescription: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   paymentFooter: {
     flexDirection: "row",
@@ -1635,7 +1635,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   paymentStatusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
   },
   payButton: {
@@ -1648,14 +1648,14 @@ const styles = StyleSheet.create({
     gap: SPACING.xs / 2,
   },
   payButtonText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.white,
   },
   milestoneCard: {
     borderLeftWidth: 4,
     backgroundColor: COLORS.background,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     marginBottom: SPACING.sm,
   },
@@ -1687,7 +1687,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs / 2,
   },
   milestoneAmount: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.primary,
   },
@@ -1718,7 +1718,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   milestoneDateText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
@@ -1765,14 +1765,14 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   tagText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
   },
   actionsCard: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.xl,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
     gap: SPACING.sm,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1784,7 +1784,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.xs,
   },
@@ -1815,20 +1815,20 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   modalContent: {
     width: "100%",
     maxWidth: 500,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   modalTitle: {
     fontSize: FONT_SIZES.xl,
@@ -1838,20 +1838,20 @@ const styles = StyleSheet.create({
   modalDescription: {
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     lineHeight: 22,
   },
   modalTextArea: {
     backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
-    minHeight: 120,
+    minHeight: 100,
     marginBottom: SPACING.xs,
   },
   charCount: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     textAlign: "right",
     marginBottom: SPACING.md,
@@ -1862,7 +1862,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
@@ -1895,9 +1895,9 @@ const styles = StyleSheet.create({
   },
   reasonBox: {
     backgroundColor: COLORS.background,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   reasonText: {
     fontSize: FONT_SIZES.base,

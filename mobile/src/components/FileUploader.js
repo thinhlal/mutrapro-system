@@ -12,7 +12,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 
-const FileUploader = ({ onFileSelect, selectedFile, onClearFile, allowedFileTypes = null }) => {
+const FileUploader = ({ onFileSelect, selectedFile, onClearFile, allowedFileTypes = null, compact = false }) => {
   const [uploading, setUploading] = useState(false);
 
   // Validate file extension for arrangement services
@@ -130,12 +130,12 @@ const FileUploader = ({ onFileSelect, selectedFile, onClearFile, allowedFileType
     <View style={styles.container}>
       {!selectedFile ? (
         <TouchableOpacity
-          style={styles.uploadButton}
+          style={[styles.uploadButton, compact && styles.uploadButtonCompact]}
           onPress={pickAudioFile}
           disabled={uploading}
         >
-          <View style={styles.uploadIconContainer}>
-            <Ionicons name="cloud-upload-outline" size={40} color={COLORS.primary} />
+          <View style={[styles.uploadIconContainer, compact && styles.uploadIconContainerCompact]}>
+            <Ionicons name="cloud-upload-outline" size={compact ? 28 : 40} color={COLORS.primary} />
           </View>
           <Text style={styles.uploadTitle}>
             {uploading ? "Loading..." : allowedFileTypes && allowedFileTypes.length > 0 
@@ -203,8 +203,14 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  uploadButtonCompact: {
+    padding: SPACING.md,
+  },
   uploadIconContainer: {
     marginBottom: SPACING.md,
+  },
+  uploadIconContainerCompact: {
+    marginBottom: SPACING.sm,
   },
   uploadTitle: {
     fontSize: FONT_SIZES.base,

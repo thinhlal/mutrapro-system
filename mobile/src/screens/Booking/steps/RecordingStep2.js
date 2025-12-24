@@ -164,7 +164,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
         {/* Slot info from previous step */}
         {bookingDate && bookingStartTime && bookingEndTime && (
           <View style={styles.alertContainer}>
-            <Ionicons name="information-circle" size={20} color={COLORS.info} />
+            <Ionicons name="information-circle" size={18} color={COLORS.info} />
             <View style={styles.alertContent}>
               <Text style={styles.alertTitle}>Selected Slot</Text>
               <View style={styles.slotInfoRow}>
@@ -297,7 +297,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
               style={styles.browseButton}
               onPress={handleBrowseVocalists}
             >
-              <Ionicons name="search" size={18} color={COLORS.primary} />
+              <Ionicons name="search" size={16} color={COLORS.primary} />
               <Text style={styles.browseButtonText}>Browse All Vocalists</Text>
             </TouchableOpacity>
 
@@ -352,7 +352,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
                         style={styles.removeButton}
                         onPress={() => handleVocalistSelect(vocalist)}
                       >
-                        <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                        <Ionicons name="close-circle" size={20} color={COLORS.error} />
                       </TouchableOpacity>
                     </View>
                   );
@@ -360,7 +360,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
               </View>
             ) : (
               <View style={styles.alertContainer}>
-                <Ionicons name="information-circle" size={20} color={COLORS.info} />
+                <Ionicons name="information-circle" size={18} color={COLORS.info} />
                 <View style={styles.alertContent}>
                   <Text style={styles.alertTitle}>No vocalists selected</Text>
                   <Text style={styles.alertText}>
@@ -388,7 +388,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
             disabled={needsVocalistSelection && selectedVocalists.length === 0}
             activeOpacity={0.8}
           >
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+            <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
             <Text style={styles.continueButtonText}>
               Continue to Instrument Setup
             </Text>
@@ -406,9 +406,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    margin: SPACING.lg,
+    margin: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xl,
@@ -425,9 +425,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   alertContainer: {
     flexDirection: 'row',
@@ -444,13 +444,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   alertTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   alertText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   slotInfoRow: {
@@ -459,20 +459,20 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   slotInfoLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
     minWidth: 50,
   },
   slotInfoValue: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.text,
     flex: 1,
   },
   vocalChoiceSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   radioGroup: {
     gap: SPACING.md,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   radioLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
@@ -524,8 +524,8 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   tagText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   tagSuccess: {
@@ -556,15 +556,15 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   sectionSubtitle: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   browseButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.primary,
@@ -572,18 +572,18 @@ const styles = StyleSheet.create({
   },
   browseButtonText: {
     marginLeft: SPACING.xs,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.primary,
   },
   selectedSummary: {
     marginTop: SPACING.md,
   },
   selectedSummaryTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   vocalistItem: {
     flexDirection: 'row',
@@ -607,8 +607,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vocalistName: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
@@ -619,11 +619,11 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     marginLeft: SPACING.xs / 2,
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
   vocalistDetail: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
   },
@@ -632,12 +632,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'column',
-    marginTop: SPACING.xl,
-    gap: SPACING.md,
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
   },
   backButton: {
     width: '100%',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -645,8 +645,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.text,
   },
   continueButton: {
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md + 4,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
   },
   continueButtonDisabled: {
@@ -664,8 +664,8 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     marginLeft: SPACING.sm,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
     color: COLORS.white,
   },
 });

@@ -1,6 +1,6 @@
 // RecordingFlowController.js - Controller for multi-step recording flow
-import React, { useState, useEffect } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useState, useEffect, useRef } from 'react';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../config/constants';
@@ -43,6 +43,9 @@ const RecordingFlowController = ({ navigation }) => {
   const [flowData, setFlowData] = useState({});
   const [loading, setLoading] = useState(true);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
+  const isFocused = useIsFocused();
+  const blurTimeoutRef = useRef(null);
+  const blurTimeRef = useRef(null);
 
   // Load flow data from storage on mount
   useEffect(() => {
@@ -70,9 +73,35 @@ const RecordingFlowController = ({ navigation }) => {
     loadFlowData();
   }, []);
 
-  // Reload data when screen comes into focus (to check if storage was cleared)
+  // Load data when screen comes into focus (after returning from selection screens)
   useFocusEffect(
     React.useCallback(() => {
+      // Clear any pending blur timeout
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+
+      // Check if we're regaining focus after being blurred for a while (tab switch)
+      const now = Date.now();
+      if (blurTimeRef.current && (now - blurTimeRef.current) > 1000) {
+        // Screen was blurred for more than 1 second - likely a tab switch
+        // Clear data before loading
+        const clearData = async () => {
+          try {
+            await removeItem(STORAGE_KEY);
+            setFlowData({});
+            setCurrentStep(0);
+            console.log('[Mobile] Booking flow cleared - user switched tab and returned');
+          } catch (error) {
+            console.error('Error clearing flow data on focus after tab switch:', error);
+          }
+        };
+        clearData();
+        blurTimeRef.current = null;
+        return; // Don't load old data
+      }
+
       const loadFlowData = async () => {
         try {
           const stored = await getItem(STORAGE_KEY);
@@ -80,7 +109,7 @@ const RecordingFlowController = ({ navigation }) => {
             setFlowData(stored);
             setCurrentStep(stored.currentStep || 0);
           } else {
-            // If storage was cleared, reset to initial state
+            // If no stored data, reset to initial state
             setFlowData({});
             setCurrentStep(0);
           }
@@ -90,9 +119,48 @@ const RecordingFlowController = ({ navigation }) => {
           setCurrentStep(0);
         }
       };
+      
       loadFlowData();
+      blurTimeRef.current = null; // Reset blur time
+      
+      // Cleanup: Clear data when screen loses focus (user switches tabs)
+      // Use a delay to distinguish between navigation within flow vs tab switch
+      return () => {
+        // Record blur time
+        blurTimeRef.current = Date.now();
+        
+        // Clear any existing timeout
+        if (blurTimeoutRef.current) {
+          clearTimeout(blurTimeoutRef.current);
+        }
+        
+        // Set a timeout to clear data after losing focus
+        // This allows time for navigation within flow (which will regain focus quickly)
+        blurTimeoutRef.current = setTimeout(async () => {
+          // Check if screen is still not focused (user switched tab)
+          // If screen regains focus within the timeout, the timeout will be cleared above
+          try {
+            await removeItem(STORAGE_KEY);
+            setFlowData({});
+            setCurrentStep(0);
+            console.log('[Mobile] Booking flow cleared - user switched tab');
+          } catch (error) {
+            console.error('Error clearing flow data on blur:', error);
+          }
+          blurTimeoutRef.current = null;
+        }, 500); // 500ms delay to allow for navigation within flow
+      };
     }, [])
   );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Save flow data to storage
   const updateFlowData = async (newData, stepOverride = null) => {
@@ -239,7 +307,7 @@ const RecordingFlowController = ({ navigation }) => {
                 ]}
               >
                 {index < currentStep ? (
-                  <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                  <Ionicons name="checkmark" size={14} color={COLORS.white} />
                 ) : (
                   <Text style={[styles.stepNumber, index === currentStep && styles.stepNumberActive]}>
                     {index + 1}
@@ -277,7 +345,7 @@ const RecordingFlowController = ({ navigation }) => {
             onPress={handlePrev}
             disabled={currentStep === 0}
           >
-            <Ionicons name="arrow-back" size={20} color={currentStep === 0 ? COLORS.textSecondary : COLORS.text} />
+            <Ionicons name="arrow-back" size={18} color={currentStep === 0 ? COLORS.textSecondary : COLORS.text} />
             <Text style={[styles.navButtonText, currentStep === 0 && styles.navButtonTextDisabled]}>
               Previous
             </Text>
@@ -286,12 +354,12 @@ const RecordingFlowController = ({ navigation }) => {
             Step {currentStep + 1} of {STEPS.length}
           </Text>
           <TouchableOpacity style={styles.toggleButton} onPress={toggleNavigation}>
-            <Ionicons name="chevron-down" size={20} color={COLORS.primary} />
+            <Ionicons name="chevron-down" size={18} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity style={styles.navigationToggleButton} onPress={toggleNavigation}>
-          <Ionicons name="chevron-up" size={20} color={COLORS.primary} />
+          <Ionicons name="chevron-up" size={18} color={COLORS.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -318,7 +386,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   stepsContent: {
     paddingHorizontal: SPACING.md,
@@ -353,7 +421,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   stepTitle: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -371,8 +439,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -380,8 +448,8 @@ const styles = StyleSheet.create({
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
   },
   navButtonDisabled: {
     opacity: 0.5,
