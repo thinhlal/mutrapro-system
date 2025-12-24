@@ -28,10 +28,12 @@ import { getContractById } from "../../services/contractService";
 import { getStudioBookings } from "../../services/studioBookingService";
 import { getContractRevisionStats } from "../../services/revisionRequestService";
 import FileItem from "../../components/FileItem";
+import ReviewModal from "../../components/ReviewModal";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_CONFIG } from "../../config/apiConfig";
 import { getItem } from "../../utils/storage";
 import { STORAGE_KEYS } from "../../config/constants";
+import { createTaskReview, getTaskReview } from "../../services/reviewService";
 
 const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const { contractId, milestoneId } = route.params || {};
@@ -48,12 +50,18 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const [revisionStats, setRevisionStats] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Review modal states
+  // Review modal states (for submission review: accept/revision)
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewAction, setReviewAction] = useState(""); // 'accept' or 'request_revision'
   const [revisionTitle, setRevisionTitle] = useState("");
   const [revisionDescription, setRevisionDescription] = useState("");
+
+  // Task review states
+  const [taskReviewModalVisible, setTaskReviewModalVisible] = useState(false);
+  const [selectedAssignmentForReview, setSelectedAssignmentForReview] = useState(null);
+  const [taskReviewLoading, setTaskReviewLoading] = useState(false);
+  const [existingTaskReviews, setExistingTaskReviews] = useState({}); // Map assignmentId -> review
 
   useEffect(() => {
     if (contractId && milestoneId) {
@@ -272,6 +280,9 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
           ? data.submissions
           : [];
         setSubmissions(allSubmissions);
+
+        // Load existing task reviews for accepted submissions
+        loadExistingTaskReviews(allSubmissions);
       } else {
         setContractInfo(null);
         setMilestoneInfo(null);
@@ -301,6 +312,70 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const onRefresh = () => {
     setRefreshing(true);
     loadDeliveries();
+  };
+
+  // Load existing task reviews for accepted submissions
+  const loadExistingTaskReviews = async (submissions) => {
+    // Load reviews cho các submissions đã accepted
+    const acceptedSubmissions = submissions.filter(
+      s => s.status?.toLowerCase() === 'customer_accepted' && s.assignmentId
+    );
+
+    const reviewsMap = {};
+    for (const submission of acceptedSubmissions) {
+      try {
+        const reviewResponse = await getTaskReview(submission.assignmentId);
+        if (reviewResponse?.status === 'success' && reviewResponse?.data) {
+          reviewsMap[submission.assignmentId] = reviewResponse.data;
+        }
+      } catch (error) {
+        // Nếu không có review hoặc lỗi, bỏ qua (có thể chưa rate)
+        console.log(
+          `No review found for assignment ${submission.assignmentId}`
+        );
+      }
+    }
+    setExistingTaskReviews(reviewsMap);
+  };
+
+  // Handle rate task assignment
+  const handleRateTask = (assignmentId) => {
+    setSelectedAssignmentForReview(assignmentId);
+    setTaskReviewModalVisible(true);
+  };
+
+  // Handle submit task review
+  const handleSubmitTaskReview = async (reviewData) => {
+    if (!selectedAssignmentForReview) return;
+
+    try {
+      setTaskReviewLoading(true);
+      const response = await createTaskReview(
+        selectedAssignmentForReview,
+        reviewData
+      );
+
+      if (response?.status === 'success') {
+        Alert.alert('Success', 'Review submitted successfully');
+        // Update existing reviews map
+        setExistingTaskReviews(prev => ({
+          ...prev,
+          [selectedAssignmentForReview]: response.data,
+        }));
+        setTaskReviewModalVisible(false);
+        setSelectedAssignmentForReview(null);
+      } else {
+        Alert.alert('Error', response?.message || 'Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Error submitting task review:', error);
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to submit review'
+      );
+    } finally {
+      setTaskReviewLoading(false);
+    }
   };
 
   const handleDownloadFile = async (fileId, fileName) => {
@@ -1290,6 +1365,29 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     );
                   })()}
 
+                  {/* Review Button - Only for accepted submissions */}
+                  {submission.status?.toLowerCase() === "customer_accepted" && 
+                   submission.assignmentId && (
+                    <View style={styles.reviewButtonContainer}>
+                      <TouchableOpacity
+                        style={styles.taskReviewButton}
+                        onPress={() => handleRateTask(submission.assignmentId)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons 
+                          name={existingTaskReviews[submission.assignmentId] ? "star" : "star-outline"} 
+                          size={16} 
+                          color={COLORS.primary} 
+                        />
+                        <Text style={styles.taskReviewButtonText}>
+                          {existingTaskReviews[submission.assignmentId] 
+                            ? 'View Task Review' 
+                            : 'Rate Task'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
                   {/* Revision Status Info */}
                   {!canShowActions && (() => {
                     // Nếu submission đã được customer accept → hiển thị status tag (đã có ở trên)
@@ -1522,6 +1620,23 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Task Review Modal - Để rate task assignment */}
+      <ReviewModal
+        visible={taskReviewModalVisible}
+        onCancel={() => {
+          setTaskReviewModalVisible(false);
+          setSelectedAssignmentForReview(null);
+        }}
+        onConfirm={handleSubmitTaskReview}
+        loading={taskReviewLoading}
+        type="task"
+        existingReview={
+          selectedAssignmentForReview
+            ? existingTaskReviews[selectedAssignmentForReview]
+            : null
+        }
+      />
     </View>
   );
 };
@@ -2257,6 +2372,28 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: FONT_SIZES.xs - 1,
     fontWeight: "600",
+    color: COLORS.primary,
+  },
+  // Task review styles
+  reviewButtonContainer: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  taskReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.primary + "15",
+    borderRadius: BORDER_RADIUS.md,
+    alignSelf: 'flex-start',
+    gap: SPACING.xs,
+  },
+  taskReviewButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
     color: COLORS.primary,
   },
 });
