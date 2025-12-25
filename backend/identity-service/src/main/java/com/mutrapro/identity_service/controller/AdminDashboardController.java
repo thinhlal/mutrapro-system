@@ -1,7 +1,7 @@
 package com.mutrapro.identity_service.controller;
 
-import com.mutrapro.identity_service.dto.response.AdminDashboardOverviewResponse;
-import com.mutrapro.identity_service.service.AdminDashboardService;
+import com.mutrapro.identity_service.dto.response.UserStatisticsResponse;
+import com.mutrapro.identity_service.service.UserService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -24,16 +24,16 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminDashboardController {
 
-    private final AdminDashboardService adminDashboardService;
+    private final UserService userService;
 
-    @GetMapping("/overview")
-    @Operation(summary = "Get admin dashboard overview", description = "Tổng hợp thống kê users + ví & giao dịch cho admin dashboard (SYSTEM_ADMIN only)")
-    public ApiResponse<AdminDashboardOverviewResponse> getOverview() {
-        log.info("GET /admin/dashboard/overview - Getting admin dashboard overview");
-        AdminDashboardOverviewResponse overview = adminDashboardService.getOverview();
-        return ApiResponse.<AdminDashboardOverviewResponse>builder()
-                .message("Admin dashboard overview retrieved successfully")
-                .data(overview)
+    @GetMapping("/users")
+    @Operation(summary = "Get user statistics for admin dashboard", description = "Lấy thống kê users cho admin dashboard (SYSTEM_ADMIN only)")
+    public ApiResponse<UserStatisticsResponse> getUserStatistics() {
+        log.info("GET /admin/dashboard/users - Getting user statistics for admin dashboard");
+        UserStatisticsResponse stats = userService.getUserStatistics();
+        return ApiResponse.<UserStatisticsResponse>builder()
+                .message("User statistics retrieved successfully")
+                .data(stats)
                 .build();
     }
 }

@@ -94,6 +94,12 @@ export const API_ENDPOINTS = {
     UPDATE_ROLE: id => `${IDENTITY_PATH}/admin/users/${id}/role`,
   },
 
+  // === Admin Dashboard ===
+  ADMIN_DASHBOARD: {
+    // GET /admin/dashboard/users
+    USERS: `${IDENTITY_PATH}/admin/dashboard/users`,
+  },
+
   // === Project Service (Quản lý File, Folder, Tag, Contract) ===
   // Giả định các controller bên trong project-service giữ nguyên đường dẫn
   FILES: {
@@ -390,6 +396,8 @@ export const API_ENDPOINTS = {
     GET_BY_ID: requestId => `${REQUEST_PATH}/requests/${requestId}`,
     // GET /api/v1/requests/requests/my-requests?status=
     MY_REQUESTS: `${REQUEST_PATH}/requests/my-requests`,
+    // GET /admin/requests/statistics
+    ADMIN_STATISTICS: `${REQUEST_PATH}/admin/requests/statistics`,
   },
 
   // === Notation Instruments Management ===

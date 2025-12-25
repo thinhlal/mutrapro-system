@@ -5,7 +5,7 @@ import com.mutrapro.identity_service.dto.request.UserSearchRequest;
 import com.mutrapro.identity_service.dto.response.FullUserResponse;
 import com.mutrapro.identity_service.dto.response.UserBasicInfoResponse;
 import com.mutrapro.identity_service.dto.response.UserPageResponse;
-import com.mutrapro.identity_service.service.UserSearchService;
+import com.mutrapro.identity_service.dto.response.UserStatisticsResponse;
 import com.mutrapro.identity_service.service.UserService;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.enums.Role;
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminUserController {
 
-    private final UserSearchService userSearchService;
     private final UserService userService;
 
     /**
@@ -40,7 +39,7 @@ public class AdminUserController {
     @Operation(summary = "Search users", description = "Search and filter users with pagination (SYSTEM_ADMIN only)")
     public ApiResponse<UserPageResponse> searchUsers(@RequestBody UserSearchRequest request) {
         log.info("POST /admin/users/search - Searching users with filters: {}", request);
-        UserPageResponse response = userSearchService.searchUsers(request);
+        UserPageResponse response = userService.searchUsers(request);
         return ApiResponse.<UserPageResponse>builder()
             .message("Users retrieved successfully")
             .data(response)
@@ -52,10 +51,10 @@ public class AdminUserController {
      */
     @GetMapping("/statistics")
     @Operation(summary = "Get user statistics", description = "Get user statistics for admin dashboard (SYSTEM_ADMIN only)")
-    public ApiResponse<UserSearchService.UserStatisticsResponse> getUserStatistics() {
+    public ApiResponse<UserStatisticsResponse> getUserStatistics() {
         log.info("GET /admin/users/statistics - Getting user statistics");
-        UserSearchService.UserStatisticsResponse stats = userSearchService.getUserStatistics();
-        return ApiResponse.<UserSearchService.UserStatisticsResponse>builder()
+        UserStatisticsResponse stats = userService.getUserStatistics();
+        return ApiResponse.<UserStatisticsResponse>builder()
             .message("User statistics retrieved successfully")
             .data(stats)
             .build();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Typography,
   Button,
@@ -8,6 +8,7 @@ import {
   Badge,
   Alert,
   message,
+  Spin,
 } from 'antd';
 import {
   UserOutlined,
@@ -25,7 +26,6 @@ import {
   TeamOutlined,
   TrophyOutlined,
   VideoCameraOutlined,
-  SettingOutlined,
   CalendarOutlined,
   EditOutlined,
   AudioOutlined,
@@ -47,14 +47,116 @@ import {
   formatCurrency,
   formatPercent,
   mapStatusToTag,
-  mapPriorityToBadge,
 } from './adminDashboardMock';
+import { getUserStatistics, getRequestStatistics, getWalletStatistics } from '../../../services/dashboardService';
 
 const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7d');
-  const currentKpis = kpis[timeRange];
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [walletStats, setWalletStats] = useState(null);
+  const [requestStats, setRequestStats] = useState(null);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [userStatsResponse, walletStatsResponse, requestStatsResponse] = await Promise.all([
+          getUserStatistics(),
+          getWalletStatistics(),
+          getRequestStatistics(),
+        ]);
+        console.log("userStatsResponse", userStatsResponse);
+        console.log("walletStatsResponse", walletStatsResponse);
+        console.log("requestStatsResponse", requestStatsResponse);
+        if (userStatsResponse?.status === 'success') {
+          setDashboardData(userStatsResponse.data);
+        }
+        if (walletStatsResponse?.status === 'success') {
+          setWalletStats(walletStatsResponse.data);
+        }
+        if (requestStatsResponse?.status === 'success') {
+          setRequestStats(requestStatsResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        message.error('Lỗi khi tải dữ liệu dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Map real data to KPIs (fallback to mock data if real data not available)
+  const getCurrentKpis = () => {
+    if (!dashboardData || !walletStats || !requestStats) {
+      return kpis[timeRange];
+    }
+
+    // dashboardData is now directly UserStatisticsResponse, not {userStats: ...}
+    const userStats = dashboardData || {};
+    const requestData = requestStats || {};
+
+    // Calculate total requests
+    const totalRequests = requestData.totalRequests || 0;
+    const byStatus = requestData.byStatus || {};
+    console.log(requestData);
+    
+    // Open requests = all statuses except completed, cancelled, rejected
+    // Backend uses lowercase enum values: pending, contract_sent, contract_approved, contract_signed, awaiting_assignment, in_progress, completed, cancelled, rejected
+    const openRequests = 
+      (byStatus.pending || 0) +
+      (byStatus.contract_sent || 0) +
+      (byStatus.contract_approved || 0) +
+      (byStatus.contract_signed || 0) +
+      (byStatus.awaiting_assignment || 0) +
+      (byStatus.in_progress || 0);
+
+    // Calculate active contracts from request stats (if we have contract stats in future, use that)
+    // For now, use total requests as approximation (since each active contract relates to a request)
+    // This is a placeholder - ideally we'd fetch contract statistics separately
+    const activeContracts = totalRequests; // Placeholder - should fetch from contract statistics API
+
+    // Calculate overdue tasks - placeholder for now
+    // Ideally we'd fetch task statistics and calculate overdue from deadline dates
+    const overdueTasks = 0; // Placeholder - should fetch from task statistics API
+
+    // For now, use real data where available, mock data for trends
+    // Note: Trends are calculated from historical data, not available in current API
+    return {
+      totalUsers: {
+        value: userStats.totalUsers || 0,
+        trend: 0, // Trends require historical data comparison - set to 0 for now
+      },
+      newUsers: {
+        value: userStats.activeUsers || 0,
+        trend: 0,
+      },
+      totalBalance: {
+        value: walletStats.totalBalance ? Number(walletStats.totalBalance) : 0,
+        trend: 0,
+      },
+      openRequests: {
+        value: openRequests,
+        trend: 0,
+      },
+      activeContracts: {
+        value: activeContracts,
+        trend: 0,
+      },
+      overdueTasks: {
+        value: overdueTasks,
+        trend: 0,
+      },
+    };
+  };
+
+  const currentKpis = getCurrentKpis();
   const currentCharts = chartsData[timeRange];
 
   const handleExport = () => {
@@ -71,14 +173,14 @@ const Dashboard = () => {
     },
     {
       key: 'newUsers',
-      label: `New Users (${timeRange})`,
+      label: 'Active Users',
       icon: <UserAddOutlined />,
       color: '#8b5cf6',
       bgColor: '#f5f3ff',
     },
     {
-      key: 'totalTopups',
-      label: 'Total Top-ups',
+      key: 'totalBalance',
+      label: 'Total Wallet Balance',
       icon: <WalletOutlined />,
       color: '#10b981',
       bgColor: '#ecfdf5',
@@ -86,7 +188,7 @@ const Dashboard = () => {
     },
     {
       key: 'openRequests',
-      label: 'Total Requests',
+      label: 'Open Requests',
       icon: <FileTextOutlined />,
       color: '#f59e0b',
       bgColor: '#fffbeb',
@@ -155,16 +257,6 @@ const Dashboard = () => {
     { title: 'Assignee', dataIndex: 'assignee', key: 'assignee', width: 100 },
     { title: 'Due', dataIndex: 'dueDate', key: 'dueDate', width: 100 },
     {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 90,
-      render: priority => {
-        const { status, text } = mapPriorityToBadge(priority);
-        return <Badge status={status} text={text} />;
-      },
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -229,13 +321,6 @@ const Dashboard = () => {
       sub: `${moduleSummary.demoManagement.active} active`,
     },
     {
-      key: 'settings',
-      icon: <SettingOutlined style={{ fontSize: 24, color: '#64748b' }} />,
-      title: 'Settings',
-      stat: '—',
-      sub: `Last: ${moduleSummary.settings.lastChanged}`,
-    },
-    {
       key: 'studioBookings',
       icon: <CalendarOutlined style={{ fontSize: 24, color: '#ec4899' }} />,
       title: 'Studio Bookings',
@@ -267,6 +352,14 @@ const Dashboard = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -329,12 +422,14 @@ const Dashboard = () => {
                   : data.value.toLocaleString()}
               </div>
               <div className={styles.kpiLabel}>{card.label}</div>
-              <div
-                className={`${styles.kpiTrend} ${isPositive ? styles.trendUp : styles.trendDown}`}
-              >
-                {isPositive ? <RiseOutlined /> : <FallOutlined />}
-                {formatPercent(data.trend)}
-              </div>
+              {data.trend !== 0 && (
+                <div
+                  className={`${styles.kpiTrend} ${isPositive ? styles.trendUp : styles.trendDown}`}
+                >
+                  {isPositive ? <RiseOutlined /> : <FallOutlined />}
+                  {formatPercent(data.trend)}
+                </div>
+              )}
             </motion.div>
           );
         })}
@@ -376,7 +471,7 @@ const Dashboard = () => {
               colorField="type"
               radius={0.8}
               innerRadius={0.6}
-              label={{ type: 'inner', offset: '-30%', content: '{percentage}' }}
+              label={false}
               legend={{ position: 'bottom' }}
               color={['#3b82f6', '#8b5cf6', '#10b981']}
             />
@@ -427,7 +522,7 @@ const Dashboard = () => {
           initial="hidden"
           animate="visible"
         >
-          <div className={styles.tableTitle}>Overdue / High-priority Tasks</div>
+          <div className={styles.tableTitle}>Overdue Tasks</div>
           <Table
             dataSource={riskyTasks}
             columns={taskColumns}

@@ -37,7 +37,7 @@ export const kpis = {
   today: {
     totalUsers: { value: 2847, trend: 12.5 },
     newUsers: { value: 34, trend: 8.2 },
-    totalTopups: { value: 156000000, trend: 15.3 },
+    totalBalance: { value: 156000000, trend: 15.3 },
     openRequests: { value: 23, trend: -5.1 },
     activeContracts: { value: 67, trend: 3.8 },
     overdueTasks: { value: 5, trend: -12.0 },
@@ -45,7 +45,7 @@ export const kpis = {
   '7d': {
     totalUsers: { value: 2847, trend: 8.1 },
     newUsers: { value: 189, trend: 12.4 },
-    totalTopups: { value: 892000000, trend: 22.1 },
+    totalBalance: { value: 892000000, trend: 22.1 },
     openRequests: { value: 45, trend: 2.3 },
     activeContracts: { value: 67, trend: 5.2 },
     overdueTasks: { value: 8, trend: -8.5 },
@@ -53,7 +53,7 @@ export const kpis = {
   '30d': {
     totalUsers: { value: 2847, trend: 18.7 },
     newUsers: { value: 623, trend: 25.3 },
-    totalTopups: { value: 3450000000, trend: 31.2 },
+    totalBalance: { value: 3450000000, trend: 31.2 },
     openRequests: { value: 112, trend: 8.9 },
     activeContracts: { value: 67, trend: 12.1 },
     overdueTasks: { value: 15, trend: -3.2 },
