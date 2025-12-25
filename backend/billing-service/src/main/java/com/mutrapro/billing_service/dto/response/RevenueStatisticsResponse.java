@@ -38,6 +38,8 @@ public class RevenueStatisticsResponse {
         private BigDecimal totalRevenue;
         private BigDecimal topupRevenue;
         private BigDecimal serviceRevenue;
+        private BigDecimal avgTopupTransactionValue; // Average transaction value for topups (revenue / count)
+        private BigDecimal avgServiceTransactionValue; // Average transaction value for services (revenue / count)
     }
 }
 

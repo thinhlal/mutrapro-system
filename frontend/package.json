@@ -25,6 +25,8 @@
     "bootstrap": "^5.3.8",
     "buffer": "^6.0.3",
     "dayjs": "^1.11.18",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.5",
     "flat-embed": "^2.5.1",
     "framer-motion": "^12.23.26",
     "html2canvas": "^1.4.1",

@@ -83,6 +83,7 @@ import SpecialistTaskDetailPage from './pages/specialist/TaskDetailPage/Speciali
 // Dashboard
 import Dashboard from './pages/dashboard/Overview/Dashboard';
 import ManagerDashboard from './pages/dashboard/Overview/ManagerDashboard';
+import WalletDashboard from './pages/dashboard/Wallet/WalletDashboard';
 
 // Contracts Pages
 import ContractBuilder from './pages/contracts/Builder/ContractBuilder';
@@ -571,6 +572,7 @@ function App() {
           >
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="wallet-dashboard" element={<WalletDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="wallets" element={<WalletManagement />} />
             <Route

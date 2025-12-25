@@ -27,7 +27,8 @@ import {
   CalendarOutlined,
   EditOutlined,
 } from '@ant-design/icons';
-import { Line, Pie, Column } from '@ant-design/plots';
+import ReactECharts from 'echarts-for-react';
+import * as echarts from 'echarts';
 import { motion } from 'framer-motion';
 import styles from './Dashboard.module.css';
 import RevenueSummaryCard from './RevenueSummaryCard';
@@ -313,6 +314,194 @@ const Dashboard = () => {
     topupsVolume: getTopupsVolumeData(),
   };
 
+  // Prepare ECharts options
+  const getNewUsersOverTimeChartOption = () => {
+    const data = currentCharts.newUsersOverTime;
+    if (!data || data.length === 0) return null;
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params) => {
+          const param = params[0];
+          return `${param.axisValue}<br/>${param.marker}${param.seriesName}: ${param.value.toLocaleString()} users`;
+        },
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: data.map(item => item.date),
+        axisTick: {
+          alignWithLabel: true,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => value.toLocaleString(),
+        },
+      },
+      series: [
+        {
+          name: 'New Users',
+          type: 'line',
+          smooth: true,
+          data: data.map(item => item.users),
+          areaStyle: {
+            opacity: 0.15,
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#3b82f6' },
+                { offset: 1, color: 'rgba(59, 130, 246, 0.1)' },
+              ],
+            },
+          },
+          lineStyle: {
+            width: 2,
+            color: '#3b82f6',
+          },
+          itemStyle: {
+            color: '#3b82f6',
+            borderWidth: 2,
+          },
+          emphasis: {
+            focus: 'series',
+            lineStyle: {
+              width: 3,
+            },
+          },
+        },
+      ],
+    };
+  };
+
+  const getRequestsByTypeChartOption = () => {
+    const data = currentCharts.requestsByType;
+    if (!data || data.length === 0) return null;
+
+    return {
+      tooltip: {
+        trigger: 'item',
+        formatter: (params) => {
+          return `${params.name}<br/>${params.marker}${params.value.toLocaleString()} requests (${params.percent}%)`;
+        },
+      },
+      legend: {
+        orient: 'horizontal',
+        bottom: 0,
+        data: data.map(item => item.type),
+      },
+      series: [
+        {
+          name: 'Requests by Type',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2,
+          },
+          label: {
+            show: false,
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: 14,
+              fontWeight: 'bold',
+            },
+          },
+          data: data.map(item => ({
+            name: item.type,
+            value: item.value,
+          })),
+          color: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+        },
+      ],
+    };
+  };
+
+  const getTopupsVolumeChartOption = () => {
+    const data = currentCharts.topupsVolume;
+    if (!data || data.length === 0) return null;
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow',
+        },
+        formatter: (params) => {
+          const param = params[0];
+          return `${param.axisValue}<br/>${param.marker}${formatCurrency(param.value)}`;
+        },
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: data.map(item => item.date),
+        axisTick: {
+          alignWithLabel: true,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => {
+            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+            if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+            return value;
+          },
+        },
+      },
+      series: [
+        {
+          name: 'Top-up Volume',
+          type: 'bar',
+          barWidth: '60%',
+          data: data.map(item => item.amount),
+          itemStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#10b981' },
+                { offset: 1, color: '#059669' },
+              ],
+            },
+            borderRadius: [6, 6, 0, 0],
+          },
+        },
+      ],
+    };
+  };
+
+  const newUsersChartOption = getNewUsersOverTimeChartOption();
+  const requestsByTypeChartOption = getRequestsByTypeChartOption();
+  const topupsVolumeChartOption = getTopupsVolumeChartOption();
+
   const handleExport = () => {
     message.success('Report exported successfully!');
   };
@@ -553,7 +742,7 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className={styles.chartsGrid}>
-        {currentCharts.newUsersOverTime && currentCharts.newUsersOverTime.length > 0 && (
+        {newUsersChartOption && (
           <motion.div
             className={styles.chartCard}
             variants={itemVariants}
@@ -562,20 +751,16 @@ const Dashboard = () => {
           >
             <div className={styles.chartTitle}>New Users Over Time</div>
             <div className={styles.chartWrapper}>
-              <Line
-                data={currentCharts.newUsersOverTime}
-                xField="date"
-                yField="users"
-                smooth
-                color="#3b82f6"
-                areaStyle={{ fill: 'l(270) 0:#fff 1:#3b82f6', fillOpacity: 0.15 }}
-                point={{ size: 3, shape: 'circle' }}
+              <ReactECharts
+                option={newUsersChartOption}
+                style={{ height: '100%', width: '100%' }}
+                opts={{ renderer: 'svg' }}
               />
             </div>
           </motion.div>
         )}
 
-        {currentCharts.requestsByType && currentCharts.requestsByType.length > 0 && (
+        {requestsByTypeChartOption && (
           <motion.div
             className={styles.chartCard}
             variants={itemVariants}
@@ -584,21 +769,16 @@ const Dashboard = () => {
           >
             <div className={styles.chartTitle}>Requests by Type</div>
             <div className={styles.chartWrapper}>
-              <Pie
-                data={currentCharts.requestsByType}
-                angleField="value"
-                colorField="type"
-                radius={0.8}
-                innerRadius={0.6}
-                label={false}
-                legend={{ position: 'bottom' }}
-                color={['#3b82f6', '#8b5cf6', '#10b981']}
+              <ReactECharts
+                option={requestsByTypeChartOption}
+                style={{ height: '100%', width: '100%' }}
+                opts={{ renderer: 'svg' }}
               />
             </div>
           </motion.div>
         )}
 
-        {currentCharts.topupsVolume && currentCharts.topupsVolume.length > 0 && (
+        {topupsVolumeChartOption && (
           <motion.div
             className={styles.chartCard}
             variants={itemVariants}
@@ -607,13 +787,10 @@ const Dashboard = () => {
           >
             <div className={styles.chartTitle}>Top-ups Volume</div>
             <div className={styles.chartWrapper}>
-              <Column
-                data={currentCharts.topupsVolume}
-                xField="date"
-                yField="amount"
-                color="#10b981"
-                columnStyle={{ radius: [6, 6, 0, 0] }}
-                label={false}
+              <ReactECharts
+                option={topupsVolumeChartOption}
+                style={{ height: '100%', width: '100%' }}
+                opts={{ renderer: 'svg' }}
               />
             </div>
           </motion.div>

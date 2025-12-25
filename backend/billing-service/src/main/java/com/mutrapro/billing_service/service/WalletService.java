@@ -1333,9 +1333,13 @@ public class WalletService {
         List<WalletTxType> allRevenueTypes = new ArrayList<>(topupTypes);
         allRevenueTypes.addAll(serviceTypes);
         
-        // Optimized: Get all revenue data (current + previous periods, totals + daily) in 1 query instead of 6
-        List<Object[]> allRevenueData = walletTransactionRepository.sumRevenueAmountsByTypeAndDateAndPeriod(
-            allRevenueTypes, startDate, endDate, prevStartDate, prevEndDate);
+        // Get revenue data and transaction counts for current and previous periods
+        List<Object[]> currentPeriodData = walletTransactionRepository.sumRevenueAmountsByTypeAndDate(
+            allRevenueTypes, startDate, endDate);
+        List<Object[]> prevPeriodData = walletTransactionRepository.sumRevenueAmountsByTypeAndDate(
+            allRevenueTypes, prevStartDate, prevEndDate);
+        List<Object[]> currentPeriodCounts = walletTransactionRepository.countTransactionsByTypeAndDate(
+            allRevenueTypes, startDate, endDate);
         
         // Initialize totals
         BigDecimal currentTotalTopups = BigDecimal.ZERO;
@@ -1344,40 +1348,56 @@ public class WalletService {
         BigDecimal prevTotalServices = BigDecimal.ZERO;
         Map<LocalDate, BigDecimal> topupByDate = new HashMap<>();
         Map<LocalDate, BigDecimal> serviceByDate = new HashMap<>();
+        Map<LocalDate, Long> topupCountByDate = new HashMap<>();
+        Map<LocalDate, Long> serviceCountByDate = new HashMap<>();
         
-        // Process results
-        for (Object[] row : allRevenueData) {
+        // Process current period revenue data
+        for (Object[] row : currentPeriodData) {
             WalletTxType txType = (WalletTxType) row[0];
             LocalDate date = (LocalDate) row[1];
             BigDecimal amount = (BigDecimal) row[2];
             if (amount == null) amount = BigDecimal.ZERO;
-            String period = (String) row[3];
             
             boolean isTopup = topupTypes.contains(txType);
-            boolean isCurrent = "current".equals(period);
             
             // Accumulate totals
-            if (isCurrent) {
-                if (isTopup) {
-                    currentTotalTopups = currentTotalTopups.add(amount);
-                } else {
-                    currentTotalServices = currentTotalServices.add(amount);
-                }
+            if (isTopup) {
+                currentTotalTopups = currentTotalTopups.add(amount);
+                topupByDate.merge(date, amount, BigDecimal::add);
             } else {
-                if (isTopup) {
-                    prevTotalTopups = prevTotalTopups.add(amount);
-                } else {
-                    prevTotalServices = prevTotalServices.add(amount);
-                }
+                currentTotalServices = currentTotalServices.add(amount);
+                serviceByDate.merge(date, amount, BigDecimal::add);
             }
+        }
+        
+        // Process current period transaction counts
+        for (Object[] row : currentPeriodCounts) {
+            WalletTxType txType = (WalletTxType) row[0];
+            LocalDate date = (LocalDate) row[1];
+            Long count = ((Number) row[2]).longValue();
             
-            // Accumulate daily stats (only for current period)
-            if (isCurrent) {
-                if (isTopup) {
-                    topupByDate.merge(date, amount, BigDecimal::add);
-                } else {
-                    serviceByDate.merge(date, amount, BigDecimal::add);
-                }
+            boolean isTopup = topupTypes.contains(txType);
+            
+            if (isTopup) {
+                topupCountByDate.merge(date, count, Long::sum);
+            } else {
+                serviceCountByDate.merge(date, count, Long::sum);
+            }
+        }
+        
+        // Process previous period data
+        for (Object[] row : prevPeriodData) {
+            WalletTxType txType = (WalletTxType) row[0];
+            BigDecimal amount = (BigDecimal) row[2];
+            if (amount == null) amount = BigDecimal.ZERO;
+            
+            boolean isTopup = topupTypes.contains(txType);
+            
+            // Accumulate totals for previous period
+            if (isTopup) {
+                prevTotalTopups = prevTotalTopups.add(amount);
+            } else {
+                prevTotalServices = prevTotalServices.add(amount);
             }
         }
         
@@ -1403,20 +1423,35 @@ public class WalletService {
                 .divide(prevTotal, 4, java.math.RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100")).doubleValue();
         
-        // Create combined daily stats and fill missing dates
+        // Create combined daily stats - include all dates from revenue and counts
         Set<LocalDate> allDates = new HashSet<>(topupByDate.keySet());
         allDates.addAll(serviceByDate.keySet());
+        allDates.addAll(topupCountByDate.keySet());
+        allDates.addAll(serviceCountByDate.keySet());
         
         List<RevenueStatisticsResponse.DailyRevenue> dailyStats = allDates.stream()
             .sorted()
             .map(date -> {
                 BigDecimal topup = topupByDate.getOrDefault(date, BigDecimal.ZERO);
                 BigDecimal service = serviceByDate.getOrDefault(date, BigDecimal.ZERO);
+                Long topupCount = topupCountByDate.getOrDefault(date, 0L);
+                Long serviceCount = serviceCountByDate.getOrDefault(date, 0L);
+                
+                // Calculate average transaction values: revenue / count
+                BigDecimal avgTopup = (topupCount > 0 && topup.compareTo(BigDecimal.ZERO) > 0)
+                    ? topup.divide(new BigDecimal(topupCount), 2, java.math.RoundingMode.HALF_UP)
+                    : null;
+                BigDecimal avgService = (serviceCount > 0 && service.compareTo(BigDecimal.ZERO) > 0)
+                    ? service.divide(new BigDecimal(serviceCount), 2, java.math.RoundingMode.HALF_UP)
+                    : null;
+                
                 return RevenueStatisticsResponse.DailyRevenue.builder()
                     .date(date)
                     .topupRevenue(topup)
                     .serviceRevenue(service)
                     .totalRevenue(topup.add(service))
+                    .avgTopupTransactionValue(avgTopup)
+                    .avgServiceTransactionValue(avgService)
                     .build();
             })
             .collect(Collectors.toList());
@@ -1424,7 +1459,7 @@ public class WalletService {
         // Fill missing dates with zero (for complete sparkline)
         List<RevenueStatisticsResponse.DailyRevenue> completeDailyStats = new ArrayList<>();
         LocalDate currentDate = startDate.toLocalDate();
-        LocalDate endLocalDate = endDate.toLocalDate();
+        LocalDate endLocalDate = endDate.toLocalDate().minusDays(1); // Exclude endDate as it's exclusive
         Map<LocalDate, RevenueStatisticsResponse.DailyRevenue> dailyMap = dailyStats.stream()
             .collect(Collectors.toMap(
                 RevenueStatisticsResponse.DailyRevenue::getDate,
@@ -1441,6 +1476,8 @@ public class WalletService {
                     .topupRevenue(BigDecimal.ZERO)
                     .serviceRevenue(BigDecimal.ZERO)
                     .totalRevenue(BigDecimal.ZERO)
+                    .avgTopupTransactionValue(null)
+                    .avgServiceTransactionValue(null)
                     .build());
             }
             currentDate = currentDate.plusDays(1);

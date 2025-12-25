@@ -20,6 +20,7 @@ import {
   EditOutlined,
   CalendarOutlined,
   MessageOutlined,
+  FundOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +35,11 @@ const menuItems = [
     key: '/admin/dashboard',
     icon: <DashboardOutlined />,
     label: <Link to="/admin/dashboard">Dashboard</Link>,
+  },
+  {
+    key: '/admin/wallet-dashboard',
+    icon: <FundOutlined />,
+    label: <Link to="/admin/wallet-dashboard">Wallet & Revenue</Link>,
   },
   {
     key: '/admin/users',
@@ -161,6 +167,9 @@ const AdminLayout = () => {
     }
     if (path.startsWith('/admin/service-requests/')) {
       return '/admin/service-requests';
+    }
+    if (path.startsWith('/admin/wallet-dashboard')) {
+      return '/admin/wallet-dashboard';
     }
     return path;
   };
