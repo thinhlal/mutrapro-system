@@ -92,7 +92,7 @@ import UserManagement from './pages/admin/UserManagement/UserManagement';
 import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
 import EquipmentManagement from './pages/admin/EquipmentManagement/EquipmentManagement';
 import AdminProfile from './pages/admin/Profile/AdminProfile';
-import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
+import AdminServiceRequestManagement from './pages/admin/ServiceRequestManagement/AdminServiceRequestManagement';
 import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/ServiceRequestContracts';
 import SpecialistManagement from './pages/admin/SpecialistManagement/SpecialistManagement';
 import SkillManagement from './pages/admin/SkillManagement/SkillManagement';
@@ -116,6 +116,7 @@ import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
 import WithdrawalRequestsManagement from './pages/manager/WithdrawalRequests/WithdrawalRequestsManagement';
+import ServiceRequestManagement from './pages/manager/ServiceRequestManagement/ServiceRequestManagement';
 
 // Admin Pages (Copied from Manager pages)
 import AdminChatLayout from './layouts/AdminChatLayout/AdminChatLayout';
@@ -577,7 +578,7 @@ function App() {
             />
             <Route
               path="service-requests"
-              element={<ServiceRequestManagement />}
+              element={<AdminServiceRequestManagement />}
             />
             <Route
               path="service-requests/:requestId"

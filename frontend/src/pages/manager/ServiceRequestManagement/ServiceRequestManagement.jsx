@@ -1,4 +1,4 @@
-// src/pages/admin/ServiceRequestManagement/ServiceRequestManagement.jsx
+// src/pages/manager/ServiceRequestManagement/ServiceRequestManagement.jsx
 import { useState, useEffect } from 'react';
 import {
   Table,
@@ -10,14 +10,19 @@ import {
   Typography,
   Select,
   Tooltip,
+  Tabs,
+  Badge,
 } from 'antd';
 import {
   ReloadOutlined,
   FileTextOutlined,
   FileSearchOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import {
   getAllServiceRequests,
+  assignServiceRequest,
+  getMyAssignedRequests,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -25,6 +30,7 @@ import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestManagement.module.css';
 
 const { Title } = Typography;
+const { TabPane } = Tabs;
 
 // Màu sắc cho từng trạng thái (lowercase từ API)
 const STATUS_COLORS = {
@@ -71,6 +77,10 @@ const REQUEST_TYPE_LABELS = {
 export default function ServiceRequestManagement() {
   const [allRequests, setAllRequests] = useState([]);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [myAssignedRequests, setMyAssignedRequests] = useState([]);
+  const [loadingMyAssigned, setLoadingMyAssigned] = useState(false);
+  const [activeTab, setActiveTab] = useState('my-assigned');
+  const [assigning, setAssigning] = useState(false);
 
   // Pagination state
   const [allPagination, setAllPagination] = useState({
@@ -78,13 +88,22 @@ export default function ServiceRequestManagement() {
     pageSize: 10,
     total: 0,
   });
+  const [myAssignedPagination, setMyAssignedPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   // Sort state
   const [allSort, setAllSort] = useState('createdAt,desc');
+  const [myAssignedSort, setMyAssignedSort] = useState('createdAt,desc');
 
   // Filter state
   const [allRequestTypeFilter, setAllRequestTypeFilter] = useState(null);
   const [allStatusFilter, setAllStatusFilter] = useState(null);
+  const [myAssignedRequestTypeFilter, setMyAssignedRequestTypeFilter] =
+    useState(null);
+  const [myAssignedStatusFilter, setMyAssignedStatusFilter] = useState(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -137,12 +156,102 @@ export default function ServiceRequestManagement() {
     }
   };
 
+  // Fetch my assigned requests
+  const fetchMyAssignedRequests = async (
+    page = 0,
+    size = 10,
+    sort = myAssignedSort,
+    requestType = myAssignedRequestTypeFilter,
+    status = myAssignedStatusFilter
+  ) => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingMyAssigned(true);
+      const response = await getMyAssignedRequests(user.id, {
+        page: page,
+        size: size,
+        sort: sort,
+        requestType: requestType,
+        status: status,
+      });
+
+      if (response?.status === 'success') {
+        const pageData = response.data;
+        const data = pageData?.content || [];
+
+        const mappedData = data.map(item => ({
+          ...item,
+          id: item.requestId || item.id,
+          contactName: item.contactName || item.userId || 'N/A',
+          contactEmail: item.contactEmail || item.userId || 'N/A',
+          contactPhone: item.contactPhone || 'N/A',
+        }));
+
+        setMyAssignedRequests(mappedData);
+        setMyAssignedPagination({
+          current: (pageData?.number || 0) + 1,
+          pageSize: pageData?.size || size,
+          total: pageData?.totalElements || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching my assigned requests:', error);
+      message.error('Failed to load my assigned requests');
+    } finally {
+      setLoadingMyAssigned(false);
+    }
+  };
+
+  // Handle assign to me
+  const handleAssign = async record => {
+    if (!user?.id) return;
+
+    const requestId = record.requestId || record.id;
+    if (!requestId) {
+      message.error('Không tìm thấy request ID');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      await assignServiceRequest(requestId, user.id);
+      message.success('Đã assign request thành công');
+      // Refresh cả 2 tab
+      fetchAllRequests(
+        allPagination.current - 1,
+        allPagination.pageSize,
+        allSort,
+        allRequestTypeFilter,
+        allStatusFilter
+      );
+      if (activeTab === 'my-assigned') {
+        fetchMyAssignedRequests(
+          myAssignedPagination.current - 1,
+          myAssignedPagination.pageSize,
+          myAssignedSort,
+          myAssignedRequestTypeFilter,
+          myAssignedStatusFilter
+        );
+      }
+    } catch (error) {
+      console.error('Error assigning request:', error);
+      message.error(
+        error.response?.data?.message || 'Không thể assign request'
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Navigate đến Contract Builder với requestId
   const handleCreateContract = record => {
     const requestId = record.requestId || record.id;
+    const basePath = location.pathname.startsWith('/admin')
+      ? '/admin'
+      : '/manager';
     // Navigate đến contract builder với requestId trong query params
-    navigate(`/admin/contract-builder?requestId=${requestId}`);
+    navigate(`${basePath}/contract-builder?requestId=${requestId}`);
   };
 
   // Điều hướng đến trang danh sách contracts của request
@@ -172,6 +281,15 @@ export default function ServiceRequestManagement() {
           allRequestTypeFilter,
           allStatusFilter
         );
+        if (activeTab === 'my-assigned') {
+          fetchMyAssignedRequests(
+            myAssignedPagination.current - 1,
+            myAssignedPagination.pageSize,
+            myAssignedSort,
+            myAssignedRequestTypeFilter,
+            myAssignedStatusFilter
+          );
+        }
       }
     };
 
@@ -179,12 +297,35 @@ export default function ServiceRequestManagement() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [allPagination, allSort, allRequestTypeFilter, allStatusFilter]);
+  }, [
+    allPagination,
+    allSort,
+    allRequestTypeFilter,
+    allStatusFilter,
+    myAssignedPagination,
+    myAssignedSort,
+    myAssignedRequestTypeFilter,
+    myAssignedStatusFilter,
+    activeTab,
+  ]);
 
   useEffect(() => {
     fetchAllRequests(0, allPagination.pageSize, allSort);
+    fetchMyAssignedRequests(0, myAssignedPagination.pageSize, myAssignedSort);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle tab change
+  const handleTabChange = key => {
+    setActiveTab(key);
+    if (key === 'my-assigned' && myAssignedRequests.length === 0) {
+      fetchMyAssignedRequests(
+        0,
+        myAssignedPagination.pageSize,
+        myAssignedSort
+      );
+    }
+  };
 
   // Base columns (dùng chung)
   const baseColumns = [
@@ -303,6 +444,7 @@ export default function ServiceRequestManagement() {
     fixed: 'right',
     render: (_, record) => {
       const isAssignedToMe = record.managerUserId === user?.id;
+      const isUnassigned = !record.managerUserId;
       // Sử dụng field hasContract từ response (đã được enrich từ backend)
       const hasContract = record.hasContract === true;
       const status = (record.status || '').toLowerCase();
@@ -318,6 +460,21 @@ export default function ServiceRequestManagement() {
 
       return (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          {/* Assign to Me button - chỉ hiển thị ở tab "All Requests", và request chưa được assign */}
+          {activeTab === 'all' &&
+            isUnassigned &&
+            status === 'pending' && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleAssign(record)}
+                loading={assigning}
+                block
+              >
+                Assign to Me
+              </Button>
+            )}
           {isAssignedToMe && !hasContract && !isContractFlowLocked && (
             <Button
               type="default"
@@ -342,8 +499,10 @@ export default function ServiceRequestManagement() {
     },
   };
 
-  // Columns (có cột "Assigned To")
-  const columns = [...baseColumns, assignedToColumn, actionsColumn];
+  // Columns cho tab "All Requests" (có cột "Assigned To")
+  const allColumns = [...baseColumns, assignedToColumn, actionsColumn];
+  // Columns cho tab "My Assigned Requests" (không có cột "Assigned To")
+  const myAssignedColumns = [...baseColumns, actionsColumn];
 
   const sortOptions = [
     { value: 'createdAt,desc', label: 'Created Date (Newest)' },
@@ -413,6 +572,147 @@ export default function ServiceRequestManagement() {
     );
   };
 
+  const handleMyAssignedSortChange = value => {
+    setMyAssignedSort(value);
+    fetchMyAssignedRequests(
+      0,
+      myAssignedPagination.pageSize,
+      value,
+      myAssignedRequestTypeFilter,
+      myAssignedStatusFilter
+    );
+  };
+
+  const handleMyAssignedRequestTypeFilterChange = value => {
+    setMyAssignedRequestTypeFilter(value);
+    fetchMyAssignedRequests(
+      0,
+      myAssignedPagination.pageSize,
+      myAssignedSort,
+      value,
+      myAssignedStatusFilter
+    );
+  };
+
+  const handleMyAssignedStatusFilterChange = value => {
+    setMyAssignedStatusFilter(value);
+    fetchMyAssignedRequests(
+      0,
+      myAssignedPagination.pageSize,
+      myAssignedSort,
+      myAssignedRequestTypeFilter,
+      value
+    );
+  };
+
+  const renderTable = (
+    dataSource,
+    columns,
+    loading,
+    pagination,
+    requestTypeFilter,
+    statusFilter,
+    sort,
+    onRequestTypeFilterChange,
+    onStatusFilterChange,
+    onSortChange,
+    onRefresh
+  ) => (
+    <>
+      <div
+        style={{
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <Space size="middle">
+          <span style={{ fontWeight: 500 }}>Filter:</span>
+          <Select
+            value={requestTypeFilter}
+            onChange={onRequestTypeFilterChange}
+            style={{ width: 200 }}
+            placeholder="Request Type"
+            allowClear
+            options={requestTypeOptions}
+          />
+          <Select
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            style={{ width: 200 }}
+            placeholder="Status"
+            allowClear
+            options={statusOptions}
+          />
+        </Space>
+        <Space>
+          <span style={{ fontWeight: 500 }}>Sort by:</span>
+          <Select
+            value={sort}
+            onChange={onSortChange}
+            style={{ width: 200 }}
+            options={sortOptions}
+          />
+        </Space>
+      </div>
+      <Table
+        columns={columns}
+        dataSource={dataSource}
+        rowKey="id"
+        loading={loading}
+        scroll={{ x: 1200 }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          showTotal: total => `Total ${total} requests`,
+          onChange: (page, pageSize) => {
+            if (activeTab === 'all') {
+              fetchAllRequests(
+                page - 1,
+                pageSize,
+                allSort,
+                allRequestTypeFilter,
+                allStatusFilter
+              );
+            } else {
+              fetchMyAssignedRequests(
+                page - 1,
+                pageSize,
+                myAssignedSort,
+                myAssignedRequestTypeFilter,
+                myAssignedStatusFilter
+              );
+            }
+          },
+          onShowSizeChange: (current, size) => {
+            if (activeTab === 'all') {
+              fetchAllRequests(
+                0,
+                size,
+                allSort,
+                allRequestTypeFilter,
+                allStatusFilter
+              );
+            } else {
+              fetchMyAssignedRequests(
+                0,
+                size,
+                myAssignedSort,
+                myAssignedRequestTypeFilter,
+                myAssignedStatusFilter
+              );
+            }
+          },
+        }}
+      />
+    </>
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -421,13 +721,23 @@ export default function ServiceRequestManagement() {
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
-              fetchAllRequests(
-                allPagination.current - 1,
-                allPagination.pageSize,
-                allSort,
-                allRequestTypeFilter,
-                allStatusFilter
-              );
+              if (activeTab === 'all') {
+                fetchAllRequests(
+                  allPagination.current - 1,
+                  allPagination.pageSize,
+                  allSort,
+                  allRequestTypeFilter,
+                  allStatusFilter
+                );
+              } else {
+                fetchMyAssignedRequests(
+                  myAssignedPagination.current - 1,
+                  myAssignedPagination.pageSize,
+                  myAssignedSort,
+                  myAssignedRequestTypeFilter,
+                  myAssignedStatusFilter
+                );
+              }
             }}
           >
             Refresh
@@ -436,78 +746,68 @@ export default function ServiceRequestManagement() {
       </div>
 
       <Card>
-        <div
-          style={{
-            marginBottom: 16,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 8,
-          }}
-        >
-          <Space size="middle">
-            <span style={{ fontWeight: 500 }}>Filter:</span>
-            <Select
-              value={allRequestTypeFilter}
-              onChange={handleAllRequestTypeFilterChange}
-              style={{ width: 200 }}
-              placeholder="Request Type"
-              allowClear
-              options={requestTypeOptions}
-            />
-            <Select
-              value={allStatusFilter}
-              onChange={handleAllStatusFilterChange}
-              style={{ width: 200 }}
-              placeholder="Status"
-              allowClear
-              options={statusOptions}
-            />
-          </Space>
-          <Space>
-            <span style={{ fontWeight: 500 }}>Sort by:</span>
-            <Select
-              value={allSort}
-              onChange={handleAllSortChange}
-              style={{ width: 200 }}
-              options={sortOptions}
-            />
-          </Space>
-        </div>
-        <Table
-          columns={columns}
-          dataSource={allRequests}
-          rowKey="id"
-          loading={loadingAll}
-          scroll={{ x: 1200 }}
-          pagination={{
-            current: allPagination.current,
-            pageSize: allPagination.pageSize,
-            total: allPagination.total,
-            showSizeChanger: true,
-            showTotal: total => `Total ${total} requests`,
-            onChange: (page, pageSize) => {
-              fetchAllRequests(
-                page - 1,
-                pageSize,
-                allSort,
-                allRequestTypeFilter,
-                allStatusFilter
-              ); // Spring Data page starts from 0
-            },
-            onShowSizeChange: (current, size) => {
-              fetchAllRequests(
-                0,
-                size,
-                allSort,
-                allRequestTypeFilter,
-                allStatusFilter
-              );
-            },
-          }}
-        />
+        <Tabs activeKey={activeTab} onChange={handleTabChange}>
+          <TabPane
+            tab={
+              <Badge
+                count={myAssignedPagination.total}
+                overflowCount={99}
+                style={{ backgroundColor: '#52c41a' }}
+              >
+                <span>My Assigned Requests</span>
+              </Badge>
+            }
+            key="my-assigned"
+          >
+            {renderTable(
+              myAssignedRequests,
+              myAssignedColumns,
+              loadingMyAssigned,
+              myAssignedPagination,
+              myAssignedRequestTypeFilter,
+              myAssignedStatusFilter,
+              myAssignedSort,
+              handleMyAssignedRequestTypeFilterChange,
+              handleMyAssignedStatusFilterChange,
+              handleMyAssignedSortChange,
+              () =>
+                fetchMyAssignedRequests(
+                  myAssignedPagination.current - 1,
+                  myAssignedPagination.pageSize,
+                  myAssignedSort,
+                  myAssignedRequestTypeFilter,
+                  myAssignedStatusFilter
+                )
+            )}
+          </TabPane>
+          <TabPane
+            tab="All Requests"
+            key="all"
+          >
+            {renderTable(
+              allRequests,
+              allColumns,
+              loadingAll,
+              allPagination,
+              allRequestTypeFilter,
+              allStatusFilter,
+              allSort,
+              handleAllRequestTypeFilterChange,
+              handleAllStatusFilterChange,
+              handleAllSortChange,
+              () =>
+                fetchAllRequests(
+                  allPagination.current - 1,
+                  allPagination.pageSize,
+                  allSort,
+                  allRequestTypeFilter,
+                  allStatusFilter
+                )
+            )}
+          </TabPane>
+        </Tabs>
       </Card>
     </div>
   );
 }
+
