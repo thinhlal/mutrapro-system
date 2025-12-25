@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Typography,
   Button,
@@ -9,6 +9,7 @@ import {
   Alert,
   message,
   Progress,
+  Spin,
 } from 'antd';
 import {
   FileTextOutlined,
@@ -29,16 +30,13 @@ import {
   BarChartOutlined,
   EditOutlined,
 } from '@ant-design/icons';
-import { Line, Column } from '@ant-design/plots';
+import ReactECharts from 'echarts-for-react';
+import * as echarts from 'echarts';
 import { motion } from 'framer-motion';
 import styles from './Dashboard.module.css';
 import {
-  kpis,
   chartsData,
   pipelineData,
-  unassignedTasks,
-  overloadedSpecialists,
-  slaAtRisk,
   milestonesDue,
   milestonesAwaitingPayment,
   revisionPending,
@@ -55,13 +53,361 @@ import {
   mapStatusToTag,
   mapPriorityToBadge,
 } from './managerDashboardMock';
+import { getRequestStatistics, getRequestStatisticsOverTime, getWorkloadDistribution, getCompletionRateOverTime } from '../../../services/dashboardService';
 
 
 const ManagerDashboard = () => {
   const [timeRange, setTimeRange] = useState('7d');
+  const [loading, setLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(true);
+  const [kpis, setKpis] = useState({
+    newRequests: { value: 0, trend: 0 },
+    inProgress: { value: 0, trend: 0 },
+    completed: { value: 0, trend: 0 },
+    unassignedRequests: { value: 0, trend: 0 },
+  });
+  const [pipelineFlowData, setPipelineFlowData] = useState(null);
+  const [workloadDistributionData, setWorkloadDistributionData] = useState(null);
+  const [completionRateData, setCompletionRateData] = useState(null);
 
-  const currentKpis = kpis[timeRange];
-  const currentCharts = chartsData[timeRange];
+  const currentKpis = kpis;
+
+  // Fetch KPI data from APIs
+  useEffect(() => {
+    const fetchKpiData = async () => {
+      setLoading(true);
+      try {
+        // Tất cả badges đều từ request-service, chỉ cần gọi một API
+        const requestStatsResponse = await getRequestStatistics();
+
+        // Map data from request-service API
+        if (requestStatsResponse?.status === 'success' && requestStatsResponse?.data?.requests) {
+          const requestsData = requestStatsResponse.data.requests;
+          const byStatus = requestsData.byStatus || {};
+          
+          // Map status enum values to our KPIs (enum values are lowercase: pending, in_progress, completed)
+          const newRequests = byStatus.pending || 0;
+          const inProgress = byStatus.in_progress || 0;
+          const completed = byStatus.completed || 0;
+          const unassignedRequests = requestsData.unassignedRequests || 0;
+
+          setKpis({
+            newRequests: { value: newRequests, trend: 0 }, // Trend calculation requires previous period data
+            inProgress: { value: inProgress, trend: 0 },
+            completed: { value: completed, trend: 0 },
+            unassignedRequests: { value: unassignedRequests, trend: 0 },
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching manager dashboard KPIs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchKpiData();
+  }, []);
+
+  // Fetch chart data from APIs
+  useEffect(() => {
+    const fetchChartData = async () => {
+      setChartsLoading(true);
+      try {
+        // Determine days based on timeRange
+        const days = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+        
+        // Fetch Pipeline Flow chart data
+        const overTimeResponse = await getRequestStatisticsOverTime(days);
+        
+        if (overTimeResponse?.status === 'success' && overTimeResponse?.data?.dailyStats) {
+          const dailyStats = overTimeResponse.data.dailyStats;
+          
+          // Map to chart format
+          const pipelineFlow = dailyStats.map(stat => ({
+            date: stat.date, // Will format in chart option
+            new: stat.pending || 0,
+            inProgress: stat.inProgress || 0,
+            completed: stat.completed || 0,
+          }));
+          
+          setPipelineFlowData({ pipelineFlow });
+        }
+
+        // Fetch Workload Distribution chart data
+        const workloadResponse = await getWorkloadDistribution();
+        
+        if (workloadResponse?.status === 'success' && workloadResponse?.data?.specialists) {
+          const workloadDistribution = workloadResponse.data.specialists.map(spec => ({
+            specialist: spec.specialistName || spec.specialistId || 'Unknown',
+            tasks: spec.taskCount || 0,
+          }));
+          
+          setWorkloadDistributionData({ workloadDistribution });
+        }
+
+        // Fetch Completion Rate chart data
+        const completionRateResponse = await getCompletionRateOverTime(days);
+        
+        if (completionRateResponse?.status === 'success' && completionRateResponse?.data?.dailyRates) {
+          const completionRate = completionRateResponse.data.dailyRates.map(stat => ({
+            date: stat.date,
+            rate: stat.rate || 0, // Use 0 if null (no completed tasks)
+          }));
+          
+          setCompletionRateData({ completionRate });
+        }
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+      } finally {
+        setChartsLoading(false);
+      }
+    };
+
+    fetchChartData();
+  }, [timeRange]);
+
+  // Prepare ECharts options
+  const getPipelineFlowChartOption = () => {
+    if (!pipelineFlowData?.pipelineFlow || pipelineFlowData.pipelineFlow.length === 0) {
+      return null;
+    }
+
+    // Format dates from YYYY-MM-DD to MM/DD
+    const dates = pipelineFlowData.pipelineFlow.map(item => {
+      if (typeof item.date === 'string') {
+        // Parse YYYY-MM-DD format
+        const [year, month, day] = item.date.split('-');
+        return `${month}/${day}`;
+      }
+      return item.date;
+    });
+    const newData = pipelineFlowData.pipelineFlow.map(item => item.new);
+    const inProgressData = pipelineFlowData.pipelineFlow.map(item => item.inProgress);
+    const completedData = pipelineFlowData.pipelineFlow.map(item => item.completed);
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params) => {
+          let result = `${params[0].axisValue}<br/>`;
+          params.forEach(param => {
+            result += `${param.marker}${param.seriesName}: ${param.value.toLocaleString()}<br/>`;
+          });
+          return result;
+        },
+      },
+      legend: {
+        data: ['New', 'In Progress', 'Completed'],
+        bottom: 0,
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisTick: {
+          alignWithLabel: true,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => value.toLocaleString(),
+        },
+      },
+      series: [
+        {
+          name: 'New',
+          type: 'line',
+          smooth: true,
+          data: newData,
+          lineStyle: { width: 2 },
+          itemStyle: { color: '#3b82f6' },
+        },
+        {
+          name: 'In Progress',
+          type: 'line',
+          smooth: true,
+          data: inProgressData,
+          lineStyle: { width: 2 },
+          itemStyle: { color: '#f59e0b' },
+        },
+        {
+          name: 'Completed',
+          type: 'line',
+          smooth: true,
+          data: completedData,
+          lineStyle: { width: 2 },
+          itemStyle: { color: '#10b981' },
+        },
+      ],
+    };
+  };
+
+  const getWorkloadDistributionChartOption = () => {
+    if (!workloadDistributionData?.workloadDistribution || workloadDistributionData.workloadDistribution.length === 0) {
+      return null;
+    }
+
+    const workloadData = workloadDistributionData.workloadDistribution;
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow',
+        },
+        formatter: (params) => {
+          const param = params[0];
+          return `${param.axisValue}<br/>${param.marker}${param.seriesName}: ${param.value.toLocaleString()} tasks`;
+        },
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: workloadData.map(item => item.specialist),
+        axisLabel: {
+          rotate: 45,
+          interval: 0,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => value.toLocaleString(),
+        },
+      },
+      series: [
+        {
+          name: 'Tasks',
+          type: 'bar',
+          barWidth: '60%',
+          data: workloadData.map(item => item.tasks),
+          itemStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#3b82f6' },
+                { offset: 1, color: '#2563eb' },
+              ],
+            },
+            borderRadius: [6, 6, 0, 0],
+          },
+          label: {
+            show: true,
+            position: 'top',
+            formatter: (params) => params.value.toLocaleString(),
+          },
+        },
+      ],
+    };
+  };
+
+  const getCompletionRateChartOption = () => {
+    if (!completionRateData?.completionRate || completionRateData.completionRate.length === 0) {
+      return null;
+    }
+
+    // Format dates from YYYY-MM-DD to MM/DD
+    const dates = completionRateData.completionRate.map(item => {
+      if (typeof item.date === 'string') {
+        const [year, month, day] = item.date.split('-');
+        return `${month}/${day}`;
+      }
+      return item.date;
+    });
+    const rates = completionRateData.completionRate.map(item => item.rate);
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params) => {
+          const param = params[0];
+          return `${param.axisValue}<br/>${param.marker}${param.seriesName}: ${param.value}%`;
+        },
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisTick: {
+          alignWithLabel: true,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 100,
+        axisLabel: {
+          formatter: (value) => `${value}%`,
+        },
+      },
+      series: [
+        {
+          name: 'Completion Rate',
+          type: 'line',
+          smooth: true,
+          data: rates,
+          areaStyle: {
+            opacity: 0.15,
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#10b981' },
+                { offset: 1, color: 'rgba(16, 185, 129, 0.1)' },
+              ],
+            },
+          },
+          lineStyle: {
+            width: 2,
+            color: '#10b981',
+          },
+          itemStyle: {
+            color: '#10b981',
+            borderWidth: 2,
+          },
+          emphasis: {
+            focus: 'series',
+            lineStyle: {
+              width: 3,
+            },
+          },
+        },
+      ],
+    };
+  };
+
+  const pipelineFlowChartOption = getPipelineFlowChartOption();
+  const workloadDistributionChartOption = getWorkloadDistributionChartOption();
+  const completionRateChartOption = getCompletionRateChartOption();
 
   const handleExport = () => {
     message.success('Report exported successfully!');
@@ -76,25 +422,11 @@ const ManagerDashboard = () => {
       bgColor: '#eff6ff',
     },
     {
-      key: 'inQuotation',
-      label: 'In Quotation',
-      icon: <DollarOutlined />,
-      color: '#8b5cf6',
-      bgColor: '#f5f3ff',
-    },
-    {
       key: 'inProgress',
       label: 'In Progress',
       icon: <ClockCircleOutlined />,
       color: '#f59e0b',
       bgColor: '#fffbeb',
-    },
-    {
-      key: 'awaitingFeedback',
-      label: 'Awaiting Feedback',
-      icon: <MessageOutlined />,
-      color: '#06b6d4',
-      bgColor: '#ecfeff',
     },
     {
       key: 'completed',
@@ -104,24 +436,10 @@ const ManagerDashboard = () => {
       bgColor: '#ecfdf5',
     },
     {
-      key: 'unassignedTasks',
-      label: 'Unassigned Tasks',
+      key: 'unassignedRequests',
+      label: 'Unassigned Requests',
       icon: <ExclamationCircleOutlined />,
       color: '#ef4444',
-      bgColor: '#fef2f2',
-    },
-    {
-      key: 'overloadedSpecialists',
-      label: 'Overloaded Specialists',
-      icon: <WarningOutlined />,
-      color: '#f97316',
-      bgColor: '#fff7ed',
-    },
-    {
-      key: 'slaAtRisk',
-      label: 'SLA At Risk',
-      icon: <ClockCircleOutlined />,
-      color: '#dc2626',
       bgColor: '#fef2f2',
     },
   ];
@@ -209,444 +527,72 @@ const ManagerDashboard = () => {
         })}
       </motion.div>
 
-      {/* Pipeline Section */}
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <FileTextOutlined style={{ marginRight: 8 }} />
-            New Requests
-          </div>
-          <Table
-            dataSource={pipelineData.newRequests}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Type', dataIndex: 'type', key: 'type', width: 120 },
-              {
-                title: 'Priority',
-                dataIndex: 'priority',
-                key: 'priority',
-                width: 100,
-                render: priority => {
-                  const { status, text } = mapPriorityToBadge(priority);
-                  return <Badge status={status} text={text} />;
-                },
-              },
-              {
-                title: 'Created',
-                dataIndex: 'createdAt',
-                key: 'createdAt',
-                width: 150,
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 600 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <DollarOutlined style={{ marginRight: 8 }} />
-            In Quotation
-          </div>
-          <Table
-            dataSource={pipelineData.inQuotation}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Type', dataIndex: 'type', key: 'type', width: 120 },
-              {
-                title: 'Days Waiting',
-                dataIndex: 'daysWaiting',
-                key: 'daysWaiting',
-                width: 110,
-                render: days => (
-                  <Tag color={days > 2 ? 'red' : 'orange'}>{days} days</Tag>
-                ),
-              },
-              {
-                title: 'Est. Value',
-                dataIndex: 'estimatedValue',
-                key: 'estimatedValue',
-                width: 120,
-                render: val => formatCurrency(val),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 600 }}
-          />
-        </motion.div>
-      </div>
-
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <ClockCircleOutlined style={{ marginRight: 8 }} />
-            In Progress
-          </div>
-          <Table
-            dataSource={pipelineData.inProgress}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Type', dataIndex: 'type', key: 'type', width: 120 },
-              {
-                title: 'Assigned To',
-                dataIndex: 'assignedTo',
-                key: 'assignedTo',
-                width: 130,
-              },
-              {
-                title: 'Progress',
-                dataIndex: 'progress',
-                key: 'progress',
-                width: 150,
-                render: progress => (
-                  <Progress percent={progress} size="small" />
-                ),
-              },
-              {
-                title: 'Deadline',
-                dataIndex: 'deadline',
-                key: 'deadline',
-                width: 120,
-              },
-              {
-                title: 'Days Left',
-                dataIndex: 'daysRemaining',
-                key: 'daysRemaining',
-                width: 100,
-                render: days => (
-                  <Tag color={days <= 2 ? 'red' : days <= 5 ? 'orange' : 'green'}>
-                    {days} days
-                  </Tag>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 800 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <MessageOutlined style={{ marginRight: 8 }} />
-            Awaiting Feedback
-          </div>
-          <Table
-            dataSource={pipelineData.awaitingFeedback}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Type', dataIndex: 'type', key: 'type', width: 120 },
-              {
-                title: 'Specialist',
-                dataIndex: 'specialist',
-                key: 'specialist',
-                width: 130,
-              },
-              {
-                title: 'Submitted',
-                dataIndex: 'submittedAt',
-                key: 'submittedAt',
-                width: 120,
-              },
-              {
-                title: 'Days Waiting',
-                dataIndex: 'daysWaiting',
-                key: 'daysWaiting',
-                width: 110,
-                render: days => (
-                  <Tag color={days > 3 ? 'red' : 'orange'}>{days} days</Tag>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 650 }}
-          />
-        </motion.div>
-      </div>
 
       {/* Charts */}
       <div className={styles.chartsGrid}>
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>Pipeline Flow</div>
-          <div className={styles.chartWrapper}>
-            <Line
-              data={currentCharts.pipelineFlow.flatMap(item => [
-                { date: item.date, stage: 'New', value: item.new },
-                { date: item.date, stage: 'In Quotation', value: item.inQuotation },
-                { date: item.date, stage: 'In Progress', value: item.inProgress },
-                { date: item.date, stage: 'Completed', value: item.completed },
-              ])}
-              xField="date"
-              yField="value"
-              seriesField="stage"
-              smooth
-              color={['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981']}
-              point={{ size: 3, shape: 'circle' }}
-            />
+        {chartsLoading ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <Spin size="large" />
           </div>
-        </motion.div>
+        ) : (
+          <>
+            {pipelineFlowChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Requests Created by Status Over Time</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={pipelineFlowChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
 
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>Workload Distribution</div>
-          <div className={styles.chartWrapper}>
-            <Column
-              data={currentCharts.workloadDistribution}
-              xField="specialist"
-              yField="tasks"
-              color="#3b82f6"
-              columnStyle={{ radius: [6, 6, 0, 0] }}
-              label={{
-                position: 'top',
-                style: { fill: '#1e293b' },
-              }}
-            />
-          </div>
-        </motion.div>
+            {workloadDistributionChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Workload Distribution</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={workloadDistributionChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
 
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>On-Time Completion Rate</div>
-          <div className={styles.chartWrapper}>
-            <Line
-              data={currentCharts.completionRate}
-              xField="date"
-              yField="rate"
-              smooth
-              color="#10b981"
-              areaStyle={{ fill: 'l(270) 0:#fff 1:#10b981', fillOpacity: 0.15 }}
-              point={{ size: 3, shape: 'circle' }}
-            />
-          </div>
-        </motion.div>
+            {completionRateChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>On-Time Completion Rate</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={completionRateChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Workload & Assignment Section */}
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <ExclamationCircleOutlined style={{ marginRight: 8 }} />
-            Unassigned Tasks
-          </div>
-          <Table
-            dataSource={unassignedTasks}
-            columns={[
-              { title: 'Task', dataIndex: 'task', key: 'task', ellipsis: true },
-              { title: 'Skill', dataIndex: 'skill', key: 'skill', width: 150 },
-              {
-                title: 'Priority',
-                dataIndex: 'priority',
-                key: 'priority',
-                width: 100,
-                render: priority => {
-                  const { status, text } = mapPriorityToBadge(priority);
-                  return <Badge status={status} text={text} />;
-                },
-              },
-              {
-                title: 'Est. Hours',
-                dataIndex: 'estimatedHours',
-                key: 'estimatedHours',
-                width: 100,
-              },
-              {
-                title: 'Created',
-                dataIndex: 'createdAt',
-                key: 'createdAt',
-                width: 120,
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 600 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <WarningOutlined style={{ marginRight: 8 }} />
-            Overloaded Specialists
-          </div>
-          <Table
-            dataSource={overloadedSpecialists}
-            columns={[
-              { title: 'Specialist', dataIndex: 'name', key: 'name', width: 130 },
-              {
-                title: 'Tasks',
-                key: 'tasks',
-                width: 120,
-                render: (_, record) => (
-                  <span>
-                    {record.currentTasks} / {record.maxCapacity}
-                  </span>
-                ),
-              },
-              {
-                title: 'Utilization',
-                dataIndex: 'utilization',
-                key: 'utilization',
-                width: 120,
-                render: util => (
-                  <Tag color={util > 120 ? 'red' : 'orange'}>
-                    {util}%
-                  </Tag>
-                ),
-              },
-              {
-                title: 'Skills',
-                dataIndex: 'skills',
-                key: 'skills',
-                ellipsis: true,
-                render: skills => skills.join(', '),
-              },
-              {
-                title: 'Next Available',
-                dataIndex: 'nextAvailable',
-                key: 'nextAvailable',
-                width: 130,
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 650 }}
-          />
-        </motion.div>
-      </div>
-
-      <motion.div
-        className={styles.tableCard}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ marginBottom: 32 }}
-      >
-        <div className={styles.tableTitle}>
-          <ClockCircleOutlined style={{ marginRight: 8 }} />
-          SLA At Risk
-        </div>
-        <Table
-          dataSource={slaAtRisk}
-          columns={[
-            { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-            {
-              title: 'Customer',
-              dataIndex: 'customer',
-              key: 'customer',
-              ellipsis: true,
-            },
-            {
-              title: 'Assigned To',
-              dataIndex: 'assignedTo',
-              key: 'assignedTo',
-              width: 130,
-            },
-            {
-              title: 'Progress',
-              dataIndex: 'progress',
-              key: 'progress',
-              width: 150,
-              render: progress => <Progress percent={progress} size="small" />,
-            },
-            {
-              title: 'Deadline',
-              dataIndex: 'deadline',
-              key: 'deadline',
-              width: 120,
-            },
-            {
-              title: 'Days Left',
-              dataIndex: 'daysRemaining',
-              key: 'daysRemaining',
-              width: 100,
-              render: days => (
-                <Tag color={days <= 2 ? 'red' : 'orange'}>{days} days</Tag>
-              ),
-            },
-            {
-              title: 'Risk Level',
-              dataIndex: 'riskLevel',
-              key: 'riskLevel',
-              width: 100,
-              render: level => (
-                <Tag color={level === 'high' ? 'red' : 'orange'}>{level}</Tag>
-              ),
-            },
-          ]}
-          size="small"
-          pagination={false}
-          scroll={{ x: 800 }}
-        />
-      </motion.div>
 
       {/* Milestones/Contracts Section */}
       <div className={styles.tablesGrid}>

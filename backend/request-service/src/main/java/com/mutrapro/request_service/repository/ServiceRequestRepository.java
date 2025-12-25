@@ -91,6 +91,22 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     @Query("SELECT sr.requestType, COUNT(sr) FROM ServiceRequest sr GROUP BY sr.requestType")
     List<Object[]> countByRequestTypeGroupBy();
     
+    // Count requests chưa assign manager (managerUserId IS NULL)
+    @Query("SELECT COUNT(sr) FROM ServiceRequest sr WHERE sr.managerUserId IS NULL")
+    long countByManagerUserIdIsNull();
+    
+    /**
+     * Count requests by status and creation date (for Pipeline Flow chart)
+     * GROUP BY DATE(created_at), status
+     * Returns: [date (LocalDate), status (RequestStatus), count (Long)]
+     */
+    @Query("SELECT CAST(sr.createdAt AS LocalDate) as date, sr.status, COUNT(sr) as count " +
+           "FROM ServiceRequest sr " +
+           "WHERE sr.createdAt >= :startDate " +
+           "GROUP BY CAST(sr.createdAt AS LocalDate), sr.status " +
+           "ORDER BY date ASC, sr.status ASC")
+    List<Object[]> countByStatusAndDateGroupBy(@Param("startDate") java.time.LocalDateTime startDate);
+    
     /**
      * Tìm service request với instruments được load sẵn (JOIN FETCH)
      * Tối ưu để tránh N+1 queries khi load instruments

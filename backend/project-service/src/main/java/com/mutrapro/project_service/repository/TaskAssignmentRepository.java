@@ -147,6 +147,33 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Optimized GROUP BY query to get all task type counts in one query
     @Query("SELECT ta.taskType, COUNT(ta) FROM TaskAssignment ta GROUP BY ta.taskType")
     List<Object[]> countByTaskTypeGroupBy();
+    
+    /**
+     * Count open tasks by specialist (for Workload Distribution chart)
+     * Open statuses: assigned, accepted_waiting, ready_to_start, in_progress, ready_for_review, 
+     * revision_requested, in_revision, delivery_pending
+     * Returns: [specialistId, specialistName, count]
+     */
+    @Query("SELECT ta.specialistId, ta.specialistNameSnapshot, COUNT(ta) " +
+           "FROM TaskAssignment ta " +
+           "WHERE ta.status IN :openStatuses " +
+           "GROUP BY ta.specialistId, ta.specialistNameSnapshot " +
+           "ORDER BY COUNT(ta) DESC")
+    List<Object[]> countOpenTasksBySpecialistGroupBy(@Param("openStatuses") java.util.List<com.mutrapro.project_service.enums.AssignmentStatus> openStatuses);
+    
+    /**
+     * Find completed tasks within date range (for On-Time Completion Rate chart)
+     * Returns tasks with status = completed and completedDate within the range
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "WHERE ta.status = com.mutrapro.project_service.enums.AssignmentStatus.completed " +
+           "AND ta.completedDate IS NOT NULL " +
+           "AND CAST(ta.completedDate AS LocalDate) >= :startDate " +
+           "AND CAST(ta.completedDate AS LocalDate) <= :endDate " +
+           "ORDER BY ta.completedDate ASC")
+    List<TaskAssignment> findCompletedTasksByDateRange(
+        @Param("startDate") java.time.LocalDate startDate,
+        @Param("endDate") java.time.LocalDate endDate);
 
     /**
      * Optimized versions joining Contract directly (manager view)

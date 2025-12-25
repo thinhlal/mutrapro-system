@@ -484,6 +484,19 @@ public class TaskAssignmentService {
             // Không bao gồm waiting_customer_review vì specialist đã deliver, không cần làm gì nữa
             // Không bao gồm completed và cancelled vì đã hoàn thành hoặc hủy
     }
+    
+    /**
+     * Public method to resolve task deadline with cached data (for use in AdminStatisticsService)
+     * This uses the same logic as resolveTaskDeadlineCached but exposed publicly
+     */
+    public LocalDateTime resolveTaskDeadlineWithCache(
+            TaskAssignment assignment,
+            Map<String, ContractMilestone> milestonesMap,
+            Map<String, Contract> contractsMap,
+            Map<String, List<ContractMilestone>> allMilestonesByContractId,
+            Map<String, StudioBooking> bookingsByMilestoneId) {
+        return resolveTaskDeadlineCached(assignment, milestonesMap, contractsMap, allMilestonesByContractId, bookingsByMilestoneId);
+    }
 
     private LocalDateTime resolveTaskDeadline(TaskAssignment assignment) {
         if (assignment.getMilestoneId() == null || assignment.getContractId() == null) {

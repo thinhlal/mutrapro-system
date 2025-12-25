@@ -402,12 +402,18 @@ export const API_ENDPOINTS = {
   ADMIN_REQUESTS: {
     // GET /admin/requests/statistics (gộp tất cả: requests, notation-instruments)
     GET_ALL_STATISTICS: `${REQUEST_PATH}/admin/requests/statistics`,
+    // GET /admin/requests/statistics/over-time?days=7 (statistics over time by date and status)
+    GET_STATISTICS_OVER_TIME: days => `${REQUEST_PATH}/admin/requests/statistics/over-time?days=${days || 7}`,
   },
 
   // === Admin Project Statistics ===
   ADMIN_PROJECT: {
     // GET /admin/statistics (gộp tất cả: contracts, tasks, equipment, studio bookings, revision requests)
     GET_ALL_STATISTICS: `${PROJECT_PATH}/admin/statistics`,
+    // GET /admin/statistics/workload-distribution (workload distribution by specialist)
+    GET_WORKLOAD_DISTRIBUTION: `${PROJECT_PATH}/admin/statistics/workload-distribution`,
+    // GET /admin/statistics/completion-rate?days=7 (on-time completion rate over time)
+    GET_COMPLETION_RATE: days => `${PROJECT_PATH}/admin/statistics/completion-rate?days=${days || 7}`,
   },
 
   // === Notation Instruments Management ===

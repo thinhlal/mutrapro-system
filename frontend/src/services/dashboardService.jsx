@@ -61,6 +61,26 @@ export const getRequestStatistics = async () => {
 };
 
 /**
+ * Get request statistics over time (by date and status) for Pipeline Flow chart
+ * GET /admin/requests/statistics/over-time?days=7
+ *
+ * @param {number} days - Number of days to look back (default: 7)
+ * @returns {Promise} ApiResponse với RequestStatisticsByDateResponse
+ */
+export const getRequestStatisticsOverTime = async (days = 7) => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.ADMIN_REQUESTS.GET_STATISTICS_OVER_TIME(days));
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy thống kê requests theo thời gian',
+      }
+    );
+  }
+};
+
+/**
  * Get all project statistics (contracts, tasks, equipment, studio bookings, revision requests)
  * GET /admin/statistics
  *
@@ -74,6 +94,45 @@ export const getProjectStatistics = async () => {
     throw (
       error.response?.data || {
         message: 'Lỗi khi lấy thống kê project',
+      }
+    );
+  }
+};
+
+/**
+ * Get workload distribution (open tasks count by specialist) for Manager Dashboard
+ * GET /admin/statistics/workload-distribution
+ *
+ * @returns {Promise} ApiResponse với WorkloadDistributionResponse
+ */
+export const getWorkloadDistribution = async () => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.ADMIN_PROJECT.GET_WORKLOAD_DISTRIBUTION);
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy phân bố workload',
+      }
+    );
+  }
+};
+
+/**
+ * Get on-time completion rate over time for Manager Dashboard
+ * GET /admin/statistics/completion-rate?days=7
+ *
+ * @param {number} days - Number of days to look back (default: 7)
+ * @returns {Promise} ApiResponse với CompletionRateResponse
+ */
+export const getCompletionRateOverTime = async (days = 7) => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.ADMIN_PROJECT.GET_COMPLETION_RATE(days));
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy tỷ lệ hoàn thành đúng hạn',
       }
     );
   }

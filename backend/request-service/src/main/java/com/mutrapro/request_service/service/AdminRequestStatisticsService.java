@@ -2,6 +2,7 @@ package com.mutrapro.request_service.service;
 
 import com.mutrapro.request_service.dto.response.NotationInstrumentStatisticsResponse;
 import com.mutrapro.request_service.dto.response.RequestModuleStatisticsResponse;
+import com.mutrapro.request_service.dto.response.RequestStatisticsByDateResponse;
 import com.mutrapro.request_service.dto.response.RequestStatisticsResponse;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
@@ -13,9 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * Service tính toán thống kê cho service requests (dùng cho admin dashboard).
@@ -52,10 +53,14 @@ public class AdminRequestStatisticsService {
             byType.put(type, count);
         }
 
+        // Count unassigned requests (managerUserId IS NULL)
+        long unassignedRequests = serviceRequestRepository.countByManagerUserIdIsNull();
+
         return RequestStatisticsResponse.builder()
                 .totalRequests(total)
                 .byStatus(byStatus)
                 .byType(byType)
+                .unassignedRequests(unassignedRequests)
                 .build();
     }
 
@@ -103,6 +108,86 @@ public class AdminRequestStatisticsService {
         return RequestModuleStatisticsResponse.builder()
                 .requests(requests)
                 .notationInstruments(notationInstruments)
+                .build();
+    }
+
+    /**
+     * Get request statistics over time (by date and status) for Pipeline Flow chart
+     * @param days Number of days to look back (default: 7)
+     * @return RequestStatisticsByDateResponse with daily stats grouped by status
+     */
+    @Transactional(readOnly = true)
+    public RequestStatisticsByDateResponse getStatisticsOverTime(int days) {
+        log.info("Calculating request statistics over time for last {} days", days);
+        
+        LocalDateTime startDate = LocalDateTime.now().minusDays(days).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        
+        // Query: GROUP BY DATE(created_at), status
+        List<Object[]> results = serviceRequestRepository.countByStatusAndDateGroupBy(startDate);
+        
+        // Map results: [date, status, count] -> Map<LocalDate, Map<RequestStatus, Long>>
+        Map<LocalDate, Map<RequestStatus, Long>> statsByDate = new LinkedHashMap<>();
+        
+        for (Object[] result : results) {
+            // result[0] = date (LocalDate or Date)
+            // result[1] = status (String from enum)
+            // result[2] = count (Long or Number)
+            
+            LocalDate date;
+            if (result[0] instanceof LocalDate) {
+                date = (LocalDate) result[0];
+            } else if (result[0] instanceof java.sql.Date) {
+                date = ((java.sql.Date) result[0]).toLocalDate();
+            } else if (result[0] instanceof java.util.Date) {
+                date = ((java.util.Date) result[0]).toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
+            } else {
+                log.warn("Unexpected date type: {}", result[0].getClass());
+                continue;
+            }
+            
+            RequestStatus status;
+            if (result[1] instanceof RequestStatus) {
+                status = (RequestStatus) result[1];
+            } else if (result[1] instanceof String) {
+                try {
+                    status = RequestStatus.valueOf(((String) result[1]).toLowerCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unknown request status: {}", result[1]);
+                    continue;
+                }
+            } else {
+                log.warn("Unexpected status type: {}", result[1].getClass());
+                continue;
+            }
+            
+            Long count = ((Number) result[2]).longValue();
+            
+            statsByDate.computeIfAbsent(date, k -> new EnumMap<>(RequestStatus.class))
+                    .put(status, count);
+        }
+        
+        // Generate list for all dates in range (fill missing dates with 0)
+        List<RequestStatisticsByDateResponse.DailyRequestStats> dailyStats = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            Map<RequestStatus, Long> statusCounts = statsByDate.getOrDefault(date, new EnumMap<>(RequestStatus.class));
+            
+            RequestStatisticsByDateResponse.DailyRequestStats dailyStat = RequestStatisticsByDateResponse.DailyRequestStats.builder()
+                    .date(date)
+                    .pending(statusCounts.getOrDefault(RequestStatus.pending, 0L))
+                    .inProgress(statusCounts.getOrDefault(RequestStatus.in_progress, 0L))
+                    .completed(statusCounts.getOrDefault(RequestStatus.completed, 0L))
+                    .build();
+            
+            dailyStats.add(dailyStat);
+        }
+        
+        return RequestStatisticsByDateResponse.builder()
+                .dailyStats(dailyStats)
                 .build();
     }
 }

@@ -45,33 +45,21 @@ export const mapPriorityToBadge = priority => {
 export const kpis = {
   today: {
     newRequests: { value: 8, trend: 12.5 },
-    inQuotation: { value: 12, trend: 8.2 },
     inProgress: { value: 23, trend: -5.1 },
-    awaitingFeedback: { value: 5, trend: 3.8 },
     completed: { value: 15, trend: 12.0 },
     unassignedTasks: { value: 7, trend: -8.5 },
-    overloadedSpecialists: { value: 3, trend: 0 },
-    slaAtRisk: { value: 4, trend: -12.0 },
   },
   '7d': {
     newRequests: { value: 45, trend: 8.1 },
-    inQuotation: { value: 67, trend: 12.4 },
     inProgress: { value: 89, trend: 2.3 },
-    awaitingFeedback: { value: 23, trend: 5.2 },
     completed: { value: 112, trend: 8.5 },
     unassignedTasks: { value: 15, trend: -3.2 },
-    overloadedSpecialists: { value: 5, trend: 0 },
-    slaAtRisk: { value: 8, trend: -5.1 },
   },
   '30d': {
     newRequests: { value: 189, trend: 18.7 },
-    inQuotation: { value: 234, trend: 25.3 },
     inProgress: { value: 312, trend: 8.9 },
-    awaitingFeedback: { value: 78, trend: 12.1 },
     completed: { value: 456, trend: 15.3 },
     unassignedTasks: { value: 23, trend: -8.2 },
-    overloadedSpecialists: { value: 8, trend: 0 },
-    slaAtRisk: { value: 15, trend: -3.2 },
   },
 };
 

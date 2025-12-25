@@ -1,6 +1,8 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.response.AllProjectStatisticsResponse;
+import com.mutrapro.project_service.dto.response.CompletionRateResponse;
+import com.mutrapro.project_service.dto.response.WorkloadDistributionResponse;
 import com.mutrapro.project_service.service.AdminStatisticsService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -37,6 +40,35 @@ public class AdminProjectStatisticsController {
         return ApiResponse.<AllProjectStatisticsResponse>builder()
                 .message("All project statistics retrieved successfully")
                 .data(stats)
+                .build();
+    }
+
+    /**
+     * Get workload distribution (open tasks count by specialist) for Manager Dashboard
+     */
+    @GetMapping("/statistics/workload-distribution")
+    @Operation(summary = "Get workload distribution", description = "Lấy phân bố workload (số lượng open tasks) theo specialist cho Manager Dashboard")
+    public ApiResponse<WorkloadDistributionResponse> getWorkloadDistribution() {
+        log.info("GET /admin/statistics/workload-distribution - Getting workload distribution");
+        WorkloadDistributionResponse workload = statisticsService.getWorkloadDistribution();
+        return ApiResponse.<WorkloadDistributionResponse>builder()
+                .message("Workload distribution retrieved successfully")
+                .data(workload)
+                .build();
+    }
+
+    /**
+     * Get on-time completion rate over time for Manager Dashboard
+     */
+    @GetMapping("/statistics/completion-rate")
+    @Operation(summary = "Get completion rate over time", description = "Lấy tỷ lệ hoàn thành đúng hạn (on-time completion rate) theo thời gian cho Manager Dashboard")
+    public ApiResponse<CompletionRateResponse> getCompletionRateOverTime(
+            @RequestParam(defaultValue = "7") int days) {
+        log.info("GET /admin/statistics/completion-rate?days={} - Getting completion rate over time", days);
+        CompletionRateResponse completionRate = statisticsService.getCompletionRateOverTime(days);
+        return ApiResponse.<CompletionRateResponse>builder()
+                .message("Completion rate over time retrieved successfully")
+                .data(completionRate)
                 .build();
     }
 }

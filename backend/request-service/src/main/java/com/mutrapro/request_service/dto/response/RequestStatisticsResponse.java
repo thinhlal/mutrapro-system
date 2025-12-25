@@ -29,6 +29,11 @@ public class RequestStatisticsResponse {
      * Count of requests grouped by service type.
      */
     private Map<ServiceType, Long> byType;
+    
+    /**
+     * Count of unassigned requests (requests chưa assign manager - managerUserId IS NULL)
+     */
+    private long unassignedRequests;
 }
 
 
