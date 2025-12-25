@@ -285,22 +285,22 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
         <View style={styles.actionsSection}>
           {canApprove && (
             <TouchableOpacity
-              style={[styles.button, styles.approveButton]}
+              style={[styles.button, styles.buttonSmall, styles.approveButton]}
               onPress={() => onApprove(contract.contractId)}
               disabled={loading}
             >
-              <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
-              <Text style={styles.buttonText}>Approve</Text>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.white} />
+              <Text style={styles.buttonTextSmall}>Approve</Text>
             </TouchableOpacity>
           )}
           {canRequestChange && (
             <TouchableOpacity
-              style={[styles.button, styles.changeButton]}
+              style={[styles.button, styles.buttonSmall, styles.changeButton]}
               onPress={() => onRequestChange(contract)}
               disabled={loading}
             >
-              <Ionicons name="create-outline" size={18} color={COLORS.primary} />
-              <Text style={[styles.buttonText, { color: COLORS.primary }]}>
+              <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+              <Text style={[styles.buttonTextSmall, { color: COLORS.primary }]}>
                 Request Change
               </Text>
             </TouchableOpacity>
@@ -460,6 +460,16 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.white,
+    marginLeft: SPACING.xs / 2,
+  },
+  buttonSmall: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+  },
+  buttonTextSmall: {
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.white,
     marginLeft: SPACING.xs / 2,

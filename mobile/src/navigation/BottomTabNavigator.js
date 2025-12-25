@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS, FONT_SIZES, SPACING } from "../config/constants";
 import { defaultStackScreenOptions } from "../config/navigationStyles";
 
@@ -42,13 +42,16 @@ const HomeStack = ({ navigation }) => {
         options={{
           title: "MuTraPro",
           headerLeft: () => (
-            <Ionicons
-              name="menu"
-              size={28}
-              color={COLORS.text}
-              style={{ marginLeft: 15 }}
+            <TouchableOpacity
               onPress={() => navigation.openDrawer()}
-            />
+              style={{ marginLeft: 15, padding: 4 }}
+            >
+              <Ionicons
+                name="menu"
+                size={28}
+                color={COLORS.text}
+              />
+            </TouchableOpacity>
           ),
         }}
       />
@@ -153,7 +156,7 @@ const BookingStack = () => {
 };
 
 // Profile Stack
-const ProfileStack = () => {
+const ProfileStack = ({ navigation }) => {
   return (
     <Stack.Navigator
       screenOptions={defaultStackScreenOptions}
@@ -161,7 +164,21 @@ const ProfileStack = () => {
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
-        options={{ title: "Profile" }}
+        options={{
+          title: "Profile",
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.openDrawer()}
+              style={{ marginLeft: 15, padding: 4 }}
+            >
+              <Ionicons
+                name="menu"
+                size={28}
+                color={COLORS.text}
+              />
+            </TouchableOpacity>
+          ),
+        }}
       />
       <Stack.Screen
         name="EditProfile"
@@ -303,7 +320,7 @@ const BottomTabNavigator = ({ navigation }) => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileStack}
+        children={(props) => <ProfileStack {...props} navigation={navigation} />}
         options={{
           tabBarLabel: "Profile",
         }}

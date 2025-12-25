@@ -24,15 +24,15 @@ const ChatHeader = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Navigate back to chat list, detect manager or customer route
   const handleBack = () => {
-    // Detect if we're in manager route or customer route
     const backPath = location.pathname.startsWith('/manager/chat')
       ? '/manager/chat'
       : '/chat';
     navigate(backPath);
   };
 
-  // Get room type text
+  // Convert room type constant to Vietnamese display text
   const getRoomTypeText = type => {
     const types = {
       REQUEST_CHAT: 'Yêu cầu dịch vụ',
@@ -44,6 +44,7 @@ const ChatHeader = ({
     return types[type] || type;
   };
 
+  // Show loading state when room data is not available
   if (!room) {
     return (
       <div className={styles.chatHeader}>
@@ -62,6 +63,7 @@ const ChatHeader = ({
 
   return (
     <div className={styles.chatHeader}>
+      {/* Back button to return to chat list */}
       <Button
         type="text"
         icon={<ArrowLeftOutlined />}
@@ -69,9 +71,12 @@ const ChatHeader = ({
         className={styles.backButton}
       />
 
+      {/* User avatar */}
       <Avatar size={40} icon={<UserOutlined />} className={styles.avatar} />
 
+      {/* Room information section */}
       <div className={styles.headerInfo}>
+        {/* Room name and closed status tag */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h3 className={styles.roomName}>{room.roomName || 'Chat Room'}</h3>
           {room.isActive === false && (
@@ -84,19 +89,25 @@ const ChatHeader = ({
             </Tag>
           )}
         </div>
+
+        {/* Room metadata: connection status, type, participants count */}
         <div className={styles.roomMeta}>
+          {/* WebSocket connection status indicator */}
           <Badge
             status={connected ? 'success' : 'default'}
             text={connected ? 'Đang kết nối' : 'Không kết nối'}
           />
           <span className={styles.separator}>•</span>
+          {/* Room type display */}
           <span className={styles.roomType}>
             {getRoomTypeText(room.roomType)}
           </span>
           <span className={styles.separator}>•</span>
+          {/* Participant count */}
           <span className={styles.participants}>
             {room.participantCount} người
           </span>
+          {/* Read-only indicator for inactive rooms */}
           {room.isActive === false && (
             <>
               <span className={styles.separator}>•</span>
@@ -104,7 +115,8 @@ const ChatHeader = ({
             </>
           )}
         </div>
-        {/* Filter by context type - Only show for CONTRACT_CHAT */}
+
+        {/* Context type filter dropdown - only shown for contract chats */}
         {room?.roomType === 'CONTRACT_CHAT' && onContextTypeChange && (
           <div style={{ marginTop: '8px' }}>
             <Select
@@ -122,6 +134,7 @@ const ChatHeader = ({
         )}
       </div>
 
+      {/* More options button */}
       <Button
         type="text"
         icon={<MoreOutlined />}

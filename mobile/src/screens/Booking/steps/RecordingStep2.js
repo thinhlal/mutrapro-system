@@ -70,7 +70,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
     }, [])
   );
 
-  const handleVocalChoiceChange = (newChoice) => {
+  const handleVocalChoiceChange = async (newChoice) => {
     setVocalChoice(newChoice);
 
     // Reset selected vocalists if switching away from hiring options
@@ -79,6 +79,22 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
       newChoice !== VOCAL_CHOICES.BOTH
     ) {
       setSelectedVocalists([]);
+    }
+
+    // Save vocalChoice to storage immediately to ensure it's preserved
+    try {
+      const stored = await getItem('recordingFlowData') || {};
+      stored.step2 = {
+        ...stored.step2,
+        vocalChoice: newChoice,
+        selectedVocalists: newChoice !== VOCAL_CHOICES.INTERNAL_ARTIST && 
+                          newChoice !== VOCAL_CHOICES.BOTH 
+                          ? [] 
+                          : (stored.step2?.selectedVocalists || []),
+      };
+      await setItem('recordingFlowData', stored);
+    } catch (error) {
+      console.error('Error saving vocal choice to storage:', error);
     }
   };
 

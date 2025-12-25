@@ -7,9 +7,7 @@ import styles from './UserMenu.module.css';
 import {
   UserOutlined,
   LogoutOutlined,
-  SettingOutlined, // nếu không dùng nữa thì xoá
   DashboardOutlined,
-  BellOutlined,
   FileTextOutlined,
   WalletOutlined,
   MessageOutlined,

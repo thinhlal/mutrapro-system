@@ -1648,8 +1648,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xs / 2,
   },
   payButtonText: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: "700",
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "500",
     color: COLORS.white,
   },
   milestoneCard: {

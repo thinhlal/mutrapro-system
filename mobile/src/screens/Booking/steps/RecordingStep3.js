@@ -41,6 +41,7 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [showCustomInstrumentInput, setShowCustomInstrumentInput] = useState(false);
   const [customInstrumentName, setCustomInstrumentName] = useState('');
+  const [instrumentsViewMode, setInstrumentsViewMode] = useState('horizontal'); // 'horizontal' or 'vertical'
 
   const { bookingDate, bookingStartTime, bookingEndTime, vocalChoice } = data || {};
 
@@ -453,42 +454,98 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
               </View>
             ) : (
               <>
-                <Text style={styles.sectionLabel}>Select instruments:</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.skillsGrid}
-                >
-                  {availableSkills.map(skill => {
-                    const isSelected = selectedInstruments.some(
-                      inst => inst.skillId === skill.skillId
-                    );
-                    return (
-                      <TouchableOpacity
-                        key={skill.skillId}
-                        style={[
-                          styles.skillCheckbox,
-                          isSelected && styles.skillCheckboxSelected,
-                        ]}
-                        onPress={() => handleInstrumentToggle(skill, !isSelected)}
-                      >
-                        <Ionicons
-                          name={isSelected ? 'checkbox' : 'checkbox-outline'}
-                          size={20}
-                          color={isSelected ? COLORS.primary : COLORS.textSecondary}
-                        />
-                        <Text
+                <View style={styles.instrumentsHeader}>
+                  <Text style={styles.sectionLabel}>Select instruments:</Text>
+                  <TouchableOpacity
+                    style={styles.viewModeToggle}
+                    onPress={() =>
+                      setInstrumentsViewMode(
+                        instrumentsViewMode === 'horizontal' ? 'vertical' : 'horizontal'
+                      )
+                    }
+                  >
+                    <Ionicons
+                      name={
+                        instrumentsViewMode === 'horizontal'
+                          ? 'list-outline'
+                          : 'grid-outline'
+                      }
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {instrumentsViewMode === 'horizontal' ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.skillsGrid}
+                  >
+                    {availableSkills.map(skill => {
+                      const isSelected = selectedInstruments.some(
+                        inst => inst.skillId === skill.skillId
+                      );
+                      return (
+                        <TouchableOpacity
+                          key={skill.skillId}
                           style={[
-                            styles.skillText,
-                            isSelected && styles.skillTextSelected,
+                            styles.skillCheckbox,
+                            isSelected && styles.skillCheckboxSelected,
                           ]}
+                          onPress={() => handleInstrumentToggle(skill, !isSelected)}
                         >
-                          {skill.skillName}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                          <Ionicons
+                            name={isSelected ? 'checkbox' : 'checkbox-outline'}
+                            size={20}
+                            color={isSelected ? COLORS.primary : COLORS.textSecondary}
+                          />
+                          <Text
+                            style={[
+                              styles.skillText,
+                              isSelected && styles.skillTextSelected,
+                            ]}
+                          >
+                            {skill.skillName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.skillsGridVertical}>
+                    {availableSkills.map(skill => {
+                      const isSelected = selectedInstruments.some(
+                        inst => inst.skillId === skill.skillId
+                      );
+                      return (
+                        <TouchableOpacity
+                          key={skill.skillId}
+                          style={[
+                            styles.skillCheckboxVertical,
+                            isSelected && styles.skillCheckboxSelected,
+                          ]}
+                          onPress={() => handleInstrumentToggle(skill, !isSelected)}
+                        >
+                          <View style={styles.skillCheckboxContent}>
+                            <Ionicons
+                              name={isSelected ? 'checkbox' : 'checkbox-outline'}
+                              size={20}
+                              color={isSelected ? COLORS.primary : COLORS.textSecondary}
+                            />
+                            <Text
+                              style={[
+                                styles.skillText,
+                                isSelected && styles.skillTextSelected,
+                              ]}
+                            >
+                              {skill.skillName}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
 
                 {/* Custom Instruments Section */}
                 <View style={styles.customInstrumentsSection}>
@@ -1387,6 +1444,17 @@ const styles = StyleSheet.create({
   instrumentSelectionSection: {
     marginTop: SPACING.lg,
   },
+  instrumentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  viewModeToggle: {
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary + '15',
+  },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1413,6 +1481,11 @@ const styles = StyleSheet.create({
     paddingRight: SPACING.md,
     marginBottom: SPACING.lg,
   },
+  skillsGridVertical: {
+    flexDirection: 'column',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
   skillCheckbox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1423,6 +1496,22 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     backgroundColor: COLORS.white,
     marginRight: SPACING.sm,
+  },
+  skillCheckboxVertical: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    width: '100%',
+  },
+  skillCheckboxContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   skillCheckboxSelected: {
     borderColor: COLORS.primary,
