@@ -7,6 +7,7 @@ import styles from './BackToTop.module.css';
 function BackToTop() {
   const [visible, setVisible] = useState(false);
 
+  // When scrolling down from the top of the page to a scroll point greater than 200px, the state changes to true and the button appears.
   useEffect(() => {
     const onScroll = () => {
       setVisible(window.scrollY > 200);
