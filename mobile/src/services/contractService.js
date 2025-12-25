@@ -44,6 +44,30 @@ export const getContractById = async (contractId) => {
 };
 
 /**
+ * Lấy chi tiết milestone theo ID
+ * GET /contracts/{contractId}/milestones/{milestoneId}
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} milestoneId - ID của milestone
+ * @returns {Promise} ApiResponse với chi tiết milestone
+ */
+export const getMilestoneById = async (contractId, milestoneId) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.GET_MILESTONE_BY_ID(contractId, milestoneId)
+    );
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Get Milestone Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi lấy chi tiết milestone',
+      error: error.response?.statusText || 'Unknown error',
+      status: error.response?.status
+    };
+  }
+};
+
+/**
  * Customer approve contract
  * POST /contracts/{contractId}/approve
  *

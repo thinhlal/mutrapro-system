@@ -73,8 +73,10 @@ export const API_ENDPOINTS = {
     PAY_DEPOSIT: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
     PAY_MILESTONE: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
     PAY_REVISION_FEE: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/revision-fee`,
+    WITHDRAW: (walletId) => `${BILLING_PATH}/wallets/${walletId}/withdraw`,
     GET_TRANSACTIONS: (walletId) => `${BILLING_PATH}/wallets/${walletId}/transactions`,
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
+    GET_MY_WITHDRAWAL_REQUESTS: `${BILLING_PATH}/wallets/me/withdrawal-requests`,
   },
 
   // === Project Service ===

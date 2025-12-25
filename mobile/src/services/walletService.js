@@ -151,6 +151,39 @@ export const payRevisionFee = async (walletId, revisionFeeData) => {
 };
 
 /**
+ * Withdraw money from wallet
+ * POST /wallets/{walletId}/withdraw
+ * 
+ * @param {string} walletId - ID của wallet
+ * @param {Object} withdrawData - Thông tin rút tiền
+ * @param {number} withdrawData.amount - Số tiền rút (tối thiểu 10,000 VND)
+ * @param {string} withdrawData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} withdrawData.bankAccountNumber - Số tài khoản ngân hàng (bắt buộc)
+ * @param {string} withdrawData.bankName - Tên ngân hàng (bắt buộc)
+ * @param {string} withdrawData.accountHolderName - Tên chủ tài khoản (bắt buộc)
+ * @param {string} withdrawData.note - Ghi chú (optional)
+ * @returns {Promise} ApiResponse với thông tin giao dịch
+ */
+export const withdrawWallet = async (walletId, withdrawData) => {
+  try {
+    console.log('💸 [Withdraw] Calling API:', API_ENDPOINTS.WALLET.WITHDRAW(walletId));
+    console.log('💸 [Withdraw] Data:', withdrawData);
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.WITHDRAW(walletId),
+      withdrawData
+    );
+    console.log('✅ [Withdraw] Success:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Withdraw Wallet Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi rút tiền từ ví',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+
+/**
  * Get wallet transactions with filters
  * GET /wallets/me/transactions?txType=&fromDate=&toDate=&page=&size=&sort=
  * 
@@ -182,6 +215,37 @@ export const getMyWalletTransactions = async (filters = {}) => {
     console.error('❌ [Get Transactions Error]', error.response?.data || error.message);
     throw error.response?.data || { 
       message: error.message || 'Lỗi khi lấy danh sách giao dịch',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+
+/**
+ * Get withdrawal requests of current user
+ * GET /wallets/me/withdrawal-requests
+ * 
+ * @param {Object} filters - Filter parameters
+ * @param {string} filters.status - Filter theo status: PENDING_REVIEW, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED
+ * @param {number} filters.page - Page number (default: 0)
+ * @param {number} filters.size - Page size (default: 20)
+ * @param {string} filters.sort - Sort order (default: createdAt,desc)
+ * @returns {Promise} ApiResponse với PageResponse chứa danh sách withdrawal requests
+ */
+export const getMyWithdrawalRequests = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.page !== undefined) params.append('page', filters.page);
+    if (filters.size !== undefined) params.append('size', filters.size);
+    if (filters.sort) params.append('sort', filters.sort);
+
+    const url = `${API_ENDPOINTS.WALLET.GET_MY_WITHDRAWAL_REQUESTS}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await axiosInstance.get(url);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Get Withdrawal Requests Error]', error.response?.data || error.message);
+    throw error.response?.data || {
+      message: error.message || 'Lỗi khi lấy danh sách withdrawal requests',
       error: error.response?.statusText || 'Unknown error'
     };
   }
