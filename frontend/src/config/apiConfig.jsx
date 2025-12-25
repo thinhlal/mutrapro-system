@@ -78,6 +78,22 @@ export const API_ENDPOINTS = {
     CREATE_PASSWORD: `${IDENTITY_PATH}/auth/reset-password`,
   },
 
+  // === Admin User Management ===
+  ADMIN_USER: {
+    // POST /admin/users (create new user)
+    CREATE: `${IDENTITY_PATH}/admin/users`,
+    // POST /admin/users/search (search and filter users with pagination)
+    SEARCH: `${IDENTITY_PATH}/admin/users/search`,
+    // GET /admin/users/statistics
+    STATISTICS: `${IDENTITY_PATH}/admin/users/statistics`,
+    // GET /admin/users/by-email/{email}
+    GET_BY_EMAIL: email => `${IDENTITY_PATH}/admin/users/by-email/${email}`,
+    // GET /admin/users/{id}/basic
+    GET_BASIC: id => `${IDENTITY_PATH}/admin/users/${id}/basic`,
+    // PUT /admin/users/{id}/role
+    UPDATE_ROLE: id => `${IDENTITY_PATH}/admin/users/${id}/role`,
+  },
+
   // === Project Service (Quản lý File, Folder, Tag, Contract) ===
   // Giả định các controller bên trong project-service giữ nguyên đường dẫn
   FILES: {

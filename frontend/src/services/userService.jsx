@@ -97,6 +97,22 @@ export const createUser = async userData => {
 };
 
 /**
+ * Create new user (Admin only) - Full user with email and password
+ * Endpoint: POST /admin/users
+ */
+export const createFullUser = async userData => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.ADMIN_USER.CREATE,
+      userData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi tạo user' };
+  }
+};
+
+/**
  * Verify email with OTP
  * Endpoint: POST /users/verify-email (public)
  */
@@ -125,5 +141,43 @@ export const resendVerification = async email => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi gửi lại email xác thực' };
+  }
+};
+
+/**
+ * Search users with filters and pagination (Admin only)
+ * Endpoint: POST /admin/users/search
+ *
+ * @param {Object} filters - Search filters
+ * @param {string} filters.keyword - Search keyword (email, fullName, phone)
+ * @param {string} filters.role - Filter by role
+ * @param {boolean} filters.emailVerified - Filter by email verified status
+ * @param {string} filters.authProvider - Filter by auth provider (LOCAL, GOOGLE)
+ * @param {number} filters.page - Page number (default: 0)
+ * @param {number} filters.size - Page size (default: 20)
+ * @param {string} filters.sortBy - Sort field (default: createdAt)
+ * @param {string} filters.sortDirection - Sort direction: ASC or DESC (default: DESC)
+ * @returns {Promise} ApiResponse với UserPageResponse
+ */
+export const searchUsers = async (filters = {}) => {
+  try {
+    const searchRequest = {
+      keyword: filters.keyword || null,
+      role: filters.role || null,
+      emailVerified: filters.emailVerified !== undefined ? filters.emailVerified : null,
+      authProvider: filters.authProvider || null,
+      page: filters.page !== undefined ? filters.page : 0,
+      size: filters.size !== undefined ? filters.size : 20,
+      sortBy: filters.sortBy || 'createdAt',
+      sortDirection: filters.sortDirection || 'DESC',
+    };
+
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.ADMIN_USER.SEARCH,
+      searchRequest
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi tìm kiếm users' };
   }
 };

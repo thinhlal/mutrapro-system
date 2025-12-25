@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -52,10 +53,23 @@ public class UserSearchService {
 
         // Execute search
         Page<UsersAuth> usersAuthPage = usersAuthRepository.findAll(spec, pageable);
+        List<UsersAuth> usersAuthList = usersAuthPage.getContent();
 
-        // Map to response
-        List<FullUserResponse> userResponses = usersAuthPage.getContent().stream()
-            .map(this::mapToFullUserResponse)
+        // Batch load all User entities to avoid N+1 query problem
+        Map<String, User> userMap = Map.of();
+        if (!usersAuthList.isEmpty()) {
+            List<String> userIds = usersAuthList.stream()
+                .map(UsersAuth::getUserId)
+                .collect(Collectors.toList());
+            
+            userMap = userRepository.findAllByUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(User::getUserId, user -> user));
+        }
+
+        // Map to response using pre-loaded userMap
+        final Map<String, User> finalUserMap = userMap;
+        List<FullUserResponse> userResponses = usersAuthList.stream()
+            .map(userAuth -> mapToFullUserResponse(userAuth, finalUserMap.get(userAuth.getUserId())))
             .collect(Collectors.toList());
 
         return UserPageResponse.builder()
@@ -116,11 +130,9 @@ public class UserSearchService {
     }
 
     /**
-     * Map UsersAuth to FullUserResponse
+     * Map UsersAuth to FullUserResponse (with pre-loaded User entity to avoid N+1 queries)
      */
-    private FullUserResponse mapToFullUserResponse(UsersAuth userAuth) {
-        User user = userRepository.findByUserId(userAuth.getUserId()).orElse(null);
-
+    private FullUserResponse mapToFullUserResponse(UsersAuth userAuth, User user) {
         return FullUserResponse.builder()
             .userId(userAuth.getUserId())
             .email(userAuth.getEmail())

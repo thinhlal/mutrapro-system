@@ -14,9 +14,15 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, String> {
     
     Optional<User> findByUserId(String userId);
+    
     /**
      * Tìm users theo active status
      */
     List<User> findByIsActive(boolean isActive);
+    
+    /**
+     * Batch query - tìm tất cả users theo danh sách userIds
+     */
+    List<User> findAllByUserIdIn(List<String> userIds);
 }
 

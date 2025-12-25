@@ -1,5 +1,6 @@
 package com.mutrapro.identity_service.controller;
 
+import com.mutrapro.identity_service.dto.request.CreateFullUserRequest;
 import com.mutrapro.identity_service.dto.request.UserSearchRequest;
 import com.mutrapro.identity_service.dto.response.FullUserResponse;
 import com.mutrapro.identity_service.dto.response.UserBasicInfoResponse;
@@ -11,8 +12,10 @@ import com.mutrapro.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -105,6 +108,22 @@ public class AdminUserController {
         userService.updateUserRole(id, role);
         return ApiResponse.<Void>builder()
             .message("User role updated successfully")
+            .build();
+    }
+
+    /**
+     * Create new user (Admin only)
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create new user", description = "Create a new user with full information (SYSTEM_ADMIN only)")
+    public ApiResponse<FullUserResponse> createUser(@Valid @RequestBody CreateFullUserRequest request) {
+        log.info("POST /admin/users - Creating new user with email: {}", request.getEmail());
+        FullUserResponse user = userService.createFullUser(request);
+        return ApiResponse.<FullUserResponse>builder()
+            .message("User created successfully")
+            .data(user)
+            .statusCode(HttpStatus.CREATED.value())
             .build();
     }
 }

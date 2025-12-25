@@ -76,16 +76,68 @@ public class UserService {
     
     
     /**
-     * Tạo user mới
-     * Note: User chỉ nên được tạo qua register flow trong AuthenticationService
-     * Method này chỉ dùng để update profile sau khi user đã được tạo
+     * Tạo user mới (Admin only - dùng CreateUserRequest cũ, không khuyến khích dùng)
+     * Note: Nên dùng createFullUser thay vì method này
      */
     @Transactional
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UserResponse createUser(CreateUserRequest request) {
         throw new UnsupportedOperationException(
-            "User creation not supported via this endpoint. Users must be created via registration flow."
+            "User creation not supported via this endpoint. Use createFullUser instead."
         );
+    }
+    
+    /**
+     * Tạo user mới đầy đủ (bao gồm users và users_auth) - Admin only
+     */
+    @Transactional
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public FullUserResponse createFullUser(CreateFullUserRequest request) {
+        log.info("Creating new user with email: {}", request.getEmail());
+        
+        // Check if email already exists
+        usersAuthRepository.findByEmail(request.getEmail()).ifPresent(u -> {
+            throw UserAlreadyExistsException.create();
+        });
+        
+        // Create UsersAuth
+        UsersAuth usersAuth = UsersAuth.builder()
+            .email(request.getEmail())
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .role(request.getRole())
+            .emailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : false)
+            .status(request.getIsActive() != null && request.getIsActive() ? "active" : "inactive")
+            .authProvider("LOCAL")
+            .hasLocalPassword(true)
+            .build();
+        UsersAuth savedUsersAuth = usersAuthRepository.save(usersAuth);
+        
+        // Create User profile
+        User user = User.builder()
+            .userId(savedUsersAuth.getUserId())
+            .fullName(request.getFullName())
+            .phone(request.getPhone())
+            .address(request.getAddress())
+            .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+            .build();
+        userRepository.save(user);
+        
+        log.info("User created successfully with ID: {}", savedUsersAuth.getUserId());
+        
+        return FullUserResponse.builder()
+            .userId(savedUsersAuth.getUserId())
+            .email(savedUsersAuth.getEmail())
+            .role(savedUsersAuth.getRole().name())
+            .emailVerified(savedUsersAuth.isEmailVerified())
+            .authProvider(savedUsersAuth.getAuthProvider())
+            .authProviderId(savedUsersAuth.getAuthProviderId())
+            .isNoPassword(!savedUsersAuth.isHasLocalPassword())
+            .fullName(user.getFullName())
+            .phone(user.getPhone())
+            .address(user.getAddress())
+            .avatarUrl(user.getAvatarUrl())
+            .active(user.isActive())
+            .build();
     }
     
     /**

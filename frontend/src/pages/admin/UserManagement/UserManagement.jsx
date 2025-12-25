@@ -9,40 +9,78 @@ import {
   Popconfirm,
   Card,
   Typography,
+  Input,
+  Select,
+  Row,
+  Col,
 } from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   ReloadOutlined,
+  SearchOutlined,
+  ClearOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import {
-  getAllUsers,
+  searchUsers,
   getUserProfile,
   updateFullUser,
   deleteUser,
+  createFullUser,
 } from '../../../services/userService';
 import UserEditModal from '../../../components/modal/UserEditModal/UserEditModal';
 import UserDetailModal from '../../../components/modal/UserDetailModal/UserDetailModal';
+import UserCreateModal from '../../../components/modal/UserCreateModal/UserCreateModal';
 import styles from './UserManagement.module.css';
 
 const { Title } = Typography;
+const { Search } = Input;
+const { Option } = Select;
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [form] = Form.useForm();
+  const [createForm] = Form.useForm();
 
-  // Fetch all users
+  // Search and filter state
+  const [filters, setFilters] = useState({
+    keyword: null,
+    role: null,
+    emailVerified: null,
+    authProvider: null,
+    page: 0,
+    size: 20,
+    sortBy: 'createdAt',
+    sortDirection: 'DESC',
+  });
+
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+  });
+
+  // Fetch users with search and filters
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await getAllUsers();
-      if (response.data) {
-        setUsers(response.data);
+      const response = await searchUsers(filters);
+      if (response.status === 'success' && response.data) {
+        setUsers(response.data.users || []);
+        setPagination({
+          current: response.data.currentPage + 1,
+          pageSize: response.data.pageSize,
+          total: response.data.totalElements,
+        });
       }
     } catch (error) {
       message.error(error.message || 'Unable to load user list');
@@ -53,7 +91,88 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
+
+  // Handle search
+  const handleSearch = value => {
+    setFilters(prev => ({
+      ...prev,
+      keyword: value || null,
+      page: 0,
+    }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  // Handle filter change
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value !== undefined && value !== null && value !== '' ? value : null,
+      page: 0,
+    }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setFilters({
+      keyword: null,
+      role: null,
+      emailVerified: null,
+      authProvider: null,
+      page: 0,
+      size: 20,
+      sortBy: 'createdAt',
+      sortDirection: 'DESC',
+    });
+    setPagination({
+      current: 1,
+      pageSize: 20,
+      total: 0,
+    });
+  };
+
+  // Handle pagination change
+  const handlePaginationChange = (page, pageSize) => {
+    setFilters(prev => ({
+      ...prev,
+      page: page - 1,
+      size: pageSize,
+    }));
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize: pageSize,
+    }));
+  };
+
+  // Handle table change (sorting, etc.)
+  const handleTableChange = (pagination, filters, sorter) => {
+    if (sorter && sorter.field) {
+      // Map frontend field names to backend field names (UsersAuth entity fields)
+      // Note: fullName is not sortable as it's in User entity, not UsersAuth
+      const fieldMapping = {
+        email: 'email',
+        role: 'role',
+        createdAt: 'createdAt',
+      };
+      
+      // Only sort if field is in mapping (backend supports it)
+      if (fieldMapping[sorter.field]) {
+        const sortBy = fieldMapping[sorter.field];
+        const sortDirection = sorter.order === 'ascend' ? 'ASC' : 'DESC';
+        
+        setFilters(prev => ({
+          ...prev,
+          sortBy: sortBy,
+          sortDirection: sortDirection,
+          page: 0,
+        }));
+        setPagination(prev => ({ ...prev, current: 1 }));
+      }
+    }
+  };
 
   // Handle edit user
   const handleEdit = async user => {
@@ -116,6 +235,39 @@ const UserManagement = () => {
     }
   };
 
+  // Handle create user
+  const handleCreate = () => {
+    createForm.resetFields();
+    setCreateModalVisible(true);
+  };
+
+  // Handle create user submit
+  const handleCreateSubmit = async values => {
+    setCreateLoading(true);
+    try {
+      await createFullUser({
+        email: values.email,
+        password: values.password,
+        fullName: values.fullName,
+        role: values.role,
+        phone: values.phone || null,
+        address: values.address || null,
+        emailVerified: values.emailVerified || false,
+        isActive: values.isActive !== undefined ? values.isActive : true,
+      });
+      message.success('User created successfully');
+      setCreateModalVisible(false);
+      createForm.resetFields();
+      fetchUsers();
+    } catch (error) {
+      console.error('Create user error:', error);
+      const errorMsg = error.message || error.error || 'Unable to create user';
+      message.error(errorMsg, 5);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   // Get role color
   const getRoleColor = role => {
     const colors = {
@@ -149,7 +301,7 @@ const UserManagement = () => {
       width: 150,
       dataIndex: 'fullName',
       key: 'fullName',
-      sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
+      sorter: false, // Not sortable (field is in User entity, not UsersAuth)
       ellipsis: true,
     },
     {
@@ -157,7 +309,7 @@ const UserManagement = () => {
       width: 200,
       dataIndex: 'email',
       key: 'email',
-      sorter: (a, b) => a.email.localeCompare(b.email),
+      sorter: true, // Sortable (field is in UsersAuth entity)
       ellipsis: true,
     },
     {
@@ -168,15 +320,7 @@ const UserManagement = () => {
       render: role => (
         <Tag color={getRoleColor(role)}>{getRoleDisplayName(role)}</Tag>
       ),
-      filters: [
-        { text: 'System Admin', value: 'SYSTEM_ADMIN' },
-        { text: 'Manager', value: 'MANAGER' },
-        { text: 'Customer', value: 'CUSTOMER' },
-        { text: 'Transcription', value: 'TRANSCRIPTION' },
-        { text: 'Arrangement', value: 'ARRANGEMENT' },
-        { text: 'Recording Artist', value: 'RECORDING_ARTIST' },
-      ],
-      onFilter: (value, record) => record.role === value,
+      sorter: true, // Sortable (field is in UsersAuth entity)
     },
     {
       title: 'Status',
@@ -252,26 +396,110 @@ const UserManagement = () => {
           </Title>
         }
         extra={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={fetchUsers}
-            loading={loading}
-          >
-            Refresh
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+            >
+              Create User
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchUsers}
+              loading={loading}
+            >
+              Refresh
+            </Button>
+          </Space>
         }
       >
+        {/* Search and Filters */}
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: '16px' }}>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Search
+                placeholder="Search by email, name, phone..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                onSearch={handleSearch}
+                size="large"
+              />
+            </Col>
+            <Col span={4}>
+              <Select
+                placeholder="Role"
+                allowClear
+                style={{ width: '100%' }}
+                size="large"
+                value={filters.role}
+                onChange={value => handleFilterChange('role', value)}
+              >
+                <Option value="SYSTEM_ADMIN">System Admin</Option>
+                <Option value="MANAGER">Manager</Option>
+                <Option value="CUSTOMER">Customer</Option>
+                <Option value="TRANSCRIPTION">Transcription</Option>
+                <Option value="ARRANGEMENT">Arrangement</Option>
+                <Option value="RECORDING_ARTIST">Recording Artist</Option>
+              </Select>
+            </Col>
+            <Col span={4}>
+              <Select
+                placeholder="Email Verified"
+                allowClear
+                style={{ width: '100%' }}
+                size="large"
+                value={filters.emailVerified}
+                onChange={value => handleFilterChange('emailVerified', value)}
+              >
+                <Option value={true}>Verified</Option>
+                <Option value={false}>Unverified</Option>
+              </Select>
+            </Col>
+            <Col span={4}>
+              <Select
+                placeholder="Auth Provider"
+                allowClear
+                style={{ width: '100%' }}
+                size="large"
+                value={filters.authProvider}
+                onChange={value => handleFilterChange('authProvider', value)}
+              >
+                <Option value="LOCAL">Local</Option>
+                <Option value="GOOGLE">Google</Option>
+              </Select>
+            </Col>
+          </Row>
+          {(filters.keyword ||
+            filters.role ||
+            filters.emailVerified !== null ||
+            filters.authProvider) && (
+            <Button
+              icon={<ClearOutlined />}
+              onClick={handleClearFilters}
+              size="small"
+            >
+              Clear Filters
+            </Button>
+          )}
+        </Space>
+
         <Table
           columns={columns}
           dataSource={users}
           rowKey="userId"
           loading={loading}
           pagination={{
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
-            showTotal: total => `Total ${total} users`,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} of ${total} users`,
+            onChange: handlePaginationChange,
+            onShowSizeChange: handlePaginationChange,
           }}
+          onChange={handleTableChange}
         />
       </Card>
 
@@ -288,6 +516,15 @@ const UserManagement = () => {
         visible={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         user={selectedUser}
+      />
+
+      {/* Create User Modal */}
+      <UserCreateModal
+        visible={createModalVisible}
+        onCancel={() => setCreateModalVisible(false)}
+        onSubmit={handleCreateSubmit}
+        form={createForm}
+        loading={createLoading}
       />
     </div>
   );
