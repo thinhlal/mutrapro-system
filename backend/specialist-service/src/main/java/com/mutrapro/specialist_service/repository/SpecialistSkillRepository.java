@@ -32,7 +32,18 @@ public interface SpecialistSkillRepository extends JpaRepository<SpecialistSkill
      * Kiểm tra xem skill có đang được sử dụng bởi specialist nào không
      */
     boolean existsBySkill(Skill skill);
-    
+
     long countBySkill(Skill skill);
+    
+    /**
+     * Đếm số specialist sử dụng mỗi skill (để tìm top demanded)
+     * Returns list of Object arrays where [0] = skillId, [1] = count
+     */
+    @Query("SELECT ss.skill.skillId, COUNT(DISTINCT ss.specialist) " +
+           "FROM SpecialistSkill ss " +
+           "WHERE ss.specialist.status = com.mutrapro.specialist_service.enums.SpecialistStatus.ACTIVE " +
+           "GROUP BY ss.skill.skillId " +
+           "ORDER BY COUNT(DISTINCT ss.specialist) DESC")
+    List<Object[]> countSpecialistsBySkill();
 }
 

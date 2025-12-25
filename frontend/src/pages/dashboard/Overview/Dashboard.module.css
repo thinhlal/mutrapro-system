@@ -39,7 +39,7 @@
 /* KPI Grid */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   margin-bottom: 32px;
 }
@@ -107,7 +107,7 @@
 /* Charts Grid */
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 0.5fr 1.5fr;
   gap: 20px;
   margin-bottom: 32px;
 }
@@ -136,7 +136,7 @@
 /* Tables Grid */
 .tablesGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-bottom: 32px;
 }

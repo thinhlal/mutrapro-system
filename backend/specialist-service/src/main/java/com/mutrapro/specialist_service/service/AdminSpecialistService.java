@@ -5,8 +5,11 @@ import com.mutrapro.specialist_service.client.IdentityServiceFeignClient;
 import com.mutrapro.specialist_service.dto.request.CreateSpecialistRequest;
 import com.mutrapro.specialist_service.dto.request.UpdateSpecialistSettingsRequest;
 import com.mutrapro.specialist_service.dto.request.UpdateSpecialistStatusRequest;
+import com.mutrapro.specialist_service.dto.response.SkillStatisticsResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistModuleStatisticsResponse;
 import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
 import com.mutrapro.specialist_service.entity.Specialist;
+import com.mutrapro.specialist_service.entity.Skill;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.SpecialistAlreadyExistsException;
@@ -15,7 +18,10 @@ import com.mutrapro.specialist_service.exception.UserNotFoundException;
 import com.mutrapro.specialist_service.exception.InvalidSpecialistRequestException;
 import com.mutrapro.specialist_service.exception.UserRoleUpdateException;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
+import com.mutrapro.specialist_service.dto.response.SpecialistStatisticsResponse;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
+import com.mutrapro.specialist_service.repository.SkillRepository;
+import com.mutrapro.specialist_service.repository.SpecialistSkillRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +42,8 @@ public class AdminSpecialistService {
     private final SpecialistRepository specialistRepository;
     private final SpecialistMapper specialistMapper;
     private final IdentityServiceFeignClient identityServiceFeignClient;
+    private final SkillRepository skillRepository;
+    private final SpecialistSkillRepository specialistSkillRepository;
     
     /**
      * Tạo specialist mới từ user (Admin only)
@@ -192,6 +200,77 @@ public class AdminSpecialistService {
         return specialistMapper.toSpecialistResponseList(specialists);
     }
     
+    /**
+     * Get specialist statistics for admin dashboard
+     * @return SpecialistStatisticsResponse with active and inactive counts
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public SpecialistStatisticsResponse getSpecialistStatistics() {
+        log.info("Getting specialist statistics for admin dashboard");
+        
+        // Count active specialists
+        long active = specialistRepository.countByStatus(SpecialistStatus.ACTIVE);
+        
+        // Count inactive specialists (SUSPENDED + INACTIVE)
+        long inactive = specialistRepository.countByStatus(SpecialistStatus.SUSPENDED) 
+                + specialistRepository.countByStatus(SpecialistStatus.INACTIVE);
+        
+        return SpecialistStatisticsResponse.builder()
+                .active(active)
+                .inactive(inactive)
+                .build();
+    }
+
+    /**
+     * Get skill statistics for admin dashboard
+     * @return SkillStatisticsResponse with total count and top demanded skill
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public SkillStatisticsResponse getSkillStatistics() {
+        log.info("Getting skill statistics for admin dashboard");
+        
+        // Count total active skills - use count query for better performance
+        long total = skillRepository.countByIsActiveTrue();
+        
+        // Find top demanded skill (skill được sử dụng bởi nhiều active specialists nhất)
+        String topDemanded = "N/A";
+        try {
+            List<Object[]> skillCounts = specialistSkillRepository.countSpecialistsBySkill();
+            if (!skillCounts.isEmpty()) {
+                String topSkillId = (String) skillCounts.get(0)[0];
+                // Fetch skill name by ID
+                topDemanded = skillRepository.findById(topSkillId)
+                    .map(Skill::getSkillName)
+                    .orElse("N/A");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get top demanded skill: {}", e.getMessage());
+        }
+        
+        return SkillStatisticsResponse.builder()
+                .total(total)
+                .topDemanded(topDemanded)
+                .build();
+    }
+
+    /**
+     * Get all specialist module statistics for admin dashboard (specialists và skills)
+     * Gộp tất cả statistics vào một response để giảm số lượng API calls
+     * @return SpecialistModuleStatisticsResponse với đầy đủ statistics
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public SpecialistModuleStatisticsResponse getAllSpecialistModuleStatistics() {
+        log.info("Getting all specialist module statistics for admin dashboard");
+        
+        SpecialistStatisticsResponse specialists = getSpecialistStatistics();
+        SkillStatisticsResponse skills = getSkillStatistics();
+        
+        return SpecialistModuleStatisticsResponse.builder()
+                .specialists(specialists)
+                .skills(skills)
+                .build();
+    }
+
     /**
      * Map SpecialistType sang Role trong identity-service
      */

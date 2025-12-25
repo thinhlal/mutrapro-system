@@ -9,7 +9,9 @@ import lombok.*;
  * Bảng: users
  */
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_is_active", columnList = "is_active")
+})
 @Getter
 @Setter
 @Builder

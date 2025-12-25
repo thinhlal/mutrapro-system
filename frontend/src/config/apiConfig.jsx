@@ -96,8 +96,8 @@ export const API_ENDPOINTS = {
 
   // === Admin Dashboard ===
   ADMIN_DASHBOARD: {
-    // GET /admin/dashboard/users
-    USERS: `${IDENTITY_PATH}/admin/dashboard/users`,
+    // GET /admin/dashboard/users?days=30 (gộp tất cả: statistics và statistics over time)
+    USERS: days => `${IDENTITY_PATH}/admin/dashboard/users?days=${days || 30}`,
   },
 
   // === Project Service (Quản lý File, Folder, Tag, Contract) ===
@@ -347,16 +347,16 @@ export const API_ENDPOINTS = {
     GET_MY_WITHDRAWAL_REQUESTS: `${BILLING_PATH}/wallets/me/withdrawal-requests`,
   },
   // === Admin Wallet Management ===
-  ADMIN_WALLET: {
-    // GET /api/v1/billing/admin/wallets
-    GET_ALL: `${BILLING_PATH}/admin/wallets`,
-    // GET /api/v1/billing/admin/wallets/{walletId}
-    GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
-    // GET /api/v1/billing/admin/wallets/{walletId}/transactions
-    GET_TRANSACTIONS: walletId =>
-      `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
-    // GET /api/v1/billing/admin/wallets/statistics
-    GET_STATISTICS: `${BILLING_PATH}/admin/wallets/statistics`,
+    ADMIN_WALLET: {
+      // GET /api/v1/billing/admin/wallets
+      GET_ALL: `${BILLING_PATH}/admin/wallets`,
+      // GET /api/v1/billing/admin/wallets/{walletId}
+      GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
+      // GET /api/v1/billing/admin/wallets/{walletId}/transactions
+      GET_TRANSACTIONS: walletId =>
+        `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
+      // GET /api/v1/billing/admin/wallets/statistics?days=7 (gộp tất cả: statistics, topup volume, revenue statistics)
+      GET_STATISTICS: days => `${BILLING_PATH}/admin/wallets/statistics?days=${days || 7}`,
     // GET /api/v1/billing/admin/wallets/withdrawal-requests
     GET_WITHDRAWAL_REQUESTS: `${BILLING_PATH}/admin/wallets/withdrawal-requests`,
     // POST /api/v1/billing/admin/wallets/withdrawal-requests/{id}/approve
@@ -396,8 +396,18 @@ export const API_ENDPOINTS = {
     GET_BY_ID: requestId => `${REQUEST_PATH}/requests/${requestId}`,
     // GET /api/v1/requests/requests/my-requests?status=
     MY_REQUESTS: `${REQUEST_PATH}/requests/my-requests`,
-    // GET /admin/requests/statistics
-    ADMIN_STATISTICS: `${REQUEST_PATH}/admin/requests/statistics`,
+  },
+
+  // === Admin Request Statistics ===
+  ADMIN_REQUESTS: {
+    // GET /admin/requests/statistics (gộp tất cả: requests, notation-instruments)
+    GET_ALL_STATISTICS: `${REQUEST_PATH}/admin/requests/statistics`,
+  },
+
+  // === Admin Project Statistics ===
+  ADMIN_PROJECT: {
+    // GET /admin/statistics (gộp tất cả: contracts, tasks, equipment, studio bookings, revision requests)
+    GET_ALL_STATISTICS: `${PROJECT_PATH}/admin/statistics`,
   },
 
   // === Notation Instruments Management ===
@@ -525,6 +535,8 @@ export const API_ENDPOINTS = {
 
   // === Specialist Service (Quản lý Specialist, Skills, Demos) ===
   SPECIALISTS: {
+    // Admin Statistics (gộp tất cả: specialists và skills)
+    ADMIN_STATISTICS: `${SPECIALIST_PATH}/admin/specialists/statistics`,
     // Admin Specialist Management
     ADMIN: {
       // POST /admin/specialists

@@ -8,7 +8,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users_auth")
+@Table(name = "users_auth", indexes = {
+    @Index(name = "idx_users_auth_role", columnList = "role"),
+    @Index(name = "idx_users_auth_status", columnList = "status"),
+    @Index(name = "idx_users_auth_email_verified", columnList = "email_verified"),
+    // Composite index to optimize getUserStatisticsByDate query (created_at for date range queries)
+    @Index(name = "idx_users_auth_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @Builder

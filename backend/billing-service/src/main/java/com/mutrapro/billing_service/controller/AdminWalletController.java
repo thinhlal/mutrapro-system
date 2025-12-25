@@ -1,8 +1,8 @@
 package com.mutrapro.billing_service.controller;
 
 import com.mutrapro.billing_service.dto.request.AdjustWalletBalanceRequest;
+import com.mutrapro.billing_service.dto.response.WalletDashboardStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
-import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
 import com.mutrapro.billing_service.dto.response.WithdrawalRequestResponse;
 import com.mutrapro.billing_service.entity.WithdrawalRequest;
@@ -129,13 +129,20 @@ public class AdminWalletController {
                 .build();
     }
 
+    /**
+     * Get all wallet dashboard statistics in one API call (statistics, topup volume, và revenue statistics)
+     * Gộp tất cả wallet statistics để giảm số lượng API calls từ frontend
+     */
     @GetMapping("/statistics")
-    @Operation(summary = "Lấy thống kê tổng quan về wallets và transactions (Admin only)")
-    public ApiResponse<WalletStatisticsResponse> getWalletStatistics() {
-        log.info("Admin getting wallet statistics");
-        WalletStatisticsResponse stats = walletService.getWalletStatisticsForAdmin();
-        return ApiResponse.<WalletStatisticsResponse>builder()
-                .message("Wallet statistics retrieved successfully")
+    @Operation(summary = "Lấy tất cả thống kê wallet dashboard (Admin only)", description = "Lấy tất cả wallet statistics (statistics, topup volume, revenue statistics) trong một API call")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ApiResponse<WalletDashboardStatisticsResponse> getWalletDashboardStatistics(
+            @Parameter(description = "Số ngày để lấy dữ liệu cho topup volume và revenue (mặc định: 7)")
+            @RequestParam(defaultValue = "7") int days) {
+        log.info("Admin getting all wallet dashboard statistics for last {} days", days);
+        WalletDashboardStatisticsResponse stats = walletService.getWalletDashboardStatistics(days);
+        return ApiResponse.<WalletDashboardStatisticsResponse>builder()
+                .message("Wallet dashboard statistics retrieved successfully")
                 .data(stats)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

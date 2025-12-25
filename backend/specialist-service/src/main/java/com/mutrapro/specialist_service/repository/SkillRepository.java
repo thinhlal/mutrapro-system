@@ -17,6 +17,9 @@ public interface SkillRepository extends JpaRepository<Skill, String>, JpaSpecif
     
     List<Skill> findByIsActiveTrue();
     
+    // Optimized count query for statistics (avoid loading all records into memory)
+    long countByIsActiveTrue();
+    
     List<Skill> findBySkillTypeAndIsActiveTrue(SkillType skillType);
     
     List<Skill> findBySkillTypeAndRecordingCategoryAndIsActiveTrue(SkillType skillType, RecordingCategory recordingCategory);

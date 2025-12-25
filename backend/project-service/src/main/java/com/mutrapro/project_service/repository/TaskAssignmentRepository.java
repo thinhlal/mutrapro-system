@@ -139,6 +139,14 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     long countByStatus(AssignmentStatus status);
 
     long countByTaskType(TaskType taskType);
+    
+    // Optimized GROUP BY query to get all status counts in one query
+    @Query("SELECT ta.status, COUNT(ta) FROM TaskAssignment ta GROUP BY ta.status")
+    List<Object[]> countByStatusGroupBy();
+    
+    // Optimized GROUP BY query to get all task type counts in one query
+    @Query("SELECT ta.taskType, COUNT(ta) FROM TaskAssignment ta GROUP BY ta.taskType")
+    List<Object[]> countByTaskTypeGroupBy();
 
     /**
      * Optimized versions joining Contract directly (manager view)

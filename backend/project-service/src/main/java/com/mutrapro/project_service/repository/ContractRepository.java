@@ -187,5 +187,13 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     long countByStatus(ContractStatus status);
 
     long countByContractType(ContractType contractType);
+    
+    // Optimized GROUP BY query to get all status counts in one query
+    @Query("SELECT c.status, COUNT(c) FROM Contract c GROUP BY c.status")
+    List<Object[]> countByStatusGroupBy();
+    
+    // Optimized GROUP BY query to get all contract type counts in one query
+    @Query("SELECT c.contractType, COUNT(c) FROM Contract c GROUP BY c.contractType")
+    List<Object[]> countByContractTypeGroupBy();
 }
 

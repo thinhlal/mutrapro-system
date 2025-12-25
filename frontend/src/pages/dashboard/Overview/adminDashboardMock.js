@@ -12,14 +12,33 @@ export const formatPercent = value => `${value >= 0 ? '+' : ''}${value}%`;
 
 export const mapStatusToTag = status => {
   const map = {
+    // Service Request statuses
     pending: { color: 'orange', text: 'Pending' },
-    processing: { color: 'blue', text: 'Processing' },
+    contract_sent: { color: 'blue', text: 'Contract Sent' },
+    contract_approved: { color: 'cyan', text: 'Contract Approved' },
+    contract_signed: { color: 'geekblue', text: 'Contract Signed' },
+    awaiting_assignment: { color: 'purple', text: 'Awaiting Assignment' },
+    in_progress: { color: 'processing', text: 'In Progress' },
     completed: { color: 'green', text: 'Completed' },
     cancelled: { color: 'red', text: 'Cancelled' },
+    rejected: { color: 'red', text: 'Rejected' },
+    // Contract statuses
+    draft: { color: 'default', text: 'Draft' },
+    sent: { color: 'geekblue', text: 'Sent' },
+    approved: { color: 'green', text: 'Approved' },
+    signed: { color: 'orange', text: 'Signed' },
+    active_pending_assignment: { color: 'gold', text: 'Active - Pending Assignment' },
+    active: { color: 'green', text: 'Active' },
+    rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
+    need_revision: { color: 'orange', text: 'Need Revision' },
+    canceled_by_customer: { color: 'default', text: 'Canceled by Customer' },
+    canceled_by_manager: { color: 'orange', text: 'Canceled by Manager' },
+    expired: { color: 'volcano', text: 'Expired' },
+    // Legacy/fallback
+    processing: { color: 'blue', text: 'Processing' },
     overdue: { color: 'volcano', text: 'Overdue' },
-    in_progress: { color: 'processing', text: 'In Progress' },
   };
-  return map[status] || { color: 'default', text: status };
+  return map[status] || { color: 'default', text: status || 'Unknown' };
 };
 
 export const mapPriorityToBadge = priority => {
@@ -36,27 +55,24 @@ export const mapPriorityToBadge = priority => {
 export const kpis = {
   today: {
     totalUsers: { value: 2847, trend: 12.5 },
-    newUsers: { value: 34, trend: 8.2 },
+    activeUsers: { value: 34, trend: 8.2 },
     totalBalance: { value: 156000000, trend: 15.3 },
     openRequests: { value: 23, trend: -5.1 },
     activeContracts: { value: 67, trend: 3.8 },
-    overdueTasks: { value: 5, trend: -12.0 },
   },
   '7d': {
     totalUsers: { value: 2847, trend: 8.1 },
-    newUsers: { value: 189, trend: 12.4 },
+    activeUsers: { value: 189, trend: 12.4 },
     totalBalance: { value: 892000000, trend: 22.1 },
     openRequests: { value: 45, trend: 2.3 },
     activeContracts: { value: 67, trend: 5.2 },
-    overdueTasks: { value: 8, trend: -8.5 },
   },
   '30d': {
     totalUsers: { value: 2847, trend: 18.7 },
-    newUsers: { value: 623, trend: 25.3 },
+    activeUsers: { value: 623, trend: 25.3 },
     totalBalance: { value: 3450000000, trend: 31.2 },
     openRequests: { value: 112, trend: 8.9 },
     activeContracts: { value: 67, trend: 12.1 },
-    overdueTasks: { value: 15, trend: -3.2 },
   },
 };
 

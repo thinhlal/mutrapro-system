@@ -2,6 +2,7 @@ package com.mutrapro.identity_service.service;
 
 import com.mutrapro.identity_service.dto.request.*;
 import com.mutrapro.identity_service.dto.response.*;
+import com.mutrapro.identity_service.dto.response.UserDashboardStatisticsResponse;
 import com.mutrapro.identity_service.entity.User;
 import com.mutrapro.identity_service.entity.UsersAuth;
 import com.mutrapro.identity_service.exception.*;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -392,16 +395,17 @@ public class UserService {
         log.info("Getting user statistics");
 
         long totalUsers = usersAuthRepository.count();
-        long activeUsers = userRepository.findByIsActive(true).size();
-        long verifiedUsers = usersAuthRepository.findByEmailVerified(true).size();
+        // Use count queries instead of .size() to avoid loading all records into memory
+        long activeUsers = userRepository.countByIsActive(true);
+        long verifiedUsers = usersAuthRepository.countByEmailVerified(true);
 
-        // Count by role
-        long systemAdmins = usersAuthRepository.findByRole(Role.SYSTEM_ADMIN).size();
-        long managers = usersAuthRepository.findByRole(Role.MANAGER).size();
-        long transcriptions = usersAuthRepository.findByRole(Role.TRANSCRIPTION).size();
-        long arrangements = usersAuthRepository.findByRole(Role.ARRANGEMENT).size();
-        long recordingArtists = usersAuthRepository.findByRole(Role.RECORDING_ARTIST).size();
-        long customers = usersAuthRepository.findByRole(Role.CUSTOMER).size();
+        // Count by role - use count queries for better performance
+        long systemAdmins = usersAuthRepository.countByRole(Role.SYSTEM_ADMIN);
+        long managers = usersAuthRepository.countByRole(Role.MANAGER);
+        long transcriptions = usersAuthRepository.countByRole(Role.TRANSCRIPTION);
+        long arrangements = usersAuthRepository.countByRole(Role.ARRANGEMENT);
+        long recordingArtists = usersAuthRepository.countByRole(Role.RECORDING_ARTIST);
+        long customers = usersAuthRepository.countByRole(Role.CUSTOMER);
 
         return UserStatisticsResponse.builder()
             .totalUsers(totalUsers)
@@ -416,6 +420,56 @@ public class UserService {
             .recordingArtists(recordingArtists)
             .customers(customers)
             .build();
+    }
+
+    /**
+     * Get user statistics grouped by date for a given time range
+     * @param days Number of days to look back (7, 30, etc.)
+     * @return UserStatisticsByDateResponse with daily counts
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UserStatisticsByDateResponse getUserStatisticsByDate(int days) {
+        log.info("Getting user statistics by date for last {} days", days);
+        
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days);
+        
+        List<Object[]> results = usersAuthRepository.countUsersByDateRange(startDate, endDate);
+        
+        // Convert results to DailyUserStats
+        List<UserStatisticsByDateResponse.DailyUserStats> dailyStats = results.stream()
+            .map(result -> {
+                LocalDate date = (LocalDate) result[0];
+                Long count = (Long) result[1];
+                return UserStatisticsByDateResponse.DailyUserStats.builder()
+                    .date(date)
+                    .count(count)
+                    .build();
+            })
+            .collect(Collectors.toList());
+        
+        return UserStatisticsByDateResponse.builder()
+                .dailyStats(dailyStats)
+                .build();
+    }
+
+    /**
+     * Get all user dashboard statistics (statistics và statistics over time)
+     * Gộp tất cả user statistics vào một response để giảm số lượng API calls
+     * @param days Number of days to look back for statistics over time
+     * @return UserDashboardStatisticsResponse với đầy đủ statistics
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UserDashboardStatisticsResponse getUserDashboardStatistics(int days) {
+        log.info("Getting all user dashboard statistics for last {} days", days);
+        
+        UserStatisticsResponse statistics = getUserStatistics();
+        UserStatisticsByDateResponse statisticsOverTime = getUserStatisticsByDate(days);
+        
+        return UserDashboardStatisticsResponse.builder()
+                .statistics(statistics)
+                .statisticsOverTime(statisticsOverTime)
+                .build();
     }
 
     // ===== SEARCH =====

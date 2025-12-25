@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -134,5 +135,74 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     Optional<WalletTransaction> findByRefundOfWalletTx_WalletTxId(String walletTxId);
 
     long countByTxType(WalletTxType txType);
+    
+    // Optimized GROUP BY query to get all transaction type counts in one query
+    @Query("SELECT wt.txType, COUNT(wt) FROM WalletTransaction wt GROUP BY wt.txType")
+    List<Object[]> countByTxTypeGroupBy();
+    
+    /**
+     * Sum topup amounts grouped by date (cast createdAt to date)
+     * Returns list of Object arrays where [0] = LocalDate, [1] = BigDecimal sum
+     */
+    @Query("SELECT CAST(wt.createdAt AS LocalDate) as date, SUM(wt.amount) as totalAmount " +
+           "FROM WalletTransaction wt " +
+           "WHERE wt.txType = :txType " +
+           "AND wt.createdAt >= :startDate AND wt.createdAt < :endDate " +
+           "GROUP BY CAST(wt.createdAt AS LocalDate) " +
+           "ORDER BY date ASC")
+    List<Object[]> sumAmountsByDateRange(@Param("txType") WalletTxType txType,
+                                          @Param("startDate") LocalDateTime startDate,
+                                          @Param("endDate") LocalDateTime endDate);
+    
+    /**
+     * Sum revenue amounts grouped by date for multiple transaction types
+     * Returns list of Object arrays where [0] = LocalDate, [1] = BigDecimal totalAmount
+     */
+    @Query("SELECT CAST(wt.createdAt AS LocalDate) as date, SUM(wt.amount) as totalAmount " +
+           "FROM WalletTransaction wt " +
+           "WHERE wt.txType IN :txTypes " +
+           "AND wt.createdAt >= :startDate AND wt.createdAt < :endDate " +
+           "GROUP BY CAST(wt.createdAt AS LocalDate) " +
+           "ORDER BY date ASC")
+    List<Object[]> sumRevenueAmountsByDateRange(@Param("txTypes") List<WalletTxType> txTypes,
+                                                 @Param("startDate") LocalDateTime startDate,
+                                                 @Param("endDate") LocalDateTime endDate);
+    
+    /**
+     * Sum total revenue amount for multiple transaction types in date range
+     */
+    @Query("SELECT COALESCE(SUM(wt.amount), 0) " +
+           "FROM WalletTransaction wt " +
+           "WHERE wt.txType IN :txTypes " +
+           "AND wt.createdAt >= :startDate AND wt.createdAt < :endDate")
+    BigDecimal sumRevenueAmount(@Param("txTypes") List<WalletTxType> txTypes,
+                                @Param("startDate") LocalDateTime startDate,
+                                @Param("endDate") LocalDateTime endDate);
+    
+    /**
+     * Optimized: Sum revenue amounts grouped by transaction type and date for both current and previous periods
+     * Returns list of Object arrays where [0] = WalletTxType, [1] = LocalDate, [2] = BigDecimal sum, [3] = String period ('current' or 'previous')
+     * Used to get all revenue data (totals + daily stats) for both periods in one query
+     */
+    @Query("SELECT wt.txType, CAST(wt.createdAt AS LocalDate) as date, SUM(wt.amount) as totalAmount, " +
+           "  CASE " +
+           "    WHEN wt.createdAt >= :currentStartDate AND wt.createdAt < :currentEndDate THEN 'current' " +
+           "    WHEN wt.createdAt >= :prevStartDate AND wt.createdAt < :prevEndDate THEN 'previous' " +
+           "  END as period " +
+           "FROM WalletTransaction wt " +
+           "WHERE wt.txType IN :txTypes " +
+           "AND ((wt.createdAt >= :currentStartDate AND wt.createdAt < :currentEndDate) " +
+           "     OR (wt.createdAt >= :prevStartDate AND wt.createdAt < :prevEndDate)) " +
+           "GROUP BY wt.txType, CAST(wt.createdAt AS LocalDate), " +
+           "  CASE " +
+           "    WHEN wt.createdAt >= :currentStartDate AND wt.createdAt < :currentEndDate THEN 'current' " +
+           "    WHEN wt.createdAt >= :prevStartDate AND wt.createdAt < :prevEndDate THEN 'previous' " +
+           "  END")
+    List<Object[]> sumRevenueAmountsByTypeAndDateAndPeriod(
+            @Param("txTypes") List<WalletTxType> txTypes,
+            @Param("currentStartDate") LocalDateTime currentStartDate,
+            @Param("currentEndDate") LocalDateTime currentEndDate,
+            @Param("prevStartDate") LocalDateTime prevStartDate,
+            @Param("prevEndDate") LocalDateTime prevEndDate);
 }
 

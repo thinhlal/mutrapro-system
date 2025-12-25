@@ -53,5 +53,16 @@ public interface BookingRequiredEquipmentRepository extends JpaRepository<Bookin
      */
     @Query("SELECT COALESCE(SUM(b.totalRentalFee), 0) FROM BookingRequiredEquipment b WHERE b.booking.bookingId = :bookingId")
     java.math.BigDecimal sumTotalRentalFeeByBookingId(@Param("bookingId") String bookingId);
+    
+    /**
+     * Đếm số equipment đang được booking (active bookings)
+     * Chỉ đếm bookings có status TENTATIVE, PENDING, CONFIRMED, IN_PROGRESS
+     */
+    @Query("SELECT COUNT(DISTINCT bre.equipmentId) FROM BookingRequiredEquipment bre " +
+           "WHERE bre.booking.status IN (com.mutrapro.project_service.enums.BookingStatus.TENTATIVE, " +
+           "com.mutrapro.project_service.enums.BookingStatus.PENDING, " +
+           "com.mutrapro.project_service.enums.BookingStatus.CONFIRMED, " +
+           "com.mutrapro.project_service.enums.BookingStatus.IN_PROGRESS)")
+    long countDistinctBookedEquipment();
 }
 

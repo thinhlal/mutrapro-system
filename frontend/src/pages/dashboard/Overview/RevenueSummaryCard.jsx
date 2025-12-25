@@ -11,11 +11,38 @@ import styles from './Dashboard.module.css';
 import { formatCurrency, formatPercent } from './adminDashboardMock';
 
 const RevenueSummaryCard = ({ data, timeRange }) => {
-  const metrics = [
-    { key: 'total', label: 'Total Revenue', ...data.total },
-    { key: 'topups', label: 'From Top-ups', ...data.fromTopups },
-    { key: 'services', label: 'From Services', ...data.fromServices },
-  ];
+  // Check if data is from API (has total, fromTopups, fromServices structure) or mock data
+  const isApiData = data && data.total && data.fromTopups && data.fromServices;
+  
+  const metrics = isApiData
+    ? [
+        { 
+          key: 'total', 
+          label: 'Total Revenue', 
+          value: data.total.value, 
+          trend: data.total.trend, 
+          sparkline: data.total.sparkline || [] 
+        },
+        { 
+          key: 'topups', 
+          label: 'From Top-ups', 
+          value: data.fromTopups.value, 
+          trend: data.fromTopups.trend, 
+          sparkline: data.fromTopups.sparkline || [] 
+        },
+        { 
+          key: 'services', 
+          label: 'From Services', 
+          value: data.fromServices.value, 
+          trend: data.fromServices.trend, 
+          sparkline: data.fromServices.sparkline || [] 
+        },
+      ]
+    : [
+        { key: 'total', label: 'Total Revenue', ...data.total },
+        { key: 'topups', label: 'From Top-ups', ...data.fromTopups },
+        { key: 'services', label: 'From Services', ...data.fromServices },
+      ];
 
   const prevLabel =
     timeRange === 'today'
@@ -65,18 +92,23 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
                 </div>
               </div>
               <div className={styles.metricSparkline}>
-                <Tiny.Area
-                  data={metric.sparkline.map((v, i) => ({ x: i, y: v }))}
-                  xField="x"
-                  yField="y"
-                  height={40}
-                  width={80}
-                  smooth
-                  areaStyle={{ fill: 'rgba(255,255,255,0.3)' }}
-                  line={{
-                    style: { stroke: 'rgba(255,255,255,0.8)', lineWidth: 2 },
-                  }}
-                />
+                {metric.sparkline && metric.sparkline.length > 0 && (
+                  <Tiny.Area
+                    data={metric.sparkline.map((v, i) => ({ 
+                      x: i, 
+                      y: typeof v === 'number' ? v : (typeof v === 'object' && v != null ? Number(v) : 0)
+                    }))}
+                    xField="x"
+                    yField="y"
+                    height={40}
+                    width={80}
+                    smooth
+                    areaStyle={{ fill: 'rgba(255,255,255,0.3)' }}
+                    line={{
+                      style: { stroke: 'rgba(255,255,255,0.8)', lineWidth: 2 },
+                    }}
+                  />
+                )}
               </div>
               {idx < metrics.length - 1 && (
                 <div className={styles.metricDivider} />

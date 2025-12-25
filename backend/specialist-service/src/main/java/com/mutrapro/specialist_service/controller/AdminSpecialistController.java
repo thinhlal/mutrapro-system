@@ -4,10 +4,12 @@ import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.specialist_service.dto.request.CreateSpecialistRequest;
 import com.mutrapro.specialist_service.dto.request.UpdateSpecialistStatusRequest;
 import com.mutrapro.specialist_service.dto.request.UpdateSpecialistSettingsRequest;
+import com.mutrapro.specialist_service.dto.response.SpecialistModuleStatisticsResponse;
 import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.service.AdminSpecialistService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -131,6 +133,21 @@ public class AdminSpecialistController {
         return ApiResponse.<List<SpecialistResponse>>builder()
             .message("Specialists retrieved successfully")
             .data(specialists)
+            .build();
+    }
+
+    /**
+     * Lấy tất cả specialist module statistics trong một API call (specialists và skills)
+     * Gộp lại để giảm số lượng API calls từ frontend
+     */
+    @GetMapping("/statistics")
+    @Operation(summary = "Get all specialist module statistics", description = "Lấy tất cả specialist statistics (specialists và skills) trong một API call")
+    public ApiResponse<SpecialistModuleStatisticsResponse> getAllSpecialistModuleStatistics() {
+        log.info("GET /admin/specialists/statistics - Getting all specialist module statistics");
+        SpecialistModuleStatisticsResponse stats = adminSpecialistService.getAllSpecialistModuleStatistics();
+        return ApiResponse.<SpecialistModuleStatisticsResponse>builder()
+            .message("All specialist module statistics retrieved successfully")
+            .data(stats)
             .build();
     }
 }

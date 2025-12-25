@@ -12,6 +12,9 @@ public interface NotationInstrumentRepository extends JpaRepository<NotationInst
     List<NotationInstrument> findByIsActiveTrue();
     List<NotationInstrument> findByUsageIn(List<NotationInstrumentUsage> usages);
     
+    // Optimized count query for statistics (avoid loading all records into memory)
+    long countByIsActiveTrue();
+    
     /**
      * Tìm instrument theo tên (case-insensitive)
      * @param instrumentName tên nhạc cụ (không phân biệt hoa thường)

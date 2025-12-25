@@ -45,4 +45,21 @@ public interface StudioBookingRepository extends JpaRepository<StudioBooking, St
     List<StudioBooking> findByContractIdOrderByBookingDateDescStartTimeAsc(String contractId);
 
     List<StudioBooking> findByMilestoneIdOrderByBookingDateDescStartTimeAsc(String milestoneId);
+    
+    /**
+     * Đếm số bookings theo status
+     */
+    long countByStatus(BookingStatus status);
+    
+    /**
+     * Đếm số bookings upcoming (bookingDate >= today và status active)
+     * Status active: TENTATIVE, PENDING, CONFIRMED, IN_PROGRESS
+     */
+    @Query("SELECT COUNT(sb) FROM StudioBooking sb " +
+           "WHERE sb.bookingDate >= CURRENT_DATE " +
+           "AND sb.status IN (com.mutrapro.project_service.enums.BookingStatus.TENTATIVE, " +
+           "com.mutrapro.project_service.enums.BookingStatus.PENDING, " +
+           "com.mutrapro.project_service.enums.BookingStatus.CONFIRMED, " +
+           "com.mutrapro.project_service.enums.BookingStatus.IN_PROGRESS)")
+    long countUpcomingBookings();
 }

@@ -83,6 +83,14 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     @Query("SELECT COUNT(sr) FROM ServiceRequest sr WHERE sr.status = :status AND sr.requestType = :type")
     long countByStatusAndRequestType(RequestStatus status, ServiceType type);
     
+    // Optimized GROUP BY query to get all status counts in one query
+    @Query("SELECT sr.status, COUNT(sr) FROM ServiceRequest sr GROUP BY sr.status")
+    List<Object[]> countByStatusGroupBy();
+    
+    // Optimized GROUP BY query to get all request type counts in one query
+    @Query("SELECT sr.requestType, COUNT(sr) FROM ServiceRequest sr GROUP BY sr.requestType")
+    List<Object[]> countByRequestTypeGroupBy();
+    
     /**
      * Tìm service request với instruments được load sẵn (JOIN FETCH)
      * Tối ưu để tránh N+1 queries khi load instruments

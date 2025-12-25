@@ -56,5 +56,16 @@ public interface EquipmentRepository extends JpaRepository<Equipment, String> {
            "WHERE sem.skillId = :skillId " +
            "AND e.isActive = true")
     List<Equipment> findEquipmentBySkillId(@Param("skillId") String skillId);
+    
+    /**
+     * Đếm số equipment available (totalQuantity > 0 && isActive = true)
+     */
+    long countByIsActiveTrueAndTotalQuantityGreaterThan(Integer totalQuantity);
+    
+    /**
+     * Đếm số equipment maintenance (totalQuantity = 0 hoặc isActive = false)
+     */
+    @Query("SELECT COUNT(e) FROM Equipment e WHERE e.totalQuantity = 0 OR e.isActive = false")
+    long countMaintenanceEquipment();
 }
 

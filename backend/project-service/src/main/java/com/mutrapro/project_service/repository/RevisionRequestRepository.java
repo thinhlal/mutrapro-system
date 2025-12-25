@@ -58,5 +58,12 @@ public interface RevisionRequestRepository extends JpaRepository<RevisionRequest
 
     // Count completed revisions for a contract
     long countByContractIdAndStatus(String contractId, RevisionRequestStatus status);
+    
+    // Count revisions by status (for admin statistics)
+    long countByStatus(RevisionRequestStatus status);
+    
+    // Optimized: Count revisions with status IN clause (for admin statistics)
+    @Query("SELECT COUNT(r) FROM RevisionRequest r WHERE r.status IN :statuses")
+    long countByStatusIn(@Param("statuses") List<RevisionRequestStatus> statuses);
 }
 

@@ -22,7 +22,9 @@ import java.util.Map;
     @Index(name = "idx_wallet_tx_submission_id", columnList = "submission_id"),
     @Index(name = "idx_wallet_tx_booking_id", columnList = "booking_id"),
     @Index(name = "idx_wallet_tx_refund_of", columnList = "refund_of_wallet_tx_id"),
-    @Index(name = "idx_wallet_tx_created_at", columnList = "created_at")
+    @Index(name = "idx_wallet_tx_created_at", columnList = "created_at"),
+    // Composite index to optimize revenue statistics queries (tx_type + created_at)
+    @Index(name = "idx_wallet_tx_type_created_at", columnList = "tx_type, created_at")
 })
 @Getter
 @Setter

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -6,7 +7,6 @@ import {
   Table,
   Tag,
   Badge,
-  Alert,
   message,
   Spin,
 } from 'antd';
@@ -18,17 +18,14 @@ import {
   SolutionOutlined,
   ClockCircleOutlined,
   ExportOutlined,
-  BellOutlined,
   RiseOutlined,
   FallOutlined,
   CustomerServiceOutlined,
   ToolOutlined,
   TeamOutlined,
   TrophyOutlined,
-  VideoCameraOutlined,
   CalendarOutlined,
   EditOutlined,
-  AudioOutlined,
 } from '@ant-design/icons';
 import { Line, Pie, Column } from '@ant-design/plots';
 import { motion } from 'framer-motion';
@@ -38,78 +35,116 @@ import {
   kpis,
   chartsData,
   recentRequests,
-  riskyTasks,
   moduleSummary,
-  alerts,
   recentContracts,
-  upcomingStudioBookings,
   revenueData,
   formatCurrency,
   formatPercent,
   mapStatusToTag,
 } from './adminDashboardMock';
-import { getUserStatistics, getRequestStatistics, getWalletStatistics } from '../../../services/dashboardService';
+import { getUserStatistics, getRequestStatistics, getWalletStatistics, getProjectStatistics, getLatestServiceRequests, getLatestContracts, getAllSpecialistModuleStatistics } from '../../../services/dashboardService';
 
 const { Title, Text } = Typography;
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('7d');
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // Loading ban đầu (chỉ KPI cards)
+  const [chartsLoading, setChartsLoading] = useState(true); // Loading cho charts/tables
   const [dashboardData, setDashboardData] = useState(null);
   const [walletStats, setWalletStats] = useState(null);
-  const [requestStats, setRequestStats] = useState(null);
+  const [requestStats, setRequestStats] = useState(null); // requests và notationInstruments
+  const [projectStats, setProjectStats] = useState(null); // contracts và tasks
+  const [userStatsOverTime, setUserStatsOverTime] = useState(null);
+  const [topupVolumeOverTime, setTopupVolumeOverTime] = useState(null);
+  const [latestRequests, setLatestRequests] = useState(null);
+  const [latestContracts, setLatestContracts] = useState(null);
+  const [revenueStats, setRevenueStats] = useState(null);
+  const [specialistModuleStats, setSpecialistModuleStats] = useState(null); // specialists, skills
 
-  // Fetch dashboard data
+  // Fetch dashboard data với progressive loading
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      setInitialLoading(true);
+      setChartsLoading(true);
       try {
-        const [userStatsResponse, walletStatsResponse, requestStatsResponse] = await Promise.all([
-          getUserStatistics(),
-          getWalletStatistics(),
+        // Determine days based on timeRange
+        const days = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+
+        // Load KPI data trước (statistics cơ bản)
+        const [userStatsResponse, walletStatsResponse, requestStatsResponse, projectStatsResponse, specialistModuleStatsResponse] = await Promise.all([
+          getUserStatistics(days),
+          getWalletStatistics(days),
           getRequestStatistics(),
+          getProjectStatistics(),
+          getAllSpecialistModuleStatistics(),
         ]);
-        console.log("userStatsResponse", userStatsResponse);
-        console.log("walletStatsResponse", walletStatsResponse);
-        console.log("requestStatsResponse", requestStatsResponse);
+
+        // Set KPI data ngay khi có
         if (userStatsResponse?.status === 'success') {
-          setDashboardData(userStatsResponse.data);
+          setDashboardData(userStatsResponse.data.statistics);
+          setUserStatsOverTime(userStatsResponse.data.statisticsOverTime);
         }
         if (walletStatsResponse?.status === 'success') {
-          setWalletStats(walletStatsResponse.data);
+          setWalletStats(walletStatsResponse.data.statistics);
+          setTopupVolumeOverTime(walletStatsResponse.data.topupVolume);
+          setRevenueStats(walletStatsResponse.data.revenueStatistics);
         }
         if (requestStatsResponse?.status === 'success') {
           setRequestStats(requestStatsResponse.data);
         }
+        if (projectStatsResponse?.status === 'success') {
+          setProjectStats(projectStatsResponse.data);
+        }
+        if (specialistModuleStatsResponse?.status === 'success') {
+          setSpecialistModuleStats(specialistModuleStatsResponse.data);
+        }
+
+        // KPI data đã load xong
+        setInitialLoading(false);
+
+        // Load charts/tables data sau (có thể chậm hơn)
+        const [latestRequestsResponse, latestContractsResponse] = await Promise.all([
+          getLatestServiceRequests(10),
+          getLatestContracts(10),
+        ]);
+
+        if (latestRequestsResponse?.status === 'success') {
+          setLatestRequests(latestRequestsResponse.data);
+        }
+        if (latestContractsResponse?.status === 'success') {
+          setLatestContracts(latestContractsResponse.data);
+        }
+
+        setChartsLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         message.error('Lỗi khi tải dữ liệu dashboard');
-      } finally {
-        setLoading(false);
+        setInitialLoading(false);
+        setChartsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [timeRange]);
 
   // Map real data to KPIs (fallback to mock data if real data not available)
   const getCurrentKpis = () => {
-    if (!dashboardData || !walletStats || !requestStats) {
+    if (!dashboardData || !walletStats || !requestStats || !projectStats) {
       return kpis[timeRange];
     }
 
-    // dashboardData is now directly UserStatisticsResponse, not {userStats: ...}
     const userStats = dashboardData || {};
-    const requestData = requestStats || {};
+    const requestData = requestStats?.requests || {};
+    const contractData = projectStats?.statistics?.contracts || {};
 
     // Calculate total requests
     const totalRequests = requestData.totalRequests || 0;
     const byStatus = requestData.byStatus || {};
-    console.log(requestData);
-    
+
     // Open requests = all statuses except completed, cancelled, rejected
     // Backend uses lowercase enum values: pending, contract_sent, contract_approved, contract_signed, awaiting_assignment, in_progress, completed, cancelled, rejected
-    const openRequests = 
+    const openRequests =
       (byStatus.pending || 0) +
       (byStatus.contract_sent || 0) +
       (byStatus.contract_approved || 0) +
@@ -117,14 +152,12 @@ const Dashboard = () => {
       (byStatus.awaiting_assignment || 0) +
       (byStatus.in_progress || 0);
 
-    // Calculate active contracts from request stats (if we have contract stats in future, use that)
-    // For now, use total requests as approximation (since each active contract relates to a request)
-    // This is a placeholder - ideally we'd fetch contract statistics separately
-    const activeContracts = totalRequests; // Placeholder - should fetch from contract statistics API
-
-    // Calculate overdue tasks - placeholder for now
-    // Ideally we'd fetch task statistics and calculate overdue from deadline dates
-    const overdueTasks = 0; // Placeholder - should fetch from task statistics API
+    // Calculate active contracts from contract stats
+    // Active contracts = active + active_pending_assignment
+    const contractByStatus = contractData.byStatus || {};
+    const activeContracts =
+      (contractByStatus.active || 0) +
+      (contractByStatus.active_pending_assignment || 0);
 
     // For now, use real data where available, mock data for trends
     // Note: Trends are calculated from historical data, not available in current API
@@ -133,7 +166,7 @@ const Dashboard = () => {
         value: userStats.totalUsers || 0,
         trend: 0, // Trends require historical data comparison - set to 0 for now
       },
-      newUsers: {
+      activeUsers: {
         value: userStats.activeUsers || 0,
         trend: 0,
       },
@@ -149,15 +182,137 @@ const Dashboard = () => {
         value: activeContracts,
         trend: 0,
       },
-      overdueTasks: {
-        value: overdueTasks,
-        trend: 0,
-      },
     };
   };
 
   const currentKpis = getCurrentKpis();
-  const currentCharts = chartsData[timeRange];
+
+  // Map user statistics over time to chart format
+  const getNewUsersOverTimeData = () => {
+    if (!userStatsOverTime?.dailyStats || userStatsOverTime.dailyStats.length === 0) {
+      return chartsData[timeRange].newUsersOverTime; // Fallback to mock data
+    }
+
+    // Determine days based on timeRange
+    const days = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+
+    // Create a map of date -> count from API response
+    const dateCountMap = new Map();
+    userStatsOverTime.dailyStats.forEach(stat => {
+      if (stat.date) {
+        // Handle date string (YYYY-MM-DD)
+        const dateKey = typeof stat.date === 'string' ? stat.date : stat.date.split('T')[0];
+        dateCountMap.set(dateKey, stat.count || 0);
+      }
+    });
+
+    // Generate all dates in the range and fill missing dates with 0
+    const result = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+
+      // Format date as YYYY-MM-DD for lookup
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+
+      // Format date as MM/DD for display
+      const displayDate = `${month}/${day}`;
+
+      // Get count from map, default to 0 if not found
+      const count = dateCountMap.get(dateKey) || 0;
+
+      result.push({
+        date: displayDate,
+        users: count,
+      });
+    }
+
+    return result;
+  };
+
+  // Map topup volume over time to chart format
+  const getTopupsVolumeData = () => {
+    if (!topupVolumeOverTime?.dailyStats || topupVolumeOverTime.dailyStats.length === 0) {
+      return chartsData[timeRange].topupsVolume; // Fallback to mock data
+    }
+
+    // Determine days based on timeRange
+    const days = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+
+    // Create a map of date -> amount from API response
+    const dateAmountMap = new Map();
+    topupVolumeOverTime.dailyStats.forEach(stat => {
+      if (stat.date) {
+        // Handle date string (YYYY-MM-DD)
+        const dateKey = typeof stat.date === 'string' ? stat.date : stat.date.split('T')[0];
+        dateAmountMap.set(dateKey, stat.amount || 0);
+      }
+    });
+
+    // Generate all dates in the range and fill missing dates with 0
+    const result = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+
+      // Format date as YYYY-MM-DD for lookup
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+
+      // Format date as MM/DD for display
+      const displayDate = `${month}/${day}`;
+
+      // Get amount from map, default to 0 if not found
+      const amount = dateAmountMap.get(dateKey) || 0;
+
+      result.push({
+        date: displayDate,
+        amount: amount,
+      });
+    }
+
+    return result;
+  };
+
+  // Map request statistics by type to chart format
+  const getRequestsByTypeData = () => {
+    if (!requestStats?.requests?.byType || Object.keys(requestStats.requests.byType).length === 0) {
+      return chartsData[timeRange].requestsByType; // Fallback to mock data
+    }
+
+    // Map ServiceType enum (lowercase) to display names
+    const typeDisplayMap = {
+      transcription: 'Transcription',
+      arrangement: 'Arrangement',
+      arrangement_with_recording: 'Arrangement + Recording',
+      recording: 'Recording',
+    };
+
+    // Convert byType map to chart format
+    const result = Object.entries(requestStats.requests.byType)
+      .map(([type, count]) => ({
+        type: typeDisplayMap[type] || type, // Use display name or fallback to original
+        value: count || 0,
+      }))
+      .filter(item => item.value > 0) // Only include types with count > 0
+      .sort((a, b) => b.value - a.value); // Sort by value descending
+
+    return result.length > 0 ? result : chartsData[timeRange].requestsByType; // Fallback if empty
+  };
+
+  const currentCharts = {
+    ...chartsData[timeRange],
+    newUsersOverTime: getNewUsersOverTimeData(),
+    requestsByType: getRequestsByTypeData(),
+    topupsVolume: getTopupsVolumeData(),
+  };
 
   const handleExport = () => {
     message.success('Report exported successfully!');
@@ -172,7 +327,7 @@ const Dashboard = () => {
       bgColor: '#eff6ff',
     },
     {
-      key: 'newUsers',
+      key: 'activeUsers',
       label: 'Active Users',
       icon: <UserAddOutlined />,
       color: '#8b5cf6',
@@ -200,29 +355,21 @@ const Dashboard = () => {
       color: '#06b6d4',
       bgColor: '#ecfeff',
     },
-    {
-      key: 'overdueTasks',
-      label: 'Overdue Tasks',
-      icon: <ClockCircleOutlined />,
-      color: '#ef4444',
-      bgColor: '#fef2f2',
-    },
   ];
 
   const requestColumns = [
-    { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
     {
       title: 'Customer',
       dataIndex: 'customer',
       key: 'customer',
-      ellipsis: true,
+      ellipsis: true, width: 130
     },
     { title: 'Type', dataIndex: 'type', key: 'type', width: 110 },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 150,
       render: status => {
         const { color, text } = mapStatusToTag(status);
         return <Tag color={color}>{text}</Tag>;
@@ -244,39 +391,16 @@ const Dashboard = () => {
         <Button
           type="link"
           size="small"
-          onClick={() => message.info(`View ${record.code}`)}
+          onClick={() => {
+            console.log('View clicked, record:', record);
+            if (record.requestId) {
+              navigate(`/admin/service-requests/${record.requestId}`);
+            } else {
+              message.warning('Request ID not available');
+            }
+          }}
         >
           View
-        </Button>
-      ),
-    },
-  ];
-
-  const taskColumns = [
-    { title: 'Task', dataIndex: 'task', key: 'task', ellipsis: true },
-    { title: 'Assignee', dataIndex: 'assignee', key: 'assignee', width: 100 },
-    { title: 'Due', dataIndex: 'dueDate', key: 'dueDate', width: 100 },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: status => {
-        const { color, text } = mapStatusToTag(status);
-        return <Tag color={color}>{text}</Tag>;
-      },
-    },
-    {
-      title: '',
-      key: 'action',
-      width: 60,
-      render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => message.info(`Open: ${record.task}`)}
-        >
-          Open
         </Button>
       ),
     },
@@ -289,57 +413,49 @@ const Dashboard = () => {
         <CustomerServiceOutlined style={{ fontSize: 24, color: '#3b82f6' }} />
       ),
       title: 'Notation Instruments',
-      stat: moduleSummary.notationInstruments.total,
-      sub: `Most used: ${moduleSummary.notationInstruments.mostUsed}`,
+      stat: requestStats?.notationInstruments?.total ?? moduleSummary.notationInstruments.total,
+      sub: `Most used: ${requestStats?.notationInstruments?.mostUsed ?? moduleSummary.notationInstruments.mostUsed}`,
     },
     {
       key: 'equipment',
       icon: <ToolOutlined style={{ fontSize: 24, color: '#8b5cf6' }} />,
       title: 'Equipment',
-      stat: `${moduleSummary.equipment.available}/${moduleSummary.equipment.booked}/${moduleSummary.equipment.maintenance}`,
+      stat: projectStats?.moduleStatistics?.equipment
+        ? `${projectStats.moduleStatistics.equipment.available}/${projectStats.moduleStatistics.equipment.booked}/${projectStats.moduleStatistics.equipment.maintenance}`
+        : `${moduleSummary.equipment.available}/${moduleSummary.equipment.booked}/${moduleSummary.equipment.maintenance}`,
       sub: 'Avail / Booked / Maint',
     },
     {
       key: 'specialists',
       icon: <TeamOutlined style={{ fontSize: 24, color: '#10b981' }} />,
       title: 'Specialists',
-      stat: `${moduleSummary.specialists.active}`,
-      sub: `${moduleSummary.specialists.acceptanceRate}% acceptance`,
+      stat: specialistModuleStats?.specialists?.active ?? moduleSummary.specialists.active,
+      sub: `Active specialists`,
     },
     {
       key: 'skills',
       icon: <TrophyOutlined style={{ fontSize: 24, color: '#f59e0b' }} />,
       title: 'Skills',
-      stat: moduleSummary.skills.total,
-      sub: `Top: ${moduleSummary.skills.topDemanded}`,
-    },
-    {
-      key: 'demos',
-      icon: <VideoCameraOutlined style={{ fontSize: 24, color: '#06b6d4' }} />,
-      title: 'Demo Management',
-      stat: moduleSummary.demoManagement.total,
-      sub: `${moduleSummary.demoManagement.active} active`,
+      stat: specialistModuleStats?.skills?.total ?? moduleSummary.skills.total,
+      sub: `Top: ${specialistModuleStats?.skills?.topDemanded ?? moduleSummary.skills.topDemanded}`,
     },
     {
       key: 'studioBookings',
       icon: <CalendarOutlined style={{ fontSize: 24, color: '#ec4899' }} />,
       title: 'Studio Bookings',
-      stat: moduleSummary.studioBookings.total,
-      sub: `${moduleSummary.studioBookings.upcoming} upcoming`,
+      stat: projectStats?.moduleStatistics?.studioBookings?.total ?? moduleSummary.studioBookings.total,
+      sub: projectStats?.moduleStatistics?.studioBookings
+        ? `${projectStats.moduleStatistics.studioBookings.upcoming} upcoming`
+        : `${moduleSummary.studioBookings.upcoming} upcoming`,
     },
     {
       key: 'revisions',
       icon: <EditOutlined style={{ fontSize: 24, color: '#f97316' }} />,
       title: 'Revision Requests',
-      stat: moduleSummary.revisionRequests.pending,
-      sub: `${moduleSummary.revisionRequests.approved} approved`,
-    },
-    {
-      key: 'transcription',
-      icon: <AudioOutlined style={{ fontSize: 24, color: '#14b8a6' }} />,
-      title: 'Transcription Jobs',
-      stat: moduleSummary.transcriptionAssignments.inProgress,
-      sub: `${moduleSummary.transcriptionAssignments.pending} pending`,
+      stat: projectStats?.moduleStatistics?.revisions?.pending ?? moduleSummary.revisionRequests.pending,
+      sub: projectStats?.moduleStatistics?.revisions
+        ? `${projectStats.moduleStatistics.revisions.approved} approved`
+        : `${moduleSummary.revisionRequests.approved} approved`,
     },
   ];
 
@@ -353,7 +469,8 @@ const Dashboard = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
   };
 
-  if (loading) {
+  // Chỉ hiển thị full loading nếu chưa có data nào
+  if (initialLoading && !dashboardData && !walletStats && !requestStats && !projectStats) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <Spin size="large" />
@@ -498,7 +615,7 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Tables Row 1 */}
+      {/* Tables Row */}
       <div className={styles.tablesGrid}>
         <motion.div
           className={styles.tableCard}
@@ -507,34 +624,32 @@ const Dashboard = () => {
           animate="visible"
         >
           <div className={styles.tableTitle}>Latest Service Requests</div>
-          <Table
-            dataSource={recentRequests}
-            columns={requestColumns}
-            size="small"
-            pagination={false}
-            scroll={{ x: 600 }}
-          />
+          {chartsLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <Spin />
+            </div>
+          ) : (
+            <Table
+              dataSource={latestRequests?.content?.map((req, index) => ({
+                key: req.requestId || index,
+                requestId: req.requestId,
+                customer: req.contactName || 'N/A',
+                type: req.requestType === 'transcription' ? 'Transcription' :
+                      req.requestType === 'arrangement' ? 'Arrangement' :
+                      req.requestType === 'arrangement_with_recording' ? 'Arrangement + Recording' :
+                      req.requestType === 'recording' ? 'Recording' : req.requestType || 'N/A',
+                status: req.status || 'pending',
+                createdAt: req.createdAt ? new Date(req.createdAt).toISOString().split('T')[0] : 'N/A',
+                totalPrice: req.totalPrice != null ? Number(req.totalPrice) : 0,
+              })) || recentRequests}
+              columns={requestColumns}
+              size="small"
+              pagination={false}
+              scroll={{ x: 600 }}
+            />
+          )}
         </motion.div>
 
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>Overdue Tasks</div>
-          <Table
-            dataSource={riskyTasks}
-            columns={taskColumns}
-            size="small"
-            pagination={false}
-            scroll={{ x: 500 }}
-          />
-        </motion.div>
-      </div>
-
-      {/* Tables Row 2 */}
-      <div className={styles.tablesGrid}>
         <motion.div
           className={styles.tableCard}
           variants={itemVariants}
@@ -542,99 +657,78 @@ const Dashboard = () => {
           animate="visible"
         >
           <div className={styles.tableTitle}>Recent Contracts</div>
-          <Table
-            dataSource={recentContracts}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Type', dataIndex: 'type', key: 'type', width: 110 },
-              {
-                title: 'Status',
-                dataIndex: 'status',
-                key: 'status',
-                width: 120,
-                render: status => {
-                  const { color, text } = mapStatusToTag(status);
-                  return <Tag color={color}>{text}</Tag>;
+          {chartsLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <Spin />
+            </div>
+          ) : (
+            <Table
+              dataSource={latestContracts?.content?.map((contract, index) => ({
+                key: contract.contractId || index,
+                contractId: contract.contractId,
+                code: contract.contractNumber || `CT-${index}`,
+                customer: contract.nameSnapshot || 'N/A',
+                type: contract.contractType === 'transcription' ? 'Transcription' :
+                      contract.contractType === 'arrangement' ? 'Arrangement' :
+                      contract.contractType === 'arrangement_with_recording' ? 'Arrangement + Recording' :
+                      contract.contractType === 'recording' ? 'Recording' :
+                      contract.contractType === 'bundle' ? 'Bundle (T+A+R)' : contract.contractType || 'N/A',
+                status: contract.status || 'draft',
+                createdAt: contract.createdAt ? new Date(contract.createdAt).toISOString().split('T')[0] : 'N/A',
+                totalPrice: contract.totalPrice != null ? Number(contract.totalPrice) : 0,
+              })) || recentContracts}
+              columns={[
+                { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
+                {
+                  title: 'Customer',
+                  dataIndex: 'customer',
+                  key: 'customer',
+                  ellipsis: true,
+                  width: 130
                 },
-              },
-              {
-                title: 'Value',
-                dataIndex: 'totalValue',
-                key: 'totalValue',
-                width: 130,
-                render: val => formatCurrency(val),
-              },
-              {
-                title: '',
-                key: 'action',
-                width: 60,
-                render: (_, record) => (
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={() => message.info(`View ${record.code}`)}
-                  >
-                    View
-                  </Button>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 550 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>Upcoming Studio Bookings</div>
-          <Table
-            dataSource={upcomingStudioBookings}
-            columns={[
-              {
-                title: 'Studio',
-                dataIndex: 'studio',
-                key: 'studio',
-                width: 90,
-              },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              { title: 'Date', dataIndex: 'date', key: 'date', width: 100 },
-              { title: 'Time', dataIndex: 'time', key: 'time', width: 120 },
-              {
-                title: 'Status',
-                dataIndex: 'status',
-                key: 'status',
-                width: 100,
-                render: status => {
-                  const { color, text } = mapStatusToTag(status);
-                  return <Tag color={color}>{text}</Tag>;
+                { title: 'Type', dataIndex: 'type', key: 'type', width: 110 },
+                {
+                  title: 'Status',
+                  dataIndex: 'status',
+                  key: 'status',
+                  width: 120,
+                  render: status => {
+                    const { color, text } = mapStatusToTag(status);
+                    return <Tag color={color}>{text}</Tag>;
+                  },
                 },
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 450 }}
-          />
+                {
+                  title: '',
+                  key: 'action',
+                  width: 60,
+                  render: (_, record) => (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => {
+                        console.log('View contract clicked, record:', record);
+                        if (record.contractId) {
+                          navigate(`/admin/contracts/${record.contractId}`);
+                        } else {
+                          message.warning('Contract ID not available');
+                        }
+                      }}
+                    >
+                      View
+                    </Button>
+                  ),
+                },
+              ]}
+              size="small"
+              pagination={false}
+              scroll={{ x: 600 }}
+            />
+          )}
         </motion.div>
       </div>
 
       {/* Revenue Summary Card */}
-      <RevenueSummaryCard data={revenueData[timeRange]} timeRange={timeRange} />
+      <RevenueSummaryCard data={revenueStats || revenueData[timeRange]} timeRange={timeRange} />
 
       {/* Module Summary */}
       <motion.div
@@ -656,28 +750,6 @@ const Dashboard = () => {
             <div className={styles.moduleSubtext}>{mod.sub}</div>
           </motion.div>
         ))}
-      </motion.div>
-
-      {/* Alerts Panel */}
-      <motion.div
-        className={styles.alertsPanel}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className={styles.alertsTitle}>
-          <BellOutlined /> System Alerts
-        </div>
-        <div className={styles.alertsList}>
-          {alerts.map((alert, idx) => (
-            <Alert
-              key={idx}
-              message={alert.message}
-              type={alert.type}
-              showIcon
-            />
-          ))}
-        </div>
       </motion.div>
     </motion.div>
   );

@@ -44,5 +44,10 @@ public interface SpecialistRepository extends JpaRepository<Specialist, String>,
         @Param("status") SpecialistStatus status,
         @Param("gender") Gender gender
     );
+    
+    /**
+     * Đếm số specialists theo status
+     */
+    long countByStatus(SpecialistStatus status);
 }
 

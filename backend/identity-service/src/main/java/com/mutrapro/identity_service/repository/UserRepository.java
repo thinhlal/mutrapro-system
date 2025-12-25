@@ -20,6 +20,9 @@ public interface UserRepository extends JpaRepository<User, String> {
      */
     List<User> findByIsActive(boolean isActive);
     
+    // Optimized count query for statistics (avoid loading all records into memory)
+    long countByIsActive(boolean isActive);
+    
     /**
      * Batch query - tìm tất cả users theo danh sách userIds
      */

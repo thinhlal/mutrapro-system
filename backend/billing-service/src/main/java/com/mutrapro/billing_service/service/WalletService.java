@@ -10,6 +10,9 @@ import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.request.WithdrawWalletRequest;
 import com.mutrapro.billing_service.client.ProjectServiceFeignClient;
 import com.mutrapro.billing_service.dto.response.MilestonePaymentQuoteResponse;
+import com.mutrapro.billing_service.dto.response.RevenueStatisticsResponse;
+import com.mutrapro.billing_service.dto.response.TopupVolumeByDateResponse;
+import com.mutrapro.billing_service.dto.response.WalletDashboardStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -51,6 +54,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -58,10 +62,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -1242,12 +1252,13 @@ public class WalletService {
 
         long totalTransactions = walletTransactionRepository.count();
 
+        // Use GROUP BY query to get all transaction type counts in one query instead of looping
         Map<WalletTxType, Long> transactionsByType = new HashMap<>();
-        for (WalletTxType type : WalletTxType.values()) {
-            long count = walletTransactionRepository.countByTxType(type);
-            if (count > 0) {
-                transactionsByType.put(type, count);
-            }
+        List<Object[]> typeCounts = walletTransactionRepository.countByTxTypeGroupBy();
+        for (Object[] result : typeCounts) {
+            WalletTxType type = (WalletTxType) result[0];
+            Long count = ((Number) result[1]).longValue();
+            transactionsByType.put(type, count);
         }
 
         return WalletStatisticsResponse.builder()
@@ -1255,6 +1266,239 @@ public class WalletService {
                 .totalBalance(totalBalance)
                 .totalTransactions(totalTransactions)
                 .transactionsByType(transactionsByType)
+                .build();
+    }
+
+    /**
+     * Get topup volume statistics grouped by date for a given time range
+     * @param days Number of days to look back (7, 30, etc.)
+     * @return TopupVolumeByDateResponse with daily topup amounts
+     */
+    @Transactional(readOnly = true)
+    public TopupVolumeByDateResponse getTopupVolumeByDate(int days) {
+        log.info("Getting topup volume statistics by date for last {} days", days);
+        
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days);
+        
+        List<Object[]> results = walletTransactionRepository.sumAmountsByDateRange(
+            WalletTxType.topup, startDate, endDate);
+        
+        // Convert results to DailyTopupVolume
+        List<TopupVolumeByDateResponse.DailyTopupVolume> dailyStats = results.stream()
+            .map(result -> {
+                LocalDate date = (LocalDate) result[0];
+                BigDecimal amount = (BigDecimal) result[1];
+                return TopupVolumeByDateResponse.DailyTopupVolume.builder()
+                    .date(date)
+                    .amount(amount != null ? amount : BigDecimal.ZERO)
+                    .build();
+            })
+            .collect(Collectors.toList());
+        
+        return TopupVolumeByDateResponse.builder()
+            .dailyStats(dailyStats)
+            .build();
+    }
+
+    /**
+     * Get revenue statistics for admin dashboard
+     * @param days Number of days to look back (1 for today, 7 for last 7 days, 30 for last 30 days)
+     * @return RevenueStatisticsResponse with total, topups, services revenue and trends
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @Transactional(readOnly = true)
+    public RevenueStatisticsResponse getRevenueStatistics(int days) {
+        log.info("Getting revenue statistics for last {} days", days);
+        
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days);
+        
+        // Calculate previous period for trend comparison
+        LocalDateTime prevEndDate = startDate;
+        LocalDateTime prevStartDate = prevEndDate.minusDays(days);
+        
+        // Transaction types for topups
+        List<WalletTxType> topupTypes = List.of(WalletTxType.topup);
+        
+        // Transaction types for services (payments)
+        List<WalletTxType> serviceTypes = List.of(
+            WalletTxType.contract_deposit_payment,
+            WalletTxType.milestone_payment,
+            WalletTxType.recording_booking_payment,
+            WalletTxType.revision_fee
+        );
+        
+        // All revenue transaction types
+        List<WalletTxType> allRevenueTypes = new ArrayList<>(topupTypes);
+        allRevenueTypes.addAll(serviceTypes);
+        
+        // Optimized: Get all revenue data (current + previous periods, totals + daily) in 1 query instead of 6
+        List<Object[]> allRevenueData = walletTransactionRepository.sumRevenueAmountsByTypeAndDateAndPeriod(
+            allRevenueTypes, startDate, endDate, prevStartDate, prevEndDate);
+        
+        // Initialize totals
+        BigDecimal currentTotalTopups = BigDecimal.ZERO;
+        BigDecimal currentTotalServices = BigDecimal.ZERO;
+        BigDecimal prevTotalTopups = BigDecimal.ZERO;
+        BigDecimal prevTotalServices = BigDecimal.ZERO;
+        Map<LocalDate, BigDecimal> topupByDate = new HashMap<>();
+        Map<LocalDate, BigDecimal> serviceByDate = new HashMap<>();
+        
+        // Process results
+        for (Object[] row : allRevenueData) {
+            WalletTxType txType = (WalletTxType) row[0];
+            LocalDate date = (LocalDate) row[1];
+            BigDecimal amount = (BigDecimal) row[2];
+            if (amount == null) amount = BigDecimal.ZERO;
+            String period = (String) row[3];
+            
+            boolean isTopup = topupTypes.contains(txType);
+            boolean isCurrent = "current".equals(period);
+            
+            // Accumulate totals
+            if (isCurrent) {
+                if (isTopup) {
+                    currentTotalTopups = currentTotalTopups.add(amount);
+                } else {
+                    currentTotalServices = currentTotalServices.add(amount);
+                }
+            } else {
+                if (isTopup) {
+                    prevTotalTopups = prevTotalTopups.add(amount);
+                } else {
+                    prevTotalServices = prevTotalServices.add(amount);
+                }
+            }
+            
+            // Accumulate daily stats (only for current period)
+            if (isCurrent) {
+                if (isTopup) {
+                    topupByDate.merge(date, amount, BigDecimal::add);
+                } else {
+                    serviceByDate.merge(date, amount, BigDecimal::add);
+                }
+            }
+        }
+        
+        BigDecimal currentTotal = currentTotalTopups.add(currentTotalServices);
+        BigDecimal prevTotal = prevTotalTopups.add(prevTotalServices);
+        
+        // Calculate trends (percentage change)
+        double topupTrend = prevTotalTopups.compareTo(BigDecimal.ZERO) == 0 
+            ? (currentTotalTopups.compareTo(BigDecimal.ZERO) == 0 ? 0.0 : 100.0)
+            : currentTotalTopups.subtract(prevTotalTopups)
+                .divide(prevTotalTopups, 4, java.math.RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100")).doubleValue();
+        
+        double serviceTrend = prevTotalServices.compareTo(BigDecimal.ZERO) == 0
+            ? (currentTotalServices.compareTo(BigDecimal.ZERO) == 0 ? 0.0 : 100.0)
+            : currentTotalServices.subtract(prevTotalServices)
+                .divide(prevTotalServices, 4, java.math.RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100")).doubleValue();
+        
+        double totalTrend = prevTotal.compareTo(BigDecimal.ZERO) == 0
+            ? (currentTotal.compareTo(BigDecimal.ZERO) == 0 ? 0.0 : 100.0)
+            : currentTotal.subtract(prevTotal)
+                .divide(prevTotal, 4, java.math.RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100")).doubleValue();
+        
+        // Create combined daily stats and fill missing dates
+        Set<LocalDate> allDates = new HashSet<>(topupByDate.keySet());
+        allDates.addAll(serviceByDate.keySet());
+        
+        List<RevenueStatisticsResponse.DailyRevenue> dailyStats = allDates.stream()
+            .sorted()
+            .map(date -> {
+                BigDecimal topup = topupByDate.getOrDefault(date, BigDecimal.ZERO);
+                BigDecimal service = serviceByDate.getOrDefault(date, BigDecimal.ZERO);
+                return RevenueStatisticsResponse.DailyRevenue.builder()
+                    .date(date)
+                    .topupRevenue(topup)
+                    .serviceRevenue(service)
+                    .totalRevenue(topup.add(service))
+                    .build();
+            })
+            .collect(Collectors.toList());
+        
+        // Fill missing dates with zero (for complete sparkline)
+        List<RevenueStatisticsResponse.DailyRevenue> completeDailyStats = new ArrayList<>();
+        LocalDate currentDate = startDate.toLocalDate();
+        LocalDate endLocalDate = endDate.toLocalDate();
+        Map<LocalDate, RevenueStatisticsResponse.DailyRevenue> dailyMap = dailyStats.stream()
+            .collect(Collectors.toMap(
+                RevenueStatisticsResponse.DailyRevenue::getDate,
+                d -> d
+            ));
+        
+        while (!currentDate.isAfter(endLocalDate)) {
+            RevenueStatisticsResponse.DailyRevenue daily = dailyMap.get(currentDate);
+            if (daily != null) {
+                completeDailyStats.add(daily);
+            } else {
+                completeDailyStats.add(RevenueStatisticsResponse.DailyRevenue.builder()
+                    .date(currentDate)
+                    .topupRevenue(BigDecimal.ZERO)
+                    .serviceRevenue(BigDecimal.ZERO)
+                    .totalRevenue(BigDecimal.ZERO)
+                    .build());
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+        
+        // Create sparkline data (daily totals)
+        List<BigDecimal> totalSparkline = completeDailyStats.stream()
+            .map(RevenueStatisticsResponse.DailyRevenue::getTotalRevenue)
+            .collect(Collectors.toList());
+        
+        List<BigDecimal> topupSparkline = completeDailyStats.stream()
+            .map(RevenueStatisticsResponse.DailyRevenue::getTopupRevenue)
+            .collect(Collectors.toList());
+        
+        List<BigDecimal> serviceSparkline = completeDailyStats.stream()
+            .map(RevenueStatisticsResponse.DailyRevenue::getServiceRevenue)
+            .collect(Collectors.toList());
+        
+        // Build response
+        return RevenueStatisticsResponse.builder()
+            .total(RevenueStatisticsResponse.RevenueMetrics.builder()
+                .value(currentTotal)
+                .trend(totalTrend)
+                .sparkline(totalSparkline)
+                .build())
+            .fromTopups(RevenueStatisticsResponse.RevenueMetrics.builder()
+                .value(currentTotalTopups)
+                .trend(topupTrend)
+                .sparkline(topupSparkline)
+                .build())
+            .fromServices(RevenueStatisticsResponse.RevenueMetrics.builder()
+                .value(currentTotalServices)
+                .trend(serviceTrend)
+                .sparkline(serviceSparkline)
+                .build())
+            .dailyStats(completeDailyStats)
+            .build();
+    }
+
+    /**
+     * Get all wallet dashboard statistics (statistics, topup volume, và revenue statistics)
+     * Gộp tất cả wallet statistics vào một response để giảm số lượng API calls
+     * @param days Number of days to look back for topup volume and revenue statistics
+     * @return WalletDashboardStatisticsResponse với đầy đủ statistics
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @Transactional(readOnly = true)
+    public WalletDashboardStatisticsResponse getWalletDashboardStatistics(int days) {
+        log.info("Getting all wallet dashboard statistics for last {} days", days);
+        
+        WalletStatisticsResponse statistics = getWalletStatisticsForAdmin();
+        TopupVolumeByDateResponse topupVolume = getTopupVolumeByDate(days);
+        RevenueStatisticsResponse revenueStatistics = getRevenueStatistics(days);
+        
+        return WalletDashboardStatisticsResponse.builder()
+                .statistics(statistics)
+                .topupVolume(topupVolume)
+                .revenueStatistics(revenueStatistics)
                 .build();
     }
 
