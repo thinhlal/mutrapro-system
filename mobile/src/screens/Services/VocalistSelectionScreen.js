@@ -185,9 +185,13 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
     if (fromFlow) {
       try {
         const stored = await getItem('recordingFlowData') || {};
+        // Preserve all existing step2 data (including vocalChoice) when saving selected vocalists
+        const existingStep2 = stored.step2 || {};
         stored.step2 = {
-          ...stored.step2,
+          ...existingStep2,
           selectedVocalists: selected,
+          // Ensure vocalChoice is preserved
+          vocalChoice: existingStep2.vocalChoice,
         };
         await setItem('recordingFlowData', stored);
         
