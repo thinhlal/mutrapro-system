@@ -253,3 +253,25 @@ export const downloadProofFile = async withdrawalRequestId => {
     throw error.response?.data || { message: 'Lỗi khi tải proof file' };
   }
 };
+
+/**
+ * Điều chỉnh số dư ví (Admin only)
+ * POST /admin/wallets/{walletId}/adjust
+ *
+ * @param {string} walletId - ID của ví
+ * @param {Object} data - Thông tin điều chỉnh
+ * @param {number} data.amount - Số tiền điều chỉnh (dương = thêm, âm = trừ)
+ * @param {string} data.reason - Lý do điều chỉnh (required)
+ * @returns {Promise} ApiResponse với WalletTransactionResponse
+ */
+export const adjustWalletBalance = async (walletId, data) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.ADMIN_WALLET.ADJUST_BALANCE(walletId),
+      data
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi điều chỉnh số dư ví' };
+  }
+};

@@ -2,6 +2,7 @@ package com.mutrapro.billing_service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mutrapro.billing_service.dto.request.AdjustWalletBalanceRequest;
 import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
@@ -29,6 +30,7 @@ import com.mutrapro.shared.service.S3Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
 import com.mutrapro.billing_service.exception.InsufficientBalanceException;
+import com.mutrapro.billing_service.exception.InvalidAdjustmentAmountException;
 import com.mutrapro.billing_service.exception.InvalidAmountException;
 import com.mutrapro.billing_service.exception.InvalidProofFileException;
 import com.mutrapro.billing_service.exception.InvalidTransactionTypeException;
@@ -1254,6 +1256,64 @@ public class WalletService {
                 .totalTransactions(totalTransactions)
                 .transactionsByType(transactionsByType)
                 .build();
+    }
+
+    /**
+     * Admin điều chỉnh số dư ví (thêm hoặc trừ tiền) - Admin only
+     */
+    @Transactional
+    public WalletTransactionResponse adjustWalletBalance(String walletId, AdjustWalletBalanceRequest request) {
+        String adminUserId = getCurrentUserId();
+
+        // Validate amount - phải khác 0
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) == 0) {
+            throw InvalidAdjustmentAmountException.zeroAmount();
+        }
+
+        // Lấy wallet với lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Validate currency
+        CurrencyType currency = wallet.getCurrency();
+
+        // Tính toán số dư mới
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.add(request.getAmount());
+
+        // Kiểm tra nếu trừ tiền mà số dư sau khi điều chỉnh < 0
+        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
+            throw InvalidAdjustmentAmountException.insufficientBalance(request.getAmount(), balanceBefore);
+        }
+
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+
+        // Tạo transaction record với type adjustment
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("adjustment_amount", request.getAmount().toString());
+        metadata.put("currency", currency.name());
+        metadata.put("reason", request.getReason());
+        metadata.put("adjusted_by", adminUserId);
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.adjustment)
+                .amount(request.getAmount().abs())  // Lưu số tiền tuyệt đối
+                .currency(currency)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        log.info("Admin adjusted wallet balance: walletId={}, amount={}, reason={}, adjustedBy={}, balanceBefore={}, balanceAfter={}",
+                walletId, request.getAmount(), request.getReason(), adminUserId, balanceBefore, balanceAfter);
+
+        return walletMapper.toResponse(savedTransaction);
     }
 
     /**

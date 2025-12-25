@@ -15,6 +15,8 @@ import {
   message,
   Spin,
   Empty,
+  Form,
+  InputNumber,
 } from 'antd';
 import {
   WalletOutlined,
@@ -22,11 +24,13 @@ import {
   EyeOutlined,
   HistoryOutlined,
   SearchOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import {
   getAllWallets,
   getWalletById,
   getWalletTransactions,
+  adjustWalletBalance,
 } from '../../../services/adminWalletService';
 import dayjs from 'dayjs';
 import styles from './WalletManagement.module.css';
@@ -49,6 +53,9 @@ const WalletManagement = () => {
     pageSize: 20,
     total: 0,
   });
+  const [adjustModalVisible, setAdjustModalVisible] = useState(false);
+  const [adjustLoading, setAdjustLoading] = useState(false);
+  const [adjustForm] = Form.useForm();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -158,6 +165,43 @@ const WalletManagement = () => {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
+  // Handle adjust balance
+  const handleAdjustBalance = wallet => {
+    setSelectedWallet(wallet);
+    adjustForm.setFieldsValue({
+      amount: undefined,
+      reason: '',
+    });
+    setAdjustModalVisible(true);
+  };
+
+  // Handle adjust balance submit
+  const handleAdjustSubmit = async values => {
+    if (!selectedWallet) return;
+
+    setAdjustLoading(true);
+    try {
+      await adjustWalletBalance(selectedWallet.walletId, {
+        amount: values.amount,
+        reason: values.reason,
+      });
+      message.success('Điều chỉnh số dư thành công');
+      setAdjustModalVisible(false);
+      adjustForm.resetFields();
+      // Reload wallets và wallet detail
+      loadWallets();
+      if (detailModalVisible) {
+        loadWalletDetail(selectedWallet.walletId);
+      }
+    } catch (error) {
+      message.error(
+        error.message || 'Lỗi khi điều chỉnh số dư ví'
+      );
+    } finally {
+      setAdjustLoading(false);
+    }
+  };
+
   // Format currency
   const formatCurrency = (amount, currency = 'VND') => {
     if (!amount) return '0';
@@ -174,6 +218,10 @@ const WalletManagement = () => {
     const colors = {
       topup: 'success',
       payment: 'error',
+      contract_deposit_payment: 'error',
+      milestone_payment: 'error',
+      recording_booking_payment: 'error',
+      revision_fee: 'error',
       refund: 'processing',
       withdrawal: 'warning',
       adjustment: 'default',
@@ -186,6 +234,10 @@ const WalletManagement = () => {
     const labels = {
       topup: 'Top Up',
       payment: 'Payment',
+      contract_deposit_payment: 'Contract Deposit',
+      milestone_payment: 'Milestone Payment',
+      recording_booking_payment: 'Recording Booking',
+      revision_fee: 'Revision Fee',
       refund: 'Refund',
       withdrawal: 'Withdrawal',
       adjustment: 'Adjustment',
@@ -199,7 +251,7 @@ const WalletManagement = () => {
       title: 'Wallet ID',
       dataIndex: 'walletId',
       key: 'walletId',
-      width: 120,
+      width: 80,
       render: text => (
         <Text code style={{ fontSize: '12px' }}>
           {text.substring(0, 8)}...
@@ -210,7 +262,7 @@ const WalletManagement = () => {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
-      width: 120,
+      width: 80,
       render: text => (
         <Text code style={{ fontSize: '12px' }}>
           {text.substring(0, 8)}...
@@ -221,7 +273,7 @@ const WalletManagement = () => {
       title: 'Balance',
       dataIndex: 'balance',
       key: 'balance',
-      width: 150,
+      width: 110,
       render: (amount, record) => (
         <Text strong style={{ fontSize: '16px', color: '#ec8a1c' }}>
           {formatCurrency(amount, record.currency)}
@@ -229,32 +281,55 @@ const WalletManagement = () => {
       ),
     },
     {
+      title: 'Hold Balance',
+      dataIndex: 'holdBalance',
+      key: 'holdBalance',
+      width: 110,
+      render: (amount, record) => (
+        <Text style={{ fontSize: '14px', color: amount > 0 ? '#ff9800' : '#888' }}>
+          {formatCurrency(amount || 0, record.currency)}
+        </Text>
+      ),
+    },
+    {
+      title: 'Available Balance',
+      dataIndex: 'availableBalance',
+      key: 'availableBalance',
+      width: 110,
+      render: (amount, record) => (
+        <Text strong style={{ fontSize: '14px', color: '#52c41a' }}>
+          {formatCurrency(amount || record.balance - (record.holdBalance || 0), record.currency)}
+        </Text>
+      ),
+    },
+    {
       title: 'Currency',
       dataIndex: 'currency',
       key: 'currency',
-      width: 120,
+      width: 50,
       render: currency => <Tag color="orange">{currency}</Tag>,
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 180,
-      render: date => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
     },
     {
       title: 'Actions',
       key: 'action',
-      width: 120,
+      width: 180,
       fixed: 'right',
       render: (_, record) => (
-        <Button
-          type="primary"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewDetail(record)}
-        >
-          View Details
-        </Button>
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record)}
+          >
+            View Details
+          </Button>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleAdjustBalance(record)}
+          >
+            Adjust
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -286,21 +361,22 @@ const WalletManagement = () => {
       dataIndex: 'amount',
       key: 'amount',
       width: 180,
-      render: (amount, record) => (
-        <Text
-          strong
-          style={{
-            color:
-              record.txType === 'topup' || record.txType === 'refund'
-                ? '#52c41a'
-                : '#ff4d4f',
-            fontSize: '16px',
-          }}
-        >
-          {record.txType === 'topup' || record.txType === 'refund' ? '+' : '-'}
-          {formatCurrency(amount, record.currency)}
-        </Text>
-      ),
+      render: (amount, record) => {
+        const isIncome =
+          record.txType === 'topup' || record.txType === 'refund';
+        return (
+          <Text
+            strong
+            style={{
+              color: isIncome ? '#52c41a' : '#ff4d4f',
+              fontSize: '16px',
+            }}
+          >
+            {isIncome ? '+' : '-'}
+            {formatCurrency(amount, record.currency)}
+          </Text>
+        );
+      },
     },
     {
       title: 'Balance Before',
@@ -317,6 +393,48 @@ const WalletManagement = () => {
       render: (amount, record) => (
         <Text strong>{formatCurrency(amount, record.currency)}</Text>
       ),
+    },
+    {
+      title: 'Contract ID',
+      dataIndex: 'contractId',
+      key: 'contractId',
+      width: 180,
+      render: (text, record) =>
+        text ? (
+          <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+            {text.substring(0, 8)}...
+          </Text>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
+    },
+    {
+      title: 'Milestone ID',
+      dataIndex: 'milestoneId',
+      key: 'milestoneId',
+      width: 180,
+      render: (text, record) =>
+        text ? (
+          <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+            {text.substring(0, 8)}...
+          </Text>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
+    },
+    {
+      title: 'Refund Of',
+      dataIndex: 'refundOfWalletTxId',
+      key: 'refundOfWalletTxId',
+      width: 200,
+      render: (text, record) =>
+        text ? (
+          <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+            {text.substring(0, 8)}...
+          </Text>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: 'Time',
@@ -355,7 +473,7 @@ const WalletManagement = () => {
           dataSource={wallets}
           rowKey="walletId"
           loading={loading}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1300 }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -418,6 +536,22 @@ const WalletManagement = () => {
                 <Descriptions.Item label="Currency">
                   <Tag color="orange">{selectedWallet.currency}</Tag>
                 </Descriptions.Item>
+                <Descriptions.Item label="Hold Balance">
+                  <Text style={{ fontSize: '16px', color: (selectedWallet.holdBalance || 0) > 0 ? '#ff9800' : '#888' }}>
+                    {formatCurrency(
+                      selectedWallet.holdBalance || 0,
+                      selectedWallet.currency
+                    )}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Available Balance">
+                  <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
+                    {formatCurrency(
+                      selectedWallet.availableBalance || (selectedWallet.balance - (selectedWallet.holdBalance || 0)),
+                      selectedWallet.currency
+                    )}
+                  </Text>
+                </Descriptions.Item>
                 <Descriptions.Item label="Created At" span={2}>
                   {dayjs(selectedWallet.createdAt).format(
                     'DD/MM/YYYY HH:mm:ss'
@@ -469,6 +603,14 @@ const WalletManagement = () => {
                   >
                     <Option value="topup">Top Up</Option>
                     <Option value="payment">Payment</Option>
+                    <Option value="contract_deposit_payment">
+                      Contract Deposit
+                    </Option>
+                    <Option value="milestone_payment">Milestone Payment</Option>
+                    <Option value="recording_booking_payment">
+                      Recording Booking
+                    </Option>
+                    <Option value="revision_fee">Revision Fee</Option>
                     <Option value="refund">Refund</Option>
                     <Option value="withdrawal">Withdrawal</Option>
                     <Option value="adjustment">Adjustment</Option>
@@ -515,6 +657,104 @@ const WalletManagement = () => {
                     dataSource={transactions}
                     rowKey="walletTxId"
                     loading={transactionsLoading}
+                    expandable={{
+                      expandedRowRender: record => (
+                        <div style={{ padding: '16px' }}>
+                          <Descriptions bordered column={2} size="small">
+                            <Descriptions.Item label="Wallet ID">
+                              <Text code>{record.walletId}</Text>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Currency">
+                              <Tag color="orange">{record.currency}</Tag>
+                            </Descriptions.Item>
+                            {record.contractId && (
+                              <Descriptions.Item label="Contract ID">
+                                <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+                                  {record.contractId}
+                                </Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.milestoneId && (
+                              <Descriptions.Item label="Milestone ID">
+                                <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+                                  {record.milestoneId}
+                                </Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.refundOfWalletTxId && (
+                              <Descriptions.Item label="Refund Of Transaction ID">
+                                <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+                                  {record.refundOfWalletTxId}
+                                </Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.submission_id && (
+                              <Descriptions.Item label="Submission ID">
+                                <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+                                  {record.metadata.submission_id}
+                                </Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.installment_id && (
+                              <Descriptions.Item label="Installment ID">
+                                <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+                                  {record.metadata.installment_id}
+                                </Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.payment_type && (
+                              <Descriptions.Item label="Payment Type">
+                                <Tag>
+                                  {record.metadata.payment_type === 'DEPOSIT'
+                                    ? 'Contract Deposit'
+                                    : record.metadata.payment_type === 'MILESTONE'
+                                    ? 'Milestone Payment'
+                                    : record.metadata.payment_type}
+                                </Tag>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.revisionRound && (
+                              <Descriptions.Item label="Revision Round">
+                                <Text>Round {record.metadata.revisionRound}</Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.description && (
+                              <Descriptions.Item label="Description" span={2}>
+                                <Text>{record.metadata.description}</Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.reason && (
+                              <Descriptions.Item label="Reason" span={2}>
+                                <Text>{record.metadata.reason}</Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata?.refund_reason && (
+                              <Descriptions.Item label="Refund Reason" span={2}>
+                                <Text>{record.metadata.refund_reason}</Text>
+                              </Descriptions.Item>
+                            )}
+                            {record.metadata && Object.keys(record.metadata).length > 0 && (
+                              <Descriptions.Item label="Full Metadata" span={2}>
+                                <pre
+                                  style={{
+                                    margin: 0,
+                                    fontSize: '12px',
+                                    maxHeight: '200px',
+                                    overflow: 'auto',
+                                    backgroundColor: '#f5f5f5',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                  }}
+                                >
+                                  {JSON.stringify(record.metadata, null, 2)}
+                                </pre>
+                              </Descriptions.Item>
+                            )}
+                          </Descriptions>
+                        </div>
+                      ),
+                      rowExpandable: record => true,
+                    }}
                     pagination={{
                       current: transactionsPagination.current,
                       pageSize: transactionsPagination.pageSize,
@@ -536,7 +776,7 @@ const WalletManagement = () => {
                         }));
                       },
                     }}
-                    scroll={{ x: 800 }}
+                    scroll={{ x: 1300 }}
                   />
                 )}
               </Space>
@@ -544,6 +784,138 @@ const WalletManagement = () => {
           </Tabs>
         ) : (
           <Spin />
+        )}
+      </Modal>
+
+      {/* Adjust Balance Modal */}
+      <Modal
+        title={
+          <Space>
+            <EditOutlined />
+            <span>Điều chỉnh số dư ví</span>
+          </Space>
+        }
+        open={adjustModalVisible}
+        onCancel={() => {
+          setAdjustModalVisible(false);
+          adjustForm.resetFields();
+        }}
+        footer={null}
+        width={600}
+      >
+        {selectedWallet && (
+          <div>
+            <Descriptions bordered column={1} size="small" style={{ marginBottom: '24px' }}>
+              <Descriptions.Item label="Wallet ID">
+                <Text code>{selectedWallet.walletId}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="User ID">
+                <Text code>{selectedWallet.userId}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số dư hiện tại">
+                <Text strong style={{ fontSize: '16px', color: '#ec8a1c' }}>
+                  {formatCurrency(selectedWallet.balance, selectedWallet.currency)}
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Form
+              form={adjustForm}
+              layout="vertical"
+              onFinish={handleAdjustSubmit}
+            >
+              <Form.Item
+                label="Số tiền điều chỉnh"
+                name="amount"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập số tiền điều chỉnh' },
+                  {
+                    validator: (_, value) => {
+                      if (value === null || value === undefined) {
+                        return Promise.reject(new Error('Vui lòng nhập số tiền điều chỉnh'));
+                      }
+                      if (value === 0) {
+                        return Promise.reject(new Error('Số tiền điều chỉnh phải khác 0'));
+                      }
+                      // Check nếu trừ tiền mà không đủ
+                      if (value < 0 && selectedWallet.balance + value < 0) {
+                        return Promise.reject(
+                          new Error(
+                            `Không thể trừ tiền. Số dư hiện tại: ${formatCurrency(
+                              selectedWallet.balance,
+                              selectedWallet.currency
+                            )}`
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+                help={
+                  adjustForm.getFieldValue('amount') ? (
+                    <Text
+                      style={{
+                        color:
+                          adjustForm.getFieldValue('amount') > 0
+                            ? '#52c41a'
+                            : '#ff4d4f',
+                      }}
+                    >
+                      Số dư sau điều chỉnh:{' '}
+                      {formatCurrency(
+                        selectedWallet.balance + (adjustForm.getFieldValue('amount') || 0),
+                        selectedWallet.currency
+                      )}
+                    </Text>
+                  ) : null
+                }
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  placeholder="Nhập số tiền (dương = thêm, âm = trừ)"
+                  min={-999999999}
+                  max={999999999}
+                  formatter={value =>
+                    value
+                      ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                      : ''
+                  }
+                  parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Lý do điều chỉnh"
+                name="reason"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập lý do điều chỉnh' },
+                  { min: 5, message: 'Lý do phải có ít nhất 5 ký tự' },
+                ]}
+              >
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Nhập lý do điều chỉnh số dư (bắt buộc để audit)"
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Space>
+                  <Button type="primary" htmlType="submit" loading={adjustLoading}>
+                    Xác nhận điều chỉnh
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setAdjustModalVisible(false);
+                      adjustForm.resetFields();
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </div>
         )}
       </Modal>
     </div>

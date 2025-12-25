@@ -1,5 +1,6 @@
 package com.mutrapro.billing_service.controller;
 
+import com.mutrapro.billing_service.dto.request.AdjustWalletBalanceRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -8,6 +9,7 @@ import com.mutrapro.billing_service.entity.WithdrawalRequest;
 import com.mutrapro.billing_service.enums.WithdrawalStatus;
 import com.mutrapro.billing_service.enums.WalletTxType;
 import com.mutrapro.billing_service.service.WalletService;
+import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -274,6 +276,23 @@ public class AdminWalletController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(resource);
+    }
+
+    @PostMapping("/{walletId}/adjust")
+    @Operation(summary = "Điều chỉnh số dư ví (Admin only) - Thêm hoặc trừ tiền với lý do")
+    public ApiResponse<WalletTransactionResponse> adjustWalletBalance(
+            @Parameter(description = "ID của ví")
+            @PathVariable String walletId,
+            @Valid @RequestBody AdjustWalletBalanceRequest request) {
+        log.info("Admin adjusting wallet balance: walletId={}, amount={}, reason={}", 
+                walletId, request.getAmount(), request.getReason());
+        WalletTransactionResponse transaction = walletService.adjustWalletBalance(walletId, request);
+        return ApiResponse.<WalletTransactionResponse>builder()
+                .message("Wallet balance adjusted successfully")
+                .data(transaction)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
     }
 }
 

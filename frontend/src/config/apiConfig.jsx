@@ -352,6 +352,9 @@ export const API_ENDPOINTS = {
     // GET /api/v1/billing/admin/wallets/withdrawal-requests/{id}/proof
     DOWNLOAD_PROOF: id =>
       `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/proof`,
+    // POST /api/v1/billing/admin/wallets/{walletId}/adjust
+    ADJUST_BALANCE: walletId =>
+      `${BILLING_PATH}/admin/wallets/${walletId}/adjust`,
   },
 
   // === Request Service (Quản lý Notation, Requests) ===
