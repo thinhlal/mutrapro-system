@@ -33,6 +33,7 @@ const RecordingStep1 = ({ data, onComplete }) => {
   const [externalGuestCount, setExternalGuestCount] = useState(
     typeof data?.externalGuestCount === 'number' ? data.externalGuestCount : 0
   );
+  const [slotsViewMode, setSlotsViewMode] = useState('horizontal'); // 'horizontal' or 'vertical'
 
   // Fetch available slots from backend when date is selected
   useEffect(() => {
@@ -284,76 +285,166 @@ const RecordingStep1 = ({ data, onComplete }) => {
 
               {!loadingSlots && availableSlots.length > 0 && (
                 <View style={styles.quickSlots}>
-                  <Text style={styles.slotsTitle}>Available Time Slots:</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.slotsContainer}
-                  >
-                    {availableSlots.map((slot, idx) => {
-                      // Normalize slot times to ensure format consistency (HH:mm)
-                      const normalizeTime = time => {
-                        if (!time) return time;
-                        // If format is HH:mm:ss, extract only HH:mm
-                        if (time.includes(':') && time.split(':').length === 3) {
-                          return time.substring(0, 5); // Take first 5 chars (HH:mm)
+                  <View style={styles.slotsHeader}>
+                    <Text style={styles.slotsTitle}>Available Time Slots:</Text>
+                    <TouchableOpacity
+                      style={styles.viewModeToggle}
+                      onPress={() =>
+                        setSlotsViewMode(
+                          slotsViewMode === 'horizontal' ? 'vertical' : 'horizontal'
+                        )
+                      }
+                    >
+                      <Ionicons
+                        name={
+                          slotsViewMode === 'horizontal'
+                            ? 'list-outline'
+                            : 'grid-outline'
                         }
-                        // If format is just number, convert to HH:00
-                        if (!time.includes(':')) {
-                          return `${String(time).padStart(2, '0')}:00`;
-                        }
-                        return time;
-                      };
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {slotsViewMode === 'horizontal' ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.slotsContainer}
+                    >
+                      {availableSlots.map((slot, idx) => {
+                        // Normalize slot times to ensure format consistency (HH:mm)
+                        const normalizeTime = time => {
+                          if (!time) return time;
+                          // If format is HH:mm:ss, extract only HH:mm
+                          if (time.includes(':') && time.split(':').length === 3) {
+                            return time.substring(0, 5); // Take first 5 chars (HH:mm)
+                          }
+                          // If format is just number, convert to HH:00
+                          if (!time.includes(':')) {
+                            return `${String(time).padStart(2, '0')}:00`;
+                          }
+                          return time;
+                        };
 
-                      const slotStart = normalizeTime(slot.start);
-                      const slotEnd = normalizeTime(slot.end);
+                        const slotStart = normalizeTime(slot.start);
+                        const slotEnd = normalizeTime(slot.end);
 
-                      // Check if this slot is selected
-                      const isSelected =
-                        selectedTimeRange &&
-                        selectedTimeRange.start === slotStart &&
-                        selectedTimeRange.end === slotEnd;
+                        // Check if this slot is selected
+                        const isSelected =
+                          selectedTimeRange &&
+                          selectedTimeRange.start === slotStart &&
+                          selectedTimeRange.end === slotEnd;
 
-                      return (
-                        <TouchableOpacity
-                          key={idx}
-                          style={[
-                            styles.slotButton,
-                            isSelected && styles.slotButtonSelected,
-                            !slot.available && styles.slotButtonDisabled,
-                          ]}
-                          onPress={() => {
-                            if (slot.available) {
-                              handleSlotSelect(slotStart, slotEnd);
-                            }
-                          }}
-                          disabled={!slot.available}
-                        >
-                          <Text
+                        return (
+                          <TouchableOpacity
+                            key={idx}
                             style={[
-                              styles.slotButtonText,
-                              isSelected && styles.slotButtonTextSelected,
-                              !slot.available && styles.slotButtonTextDisabled,
+                              styles.slotButton,
+                              isSelected && styles.slotButtonSelected,
+                              !slot.available && styles.slotButtonDisabled,
                             ]}
+                            onPress={() => {
+                              if (slot.available) {
+                                handleSlotSelect(slotStart, slotEnd);
+                              }
+                            }}
+                            disabled={!slot.available}
                           >
-                            {slotStart} - {slotEnd}
-                          </Text>
-                          {!slot.available && (
-                            <View style={styles.bookedBadge}>
-                              <Text style={styles.bookedBadgeText}>Booked</Text>
+                            <Text
+                              style={[
+                                styles.slotButtonText,
+                                isSelected && styles.slotButtonTextSelected,
+                                !slot.available && styles.slotButtonTextDisabled,
+                              ]}
+                            >
+                              {slotStart} - {slotEnd}
+                            </Text>
+                            {!slot.available && (
+                              <View style={styles.bookedBadge}>
+                                <Text style={styles.bookedBadgeText}>Booked</Text>
+                              </View>
+                            )}
+                            {isSelected && slot.available && (
+                              <Ionicons
+                                name="checkmark-circle"
+                                size={16}
+                                color={COLORS.white}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : (
+                    <View style={styles.slotsContainerVertical}>
+                      {availableSlots.map((slot, idx) => {
+                        // Normalize slot times to ensure format consistency (HH:mm)
+                        const normalizeTime = time => {
+                          if (!time) return time;
+                          // If format is HH:mm:ss, extract only HH:mm
+                          if (time.includes(':') && time.split(':').length === 3) {
+                            return time.substring(0, 5); // Take first 5 chars (HH:mm)
+                          }
+                          // If format is just number, convert to HH:00
+                          if (!time.includes(':')) {
+                            return `${String(time).padStart(2, '0')}:00`;
+                          }
+                          return time;
+                        };
+
+                        const slotStart = normalizeTime(slot.start);
+                        const slotEnd = normalizeTime(slot.end);
+
+                        // Check if this slot is selected
+                        const isSelected =
+                          selectedTimeRange &&
+                          selectedTimeRange.start === slotStart &&
+                          selectedTimeRange.end === slotEnd;
+
+                        return (
+                          <TouchableOpacity
+                            key={idx}
+                            style={[
+                              styles.slotButtonVertical,
+                              isSelected && styles.slotButtonSelected,
+                              !slot.available && styles.slotButtonDisabled,
+                            ]}
+                            onPress={() => {
+                              if (slot.available) {
+                                handleSlotSelect(slotStart, slotEnd);
+                              }
+                            }}
+                            disabled={!slot.available}
+                          >
+                            <View style={styles.slotButtonContent}>
+                              <Text
+                                style={[
+                                  styles.slotButtonText,
+                                  isSelected && styles.slotButtonTextSelected,
+                                  !slot.available && styles.slotButtonTextDisabled,
+                                ]}
+                              >
+                                {slotStart} - {slotEnd}
+                              </Text>
+                              {!slot.available && (
+                                <View style={styles.bookedBadge}>
+                                  <Text style={styles.bookedBadgeText}>Booked</Text>
+                                </View>
+                              )}
+                              {isSelected && slot.available && (
+                                <Ionicons
+                                  name="checkmark-circle"
+                                  size={18}
+                                  color={COLORS.white}
+                                />
+                              )}
                             </View>
-                          )}
-                          {isSelected && slot.available && (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={16}
-                              color={COLORS.white}
-                            />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -538,16 +629,31 @@ const styles = StyleSheet.create({
   quickSlots: {
     marginBottom: SPACING.md,
   },
+  slotsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
   slotsTitle: {
     fontSize: FONT_SIZES.base,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.sm,
+    flex: 1,
+  },
+  viewModeToggle: {
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary + '15',
   },
   slotsContainer: {
     flexDirection: 'row',
     paddingVertical: SPACING.xs,
     paddingRight: SPACING.md,
+  },
+  slotsContainerVertical: {
+    flexDirection: 'column',
+    gap: SPACING.sm,
   },
   slotButton: {
     flexDirection: 'row',
@@ -579,6 +685,23 @@ const styles = StyleSheet.create({
   },
   slotButtonTextDisabled: {
     color: COLORS.textSecondary,
+  },
+  slotButtonVertical: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.gray[100],
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    width: '100%',
+  },
+  slotButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
   },
   bookedBadge: {
     backgroundColor: COLORS.error,

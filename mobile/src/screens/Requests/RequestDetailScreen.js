@@ -1371,18 +1371,19 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
+                style={[styles.modalButton, styles.modalButtonSmall, styles.modalCancelButton]}
                 onPress={() => {
                   setRequestChangeModalVisible(false);
                   setChangeReason("");
                   setSelectedContract(null);
                 }}
               >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                <Text style={styles.modalCancelButtonTextSmall}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.modalButton,
+                  styles.modalButtonSmall,
                   styles.modalConfirmButton,
                   actionLoading && styles.modalButtonDisabled,
                 ]}
@@ -1392,7 +1393,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 {actionLoading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
-                  <Text style={styles.modalConfirmButtonText}>Send Request</Text>
+                  <Text style={styles.modalConfirmButtonTextSmall}>Send Request</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1974,6 +1975,19 @@ const styles = StyleSheet.create({
   },
   modalButtonDisabled: {
     opacity: 0.6,
+  },
+  modalButtonSmall: {
+    paddingVertical: SPACING.sm,
+  },
+  modalCancelButtonTextSmall: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  modalConfirmButtonTextSmall: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.white,
   },
   helperText: {
     fontSize: FONT_SIZES.sm,

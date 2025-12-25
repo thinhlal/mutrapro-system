@@ -71,14 +71,14 @@ const CustomDrawerContent = (props) => {
       tab: 'Profile',
       onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }),
     },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: 'settings-outline',
-      screen: 'MainTabs',
-      tab: 'Home',
-      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-    },
+    // {
+    //   id: 'settings',
+    //   label: 'Settings',
+    //   icon: 'settings-outline',
+    //   screen: 'MainTabs',
+    //   tab: 'Home',
+    //   onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+    // },
   ];
 
   const getCurrentRoute = () => {

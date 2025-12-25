@@ -62,6 +62,10 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   // Validation errors
   const [errors, setErrors] = useState({});
   
+  // View mode for genres and purpose (horizontal or vertical)
+  const [genresViewMode, setGenresViewMode] = useState('horizontal');
+  const [purposeViewMode, setPurposeViewMode] = useState('horizontal');
+  
   // Check if arrangement service
   const isArrangement = serviceType === "arrangement" || serviceType === "arrangement_with_recording";
   const isArrangementWithRecording = serviceType === "arrangement_with_recording";
@@ -531,34 +535,82 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {/* Genres Selection - Only for arrangement */}
         {isArrangement && (
           <View style={styles.formGroup}>
-            <Text style={styles.label}>
-              Music Genres <Text style={styles.required}>*</Text>
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genresContainer}>
-              {MUSIC_GENRES.map((genre) => {
-                const isSelected = genres.includes(genre.value);
-                return (
-                  <TouchableOpacity
-                    key={genre.value}
-                    style={[styles.genreTag, isSelected && styles.genreTagSelected]}
-                    onPress={() => {
-                      if (isSelected) {
-                        setGenres(genres.filter((g) => g !== genre.value));
-                      } else {
-                        setGenres([...genres, genre.value]);
-                      }
-                      if (errors.genres) {
-                        setErrors({ ...errors, genres: null });
-                      }
-                    }}
-                  >
-                    <Text style={[styles.genreTagText, isSelected && styles.genreTagTextSelected]}>
-                      {genre.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>
+                Music Genres <Text style={styles.required}>*</Text>
+              </Text>
+              <TouchableOpacity
+                style={styles.viewModeToggle}
+                onPress={() =>
+                  setGenresViewMode(
+                    genresViewMode === 'horizontal' ? 'vertical' : 'horizontal'
+                  )
+                }
+              >
+                <Ionicons
+                  name={
+                    genresViewMode === 'horizontal'
+                      ? 'list-outline'
+                      : 'grid-outline'
+                  }
+                  size={20}
+                  color={COLORS.primary}
+                />
+              </TouchableOpacity>
+            </View>
+            {genresViewMode === 'horizontal' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genresContainer}>
+                {MUSIC_GENRES.map((genre) => {
+                  const isSelected = genres.includes(genre.value);
+                  return (
+                    <TouchableOpacity
+                      key={genre.value}
+                      style={[styles.genreTag, isSelected && styles.genreTagSelected]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setGenres(genres.filter((g) => g !== genre.value));
+                        } else {
+                          setGenres([...genres, genre.value]);
+                        }
+                        if (errors.genres) {
+                          setErrors({ ...errors, genres: null });
+                        }
+                      }}
+                    >
+                      <Text style={[styles.genreTagText, isSelected && styles.genreTagTextSelected]}>
+                        {genre.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <View style={styles.genresContainerVertical}>
+                {MUSIC_GENRES.map((genre) => {
+                  const isSelected = genres.includes(genre.value);
+                  return (
+                    <TouchableOpacity
+                      key={genre.value}
+                      style={[styles.genreTagVertical, isSelected && styles.genreTagSelected]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setGenres(genres.filter((g) => g !== genre.value));
+                        } else {
+                          setGenres([...genres, genre.value]);
+                        }
+                        if (errors.genres) {
+                          setErrors({ ...errors, genres: null });
+                        }
+                      }}
+                    >
+                      <Text style={[styles.genreTagText, isSelected && styles.genreTagTextSelected]}>
+                        {genre.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
             {errors.genres && <Text style={styles.errorText}>{errors.genres}</Text>}
           </View>
         )}
@@ -566,30 +618,74 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {/* Purpose Selection - Only for arrangement */}
         {isArrangement && (
           <View style={styles.formGroup}>
-            <Text style={styles.label}>
-              Purpose <Text style={styles.required}>*</Text>
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.purposeContainer}>
-              {MUSIC_PURPOSES.map((p) => {
-                const isSelected = purpose === p.value;
-                return (
-                  <TouchableOpacity
-                    key={p.value}
-                    style={[styles.purposeButton, isSelected && styles.purposeButtonSelected]}
-                    onPress={() => {
-                      setPurpose(isSelected ? null : p.value);
-                      if (errors.purpose) {
-                        setErrors({ ...errors, purpose: null });
-                      }
-                    }}
-                  >
-                    <Text style={[styles.purposeButtonText, isSelected && styles.purposeButtonTextSelected]}>
-                      {p.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>
+                Purpose <Text style={styles.required}>*</Text>
+              </Text>
+              <TouchableOpacity
+                style={styles.viewModeToggle}
+                onPress={() =>
+                  setPurposeViewMode(
+                    purposeViewMode === 'horizontal' ? 'vertical' : 'horizontal'
+                  )
+                }
+              >
+                <Ionicons
+                  name={
+                    purposeViewMode === 'horizontal'
+                      ? 'list-outline'
+                      : 'grid-outline'
+                  }
+                  size={20}
+                  color={COLORS.primary}
+                />
+              </TouchableOpacity>
+            </View>
+            {purposeViewMode === 'horizontal' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.purposeContainer}>
+                {MUSIC_PURPOSES.map((p) => {
+                  const isSelected = purpose === p.value;
+                  return (
+                    <TouchableOpacity
+                      key={p.value}
+                      style={[styles.purposeButton, isSelected && styles.purposeButtonSelected]}
+                      onPress={() => {
+                        setPurpose(isSelected ? null : p.value);
+                        if (errors.purpose) {
+                          setErrors({ ...errors, purpose: null });
+                        }
+                      }}
+                    >
+                      <Text style={[styles.purposeButtonText, isSelected && styles.purposeButtonTextSelected]}>
+                        {p.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <View style={styles.purposeContainerVertical}>
+                {MUSIC_PURPOSES.map((p) => {
+                  const isSelected = purpose === p.value;
+                  return (
+                    <TouchableOpacity
+                      key={p.value}
+                      style={[styles.purposeButtonVertical, isSelected && styles.purposeButtonSelected]}
+                      onPress={() => {
+                        setPurpose(isSelected ? null : p.value);
+                        if (errors.purpose) {
+                          setErrors({ ...errors, purpose: null });
+                        }
+                      }}
+                    >
+                      <Text style={[styles.purposeButtonText, isSelected && styles.purposeButtonTextSelected]}>
+                        {p.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
             {errors.purpose && <Text style={styles.errorText}>{errors.purpose}</Text>}
           </View>
         )}
@@ -604,15 +700,19 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               Note: This is a preference suggestion, not a commitment. We will try to book the vocalist you choose. If they are not available, the manager will suggest similar options.
             </Text>
             
-            {/* Selected Vocalists */}
+            {/* Selected Vocalists Table */}
             {preferredVocalists.length > 0 && (
-              <View style={styles.selectedVocalistsContainer}>
-                {preferredVocalists.map((vocalist) => (
-                  <View key={vocalist.id || vocalist.specialistId} style={styles.vocalistTag}>
-                    <Text style={styles.vocalistTagText}>
+              <View style={styles.vocalistsTableContainer}>
+                <View style={styles.vocalistsTableHeader}>
+                  <Text style={styles.vocalistsTableHeaderText}>Vocalist Name</Text>
+                </View>
+                {preferredVocalists.map((vocalist, index) => (
+                  <View key={vocalist.id || vocalist.specialistId} style={styles.vocalistsTableRow}>
+                    <Text style={styles.vocalistsTableCell}>
                       {vocalist.name || vocalist.fullName || `Vocalist ${vocalist.id || vocalist.specialistId}`}
                     </Text>
                     <TouchableOpacity
+                      style={styles.vocalistsTableAction}
                       onPress={() => {
                         setPreferredVocalists(
                           preferredVocalists.filter(
@@ -621,7 +721,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                         );
                       }}
                     >
-                      <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                      <Ionicons name="close-circle" size={20} color={COLORS.error} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -747,6 +847,17 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.sm,
+  },
+  viewModeToggle: {
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary + "15",
+  },
   required: {
     color: COLORS.error,
   },
@@ -869,6 +980,20 @@ const styles = StyleSheet.create({
   genresContainer: {
     marginTop: SPACING.sm,
   },
+  genresContainerVertical: {
+    flexDirection: "column",
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  genreTagVertical: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    width: "100%",
+  },
   genreTag: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -893,6 +1018,20 @@ const styles = StyleSheet.create({
   },
   purposeContainer: {
     marginTop: SPACING.sm,
+  },
+  purposeContainerVertical: {
+    flexDirection: "column",
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  purposeButtonVertical: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    width: "100%",
   },
   purposeButton: {
     paddingHorizontal: SPACING.md,
@@ -922,26 +1061,44 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
     lineHeight: 18,
   },
-  selectedVocalistsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  vocalistsTableContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginTop: SPACING.sm,
     marginBottom: SPACING.sm,
-    gap: SPACING.sm,
+    overflow: "hidden",
   },
-  vocalistTag: {
+  vocalistsTableHeader: {
+    flexDirection: "row",
+    backgroundColor: COLORS.primary + "15",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  vocalistsTableHeaderText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  vocalistsTableRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primary + "15",
-    paddingHorizontal: SPACING.md,
+    justifyContent: "space-between",
     paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  vocalistTagText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    color: COLORS.primary,
+  vocalistsTableCell: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    flex: 1,
+  },
+  vocalistsTableAction: {
+    padding: SPACING.xs,
   },
   addVocalistButton: {
     flexDirection: "row",
