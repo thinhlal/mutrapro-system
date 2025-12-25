@@ -82,6 +82,7 @@ import SpecialistTaskDetailPage from './pages/specialist/TaskDetailPage/Speciali
 
 // Dashboard
 import Dashboard from './pages/dashboard/Overview/Dashboard';
+import ManagerDashboard from './pages/dashboard/Overview/ManagerDashboard';
 
 // Contracts Pages
 import ContractBuilder from './pages/contracts/Builder/ContractBuilder';
@@ -497,7 +498,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="dashboard" element={<ManagerDashboard />} />
             <Route
               path="service-requests"
               element={<ServiceRequestManagement />}
