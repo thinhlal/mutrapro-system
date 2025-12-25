@@ -32,12 +32,6 @@ import { motion } from 'framer-motion';
 import styles from './Dashboard.module.css';
 import RevenueSummaryCard from './RevenueSummaryCard';
 import {
-  kpis,
-  chartsData,
-  recentRequests,
-  moduleSummary,
-  recentContracts,
-  revenueData,
   formatCurrency,
   formatPercent,
   mapStatusToTag,
@@ -128,10 +122,16 @@ const Dashboard = () => {
     fetchData();
   }, [timeRange]);
 
-  // Map real data to KPIs (fallback to mock data if real data not available)
+  // Map real data to KPIs
   const getCurrentKpis = () => {
     if (!dashboardData || !walletStats || !requestStats || !projectStats) {
-      return kpis[timeRange];
+      return {
+        totalUsers: { value: 0, trend: 0 },
+        activeUsers: { value: 0, trend: 0 },
+        totalBalance: { value: 0, trend: 0 },
+        openRequests: { value: 0, trend: 0 },
+        activeContracts: { value: 0, trend: 0 },
+      };
     }
 
     const userStats = dashboardData || {};
@@ -159,8 +159,7 @@ const Dashboard = () => {
       (contractByStatus.active || 0) +
       (contractByStatus.active_pending_assignment || 0);
 
-    // For now, use real data where available, mock data for trends
-    // Note: Trends are calculated from historical data, not available in current API
+    // Note: Trends require historical data comparison, currently set to 0
     return {
       totalUsers: {
         value: userStats.totalUsers || 0,
@@ -190,7 +189,7 @@ const Dashboard = () => {
   // Map user statistics over time to chart format
   const getNewUsersOverTimeData = () => {
     if (!userStatsOverTime?.dailyStats || userStatsOverTime.dailyStats.length === 0) {
-      return chartsData[timeRange].newUsersOverTime; // Fallback to mock data
+      return [];
     }
 
     // Determine days based on timeRange
@@ -237,7 +236,7 @@ const Dashboard = () => {
   // Map topup volume over time to chart format
   const getTopupsVolumeData = () => {
     if (!topupVolumeOverTime?.dailyStats || topupVolumeOverTime.dailyStats.length === 0) {
-      return chartsData[timeRange].topupsVolume; // Fallback to mock data
+      return [];
     }
 
     // Determine days based on timeRange
@@ -284,7 +283,7 @@ const Dashboard = () => {
   // Map request statistics by type to chart format
   const getRequestsByTypeData = () => {
     if (!requestStats?.requests?.byType || Object.keys(requestStats.requests.byType).length === 0) {
-      return chartsData[timeRange].requestsByType; // Fallback to mock data
+      return [];
     }
 
     // Map ServiceType enum (lowercase) to display names
@@ -298,17 +297,17 @@ const Dashboard = () => {
     // Convert byType map to chart format
     const result = Object.entries(requestStats.requests.byType)
       .map(([type, count]) => ({
-        type: typeDisplayMap[type] || type, // Use display name or fallback to original
+        type: typeDisplayMap[type] || type,
         value: count || 0,
       }))
       .filter(item => item.value > 0) // Only include types with count > 0
       .sort((a, b) => b.value - a.value); // Sort by value descending
 
-    return result.length > 0 ? result : chartsData[timeRange].requestsByType; // Fallback if empty
+    return result;
   };
 
+  // Map contracts by status to chart format
   const currentCharts = {
-    ...chartsData[timeRange],
     newUsersOverTime: getNewUsersOverTimeData(),
     requestsByType: getRequestsByTypeData(),
     topupsVolume: getTopupsVolumeData(),
@@ -413,8 +412,8 @@ const Dashboard = () => {
         <CustomerServiceOutlined style={{ fontSize: 24, color: '#3b82f6' }} />
       ),
       title: 'Notation Instruments',
-      stat: requestStats?.notationInstruments?.total ?? moduleSummary.notationInstruments.total,
-      sub: `Most used: ${requestStats?.notationInstruments?.mostUsed ?? moduleSummary.notationInstruments.mostUsed}`,
+      stat: requestStats?.notationInstruments?.total ?? 0,
+      sub: `Most used: ${requestStats?.notationInstruments?.mostUsed ?? 'N/A'}`,
     },
     {
       key: 'equipment',
@@ -422,40 +421,40 @@ const Dashboard = () => {
       title: 'Equipment',
       stat: projectStats?.moduleStatistics?.equipment
         ? `${projectStats.moduleStatistics.equipment.available}/${projectStats.moduleStatistics.equipment.booked}/${projectStats.moduleStatistics.equipment.maintenance}`
-        : `${moduleSummary.equipment.available}/${moduleSummary.equipment.booked}/${moduleSummary.equipment.maintenance}`,
+        : '0/0/0',
       sub: 'Avail / Booked / Maint',
     },
     {
       key: 'specialists',
       icon: <TeamOutlined style={{ fontSize: 24, color: '#10b981' }} />,
       title: 'Specialists',
-      stat: specialistModuleStats?.specialists?.active ?? moduleSummary.specialists.active,
+      stat: specialistModuleStats?.specialists?.active ?? 0,
       sub: `Active specialists`,
     },
     {
       key: 'skills',
       icon: <TrophyOutlined style={{ fontSize: 24, color: '#f59e0b' }} />,
       title: 'Skills',
-      stat: specialistModuleStats?.skills?.total ?? moduleSummary.skills.total,
-      sub: `Top: ${specialistModuleStats?.skills?.topDemanded ?? moduleSummary.skills.topDemanded}`,
+      stat: specialistModuleStats?.skills?.total ?? 0,
+      sub: `Top: ${specialistModuleStats?.skills?.topDemanded ?? 'N/A'}`,
     },
     {
       key: 'studioBookings',
       icon: <CalendarOutlined style={{ fontSize: 24, color: '#ec4899' }} />,
       title: 'Studio Bookings',
-      stat: projectStats?.moduleStatistics?.studioBookings?.total ?? moduleSummary.studioBookings.total,
+      stat: projectStats?.moduleStatistics?.studioBookings?.total ?? 0,
       sub: projectStats?.moduleStatistics?.studioBookings
         ? `${projectStats.moduleStatistics.studioBookings.upcoming} upcoming`
-        : `${moduleSummary.studioBookings.upcoming} upcoming`,
+        : '0 upcoming',
     },
     {
       key: 'revisions',
       icon: <EditOutlined style={{ fontSize: 24, color: '#f97316' }} />,
       title: 'Revision Requests',
-      stat: projectStats?.moduleStatistics?.revisions?.pending ?? moduleSummary.revisionRequests.pending,
+      stat: projectStats?.moduleStatistics?.revisions?.pending ?? 0,
       sub: projectStats?.moduleStatistics?.revisions
         ? `${projectStats.moduleStatistics.revisions.approved} approved`
-        : `${moduleSummary.revisionRequests.approved} approved`,
+        : '0 approved',
     },
   ];
 
@@ -554,65 +553,71 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className={styles.chartsGrid}>
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>New Users Over Time</div>
-          <div className={styles.chartWrapper}>
-            <Line
-              data={currentCharts.newUsersOverTime}
-              xField="date"
-              yField="users"
-              smooth
-              color="#3b82f6"
-              areaStyle={{ fill: 'l(270) 0:#fff 1:#3b82f6', fillOpacity: 0.15 }}
-              point={{ size: 3, shape: 'circle' }}
-            />
-          </div>
-        </motion.div>
+        {currentCharts.newUsersOverTime && currentCharts.newUsersOverTime.length > 0 && (
+          <motion.div
+            className={styles.chartCard}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className={styles.chartTitle}>New Users Over Time</div>
+            <div className={styles.chartWrapper}>
+              <Line
+                data={currentCharts.newUsersOverTime}
+                xField="date"
+                yField="users"
+                smooth
+                color="#3b82f6"
+                areaStyle={{ fill: 'l(270) 0:#fff 1:#3b82f6', fillOpacity: 0.15 }}
+                point={{ size: 3, shape: 'circle' }}
+              />
+            </div>
+          </motion.div>
+        )}
 
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>Requests by Type</div>
-          <div className={styles.chartWrapper}>
-            <Pie
-              data={currentCharts.requestsByType}
-              angleField="value"
-              colorField="type"
-              radius={0.8}
-              innerRadius={0.6}
-              label={false}
-              legend={{ position: 'bottom' }}
-              color={['#3b82f6', '#8b5cf6', '#10b981']}
-            />
-          </div>
-        </motion.div>
+        {currentCharts.requestsByType && currentCharts.requestsByType.length > 0 && (
+          <motion.div
+            className={styles.chartCard}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className={styles.chartTitle}>Requests by Type</div>
+            <div className={styles.chartWrapper}>
+              <Pie
+                data={currentCharts.requestsByType}
+                angleField="value"
+                colorField="type"
+                radius={0.8}
+                innerRadius={0.6}
+                label={false}
+                legend={{ position: 'bottom' }}
+                color={['#3b82f6', '#8b5cf6', '#10b981']}
+              />
+            </div>
+          </motion.div>
+        )}
 
-        <motion.div
-          className={styles.chartCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.chartTitle}>Top-ups Volume</div>
-          <div className={styles.chartWrapper}>
-            <Column
-              data={currentCharts.topupsVolume}
-              xField="date"
-              yField="amount"
-              color="#10b981"
-              columnStyle={{ radius: [6, 6, 0, 0] }}
-              label={false}
-            />
-          </div>
-        </motion.div>
+        {currentCharts.topupsVolume && currentCharts.topupsVolume.length > 0 && (
+          <motion.div
+            className={styles.chartCard}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className={styles.chartTitle}>Top-ups Volume</div>
+            <div className={styles.chartWrapper}>
+              <Column
+                data={currentCharts.topupsVolume}
+                xField="date"
+                yField="amount"
+                color="#10b981"
+                columnStyle={{ radius: [6, 6, 0, 0] }}
+                label={false}
+              />
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Tables Row */}
@@ -641,7 +646,7 @@ const Dashboard = () => {
                 status: req.status || 'pending',
                 createdAt: req.createdAt ? new Date(req.createdAt).toISOString().split('T')[0] : 'N/A',
                 totalPrice: req.totalPrice != null ? Number(req.totalPrice) : 0,
-              })) || recentRequests}
+              })) || []}
               columns={requestColumns}
               size="small"
               pagination={false}
@@ -676,7 +681,7 @@ const Dashboard = () => {
                 status: contract.status || 'draft',
                 createdAt: contract.createdAt ? new Date(contract.createdAt).toISOString().split('T')[0] : 'N/A',
                 totalPrice: contract.totalPrice != null ? Number(contract.totalPrice) : 0,
-              })) || recentContracts}
+              })) || []}
               columns={[
                 { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
                 {
@@ -728,7 +733,7 @@ const Dashboard = () => {
       </div>
 
       {/* Revenue Summary Card */}
-      <RevenueSummaryCard data={revenueStats || revenueData[timeRange]} timeRange={timeRange} />
+      <RevenueSummaryCard data={revenueStats} timeRange={timeRange} />
 
       {/* Module Summary */}
       <motion.div

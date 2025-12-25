@@ -11,38 +11,34 @@ import styles from './Dashboard.module.css';
 import { formatCurrency, formatPercent } from './adminDashboardMock';
 
 const RevenueSummaryCard = ({ data, timeRange }) => {
-  // Check if data is from API (has total, fromTopups, fromServices structure) or mock data
-  const isApiData = data && data.total && data.fromTopups && data.fromServices;
-  
-  const metrics = isApiData
-    ? [
-        { 
-          key: 'total', 
-          label: 'Total Revenue', 
-          value: data.total.value, 
-          trend: data.total.trend, 
-          sparkline: data.total.sparkline || [] 
-        },
-        { 
-          key: 'topups', 
-          label: 'From Top-ups', 
-          value: data.fromTopups.value, 
-          trend: data.fromTopups.trend, 
-          sparkline: data.fromTopups.sparkline || [] 
-        },
-        { 
-          key: 'services', 
-          label: 'From Services', 
-          value: data.fromServices.value, 
-          trend: data.fromServices.trend, 
-          sparkline: data.fromServices.sparkline || [] 
-        },
-      ]
-    : [
-        { key: 'total', label: 'Total Revenue', ...data.total },
-        { key: 'topups', label: 'From Top-ups', ...data.fromTopups },
-        { key: 'services', label: 'From Services', ...data.fromServices },
-      ];
+  // Return null if no data
+  if (!data || !data.total || !data.fromTopups || !data.fromServices) {
+    return null;
+  }
+
+  const metrics = [
+    { 
+      key: 'total', 
+      label: 'Total Revenue', 
+      value: data.total.value, 
+      trend: data.total.trend, 
+      sparkline: data.total.sparkline || [] 
+    },
+    { 
+      key: 'topups', 
+      label: 'From Top-ups', 
+      value: data.fromTopups.value, 
+      trend: data.fromTopups.trend, 
+      sparkline: data.fromTopups.sparkline || [] 
+    },
+    { 
+      key: 'services', 
+      label: 'From Services', 
+      value: data.fromServices.value, 
+      trend: data.fromServices.trend, 
+      sparkline: data.fromServices.sparkline || [] 
+    },
+  ];
 
   const prevLabel =
     timeRange === 'today'

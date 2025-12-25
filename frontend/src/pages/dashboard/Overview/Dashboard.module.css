@@ -107,7 +107,7 @@
 /* Charts Grid */
 .chartsGrid {
   display: grid;
-  grid-template-columns: 1fr 0.5fr 1.5fr;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
   margin-bottom: 32px;
 }
