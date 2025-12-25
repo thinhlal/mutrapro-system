@@ -55,10 +55,16 @@ public interface BookingParticipantRepository extends JpaRepository<BookingParti
     long countByBooking_BookingId(String bookingId);
 
     /**
-     * Lấy bookingId từ participantId (query trực tiếp từ database, không load booking entity)
+     * Lấy bookingId từ participantId
      */
     @Query("SELECT bp.booking.bookingId FROM BookingParticipant bp WHERE bp.participantId = :participantId")
     String findBookingIdByParticipantId(@Param("participantId") String participantId);
+    
+    /**
+     * Batch lấy bookingIds từ nhiều participantIds
+     */
+    @Query("SELECT bp.participantId, bp.booking.bookingId FROM BookingParticipant bp WHERE bp.participantId IN :participantIds")
+    List<Object[]> findBookingIdsByParticipantIds(@Param("participantIds") List<String> participantIds);
     
     /**
      * Tìm các participants có conflict về thời gian với một slot cụ thể

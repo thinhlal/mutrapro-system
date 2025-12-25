@@ -35,7 +35,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -424,6 +426,7 @@ public class ReviewService {
 
     /**
      * Admin: Lấy tất cả reviews với filters (chỉ admin)
+     * Tối ưu: Batch load TaskAssignments và bookingIds để tránh N+1 query problem
      */
     public PageResponse<ReviewResponse> getAllReviews(
             ReviewType reviewType,
@@ -437,24 +440,53 @@ public class ReviewService {
         Page<Review> reviews = reviewRepository.findAllWithFilters(
                 reviewType, specialistId, requestId, minRating, maxRating, customerId, pageable);
         
-        List<ReviewResponse> content = reviews.getContent().stream()
+        List<Review> reviewList = reviews.getContent();
+        
+        // Batch load TaskAssignments để tránh N+1 query
+        Map<String, TaskAssignment> assignmentMap = new HashMap<>();
+        List<String> assignmentIds = reviewList.stream()
+                .filter(r -> r.getAssignmentId() != null)
+                .map(Review::getAssignmentId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        if (!assignmentIds.isEmpty()) {
+            List<TaskAssignment> assignments = taskAssignmentRepository.findAllById(assignmentIds);
+            assignmentMap = assignments.stream()
+                    .collect(Collectors.toMap(TaskAssignment::getAssignmentId, a -> a));
+        }
+        
+        // Batch load bookingIds cho PARTICIPANT reviews để tránh N+1 query
+        Map<String, String> participantToBookingMap = new HashMap<>();
+        List<String> participantIds = reviewList.stream()
+                .filter(r -> r.getReviewType() == ReviewType.PARTICIPANT && r.getParticipantId() != null)
+                .map(Review::getParticipantId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        if (!participantIds.isEmpty()) {
+            List<Object[]> results = bookingParticipantRepository.findBookingIdsByParticipantIds(participantIds);
+            participantToBookingMap = results.stream()
+                    .filter(result -> result.length == 2 && result[0] != null && result[1] != null)
+                    .collect(Collectors.toMap(
+                            result -> (String) result[0],  // participantId
+                            result -> (String) result[1]  // bookingId
+                    ));
+        }
+        
+        // Map to response using pre-loaded data
+        final Map<String, TaskAssignment> finalAssignmentMap = assignmentMap;
+        final Map<String, String> finalParticipantToBookingMap = participantToBookingMap;
+        List<ReviewResponse> content = reviewList.stream()
                 .map(review -> {
-                    TaskAssignment assignment = null;
-                    if (review.getAssignmentId() != null) {
-                        assignment = taskAssignmentRepository.findById(review.getAssignmentId())
-                                .orElse(null);
-                    }
+                    TaskAssignment assignment = review.getAssignmentId() != null
+                            ? finalAssignmentMap.get(review.getAssignmentId())
+                            : null;
                     
-                    // Load bookingId cho PARTICIPANT reviews
                     String bookingId = null;
                     if (review.getReviewType() == ReviewType.PARTICIPANT
                             && review.getParticipantId() != null) {
-                        try {
-                            bookingId = bookingParticipantRepository.findBookingIdByParticipantId(review.getParticipantId());
-                        } catch (Exception e) {
-                            log.warn("Failed to load bookingId for participant review: participantId={}, error={}", 
-                                    review.getParticipantId(), e.getMessage());
-                        }
+                        bookingId = finalParticipantToBookingMap.get(review.getParticipantId());
                     }
                     
                     return toResponse(review, assignment, bookingId);
