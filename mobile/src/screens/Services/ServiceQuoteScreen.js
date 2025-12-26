@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { calculatePrice, formatPrice, getPricingDetail } from "../../services/pricingMatrixService";
 import { createServiceRequest } from "../../services/serviceRequestService";
@@ -32,6 +33,13 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
   const [instruments, setInstruments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Audio player state
+  const [sound, setSound] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackStatus, setPlaybackStatus] = useState(null);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const soundRef = useRef(null);
 
   useEffect(() => {
     // Validate formData based on service type
@@ -217,6 +225,116 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
+  // Format time in milliseconds to MM:SS
+  const formatTime = (millis) => {
+    if (!millis || isNaN(millis)) return "00:00";
+    const totalSeconds = Math.floor(millis / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+  // Check if file is audio/video (not arrangement file)
+  const isAudioVideoFile = () => {
+    if (!uploadedFile) return false;
+    // Check if service type is arrangement (has allowedFileTypes)
+    const isArrangement = serviceType === "arrangement" || serviceType === "arrangement_with_recording";
+    return !isArrangement; // Audio/video files for transcription and recording
+  };
+
+  // Load and play audio
+  useEffect(() => {
+    const shouldLoadAudio = uploadedFile && isAudioVideoFile();
+    
+    if (shouldLoadAudio) {
+      loadAudio();
+    } else {
+      unloadAudio();
+    }
+
+    return () => {
+      unloadAudio();
+    };
+  }, [uploadedFile?.uri, serviceType]);
+
+  const loadAudio = async () => {
+    if (!uploadedFile?.uri) return;
+    
+    try {
+      setIsLoadingAudio(true);
+      // Unload previous sound if exists
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+      }
+
+      // Set audio mode
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+      });
+
+      // Create and load sound
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: uploadedFile.uri },
+        { shouldPlay: false },
+        onPlaybackStatusUpdate
+      );
+
+      soundRef.current = newSound;
+      setSound(newSound);
+    } catch (error) {
+      console.error("Error loading audio:", error);
+      // Don't show alert, just log error
+    } finally {
+      setIsLoadingAudio(false);
+    }
+  };
+
+  const unloadAudio = async () => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+      setSound(null);
+      setIsPlaying(false);
+      setPlaybackStatus(null);
+    } catch (error) {
+      console.error("Error unloading audio:", error);
+    }
+  };
+
+  const onPlaybackStatusUpdate = (status) => {
+    setPlaybackStatus(status);
+    if (status.isLoaded) {
+      setIsPlaying(status.isPlaying);
+      if (status.didJustFinish) {
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handlePlayPause = async () => {
+    try {
+      if (!soundRef.current) {
+        await loadAudio();
+        return;
+      }
+
+      const status = await soundRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        if (status.isPlaying) {
+          await soundRef.current.pauseAsync();
+        } else {
+          await soundRef.current.playAsync();
+        }
+      }
+    } catch (error) {
+      console.error("Error playing/pausing audio:", error);
+      Alert.alert("Error", "Failed to play audio");
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -283,6 +401,65 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
               <Text style={styles.tableValueVertical} numberOfLines={1}>
                 {uploadedFile.name}
               </Text>
+              
+              {/* Audio Player - Only for audio/video files */}
+              {isAudioVideoFile() && (
+                <View style={styles.audioPlayerContainer}>
+                  {isLoadingAudio ? (
+                    <View style={styles.audioPlayerLoading}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <Text style={styles.audioPlayerLoadingText}>Loading audio...</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.audioPlayerControls}>
+                      <TouchableOpacity
+                        style={styles.playPauseButton}
+                        onPress={handlePlayPause}
+                        disabled={isLoadingAudio}
+                      >
+                        <Ionicons
+                          name={isPlaying ? "pause" : "play"}
+                          size={20}
+                          color={COLORS.white}
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.audioPlayerInfo}>
+                        <View style={styles.audioPlayerTimeRow}>
+                          <Text style={styles.audioPlayerTime}>
+                            {playbackStatus?.isLoaded
+                              ? formatTime(playbackStatus.positionMillis)
+                              : "00:00"}
+                          </Text>
+                          <Text style={styles.audioPlayerTimeSeparator}>/</Text>
+                          <Text style={styles.audioPlayerTime}>
+                            {playbackStatus?.isLoaded && playbackStatus.durationMillis
+                              ? formatTime(playbackStatus.durationMillis)
+                              : uploadedFile.duration > 0
+                              ? formatDuration(uploadedFile.duration)
+                              : "00:00"}
+                          </Text>
+                        </View>
+                        {playbackStatus?.isLoaded && playbackStatus.durationMillis && (
+                          <View style={styles.progressBarContainer}>
+                            <View
+                              style={[
+                                styles.progressBar,
+                                {
+                                  width: `${
+                                    (playbackStatus.positionMillis /
+                                      playbackStatus.durationMillis) *
+                                    100
+                                  }%`,
+                                },
+                              ]}
+                            />
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
           )}
 
@@ -635,7 +812,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   headerTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.xxl,
     fontWeight: "bold",
     color: COLORS.text,
     marginBottom: SPACING.xs,
@@ -1060,6 +1237,77 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.white,
     marginHorizontal: SPACING.sm,
+  },
+  // Audio Player Styles
+  audioPlayerContainer: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  audioPlayerLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  audioPlayerLoadingText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  audioPlayerControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.md,
+  },
+  playPauseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  audioPlayerInfo: {
+    flex: 1,
+  },
+  audioPlayerTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  audioPlayerTime: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  audioPlayerTimeSeparator: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginHorizontal: SPACING.xs,
+  },
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
   },
 });
 

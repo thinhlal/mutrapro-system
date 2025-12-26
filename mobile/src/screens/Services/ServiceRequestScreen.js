@@ -771,7 +771,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <Text style={styles.label}>
             {isArrangement 
               ? "Notation File (MusicXML, MIDI, PDF)" 
-              : "Audio/Video File"} <Text style={styles.required}>*</Text>
+              : "Audio File"} <Text style={styles.required}>*</Text>
           </Text>
           <FileUploader
             onFileSelect={(file) => {

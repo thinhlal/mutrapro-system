@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   infoValue: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.text,
     flex: 1,
