@@ -821,8 +821,10 @@ const WithdrawalRequestsManagement = () => {
                     file.type.startsWith('image/') ||
                     file.type === 'application/pdf';
                   if (!isValidType) {
-                    toast.error('Only allows image files (.jpg, .png, { duration: 5000, position: 'top-center' }); or PDF!'
-                    );
+                    toast.error('Only allows image files (.jpg, .png) or PDF!', {
+                      duration: 5000,
+                      position: 'top-center',
+                    });
                     return Upload.LIST_IGNORE;
                   }
                   // Check size (max 10MB)

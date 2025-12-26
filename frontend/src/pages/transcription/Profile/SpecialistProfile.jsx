@@ -1694,8 +1694,10 @@ const SpecialistProfile = () => {
                   file.type.startsWith('audio/');
 
                 if (!isAudio) {
-                  toast.error('Only audio files (mp3, wav, m4a, flac, aac, { duration: 5000, position: 'top-center' }); are accepted'
-                  );
+                  toast.error('Only audio files (mp3, wav, m4a, flac, aac) are accepted', {
+                    duration: 5000,
+                    position: 'top-center',
+                  });
                   return Upload.LIST_IGNORE;
                 }
 
