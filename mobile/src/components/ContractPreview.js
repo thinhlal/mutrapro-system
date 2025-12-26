@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
+import { Asset } from "expo-asset";
 import dayjs from "dayjs";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 import { getGenreLabel, getPurposeLabel } from "../constants/musicOptionsConstants";
@@ -16,6 +17,7 @@ import { getSignatureImage } from "../services/contractService";
 const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingData }) => {
   const [exporting, setExporting] = useState(false);
   const [partyBSignatureUrl, setPartyBSignatureUrl] = useState(null); // Base64 data URL from backend
+  const [partyASignatureUrl, setPartyASignatureUrl] = useState(null); // Base64 data URL for Party A signature
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -102,8 +104,27 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
 
   // Fetch signature images when contract is signed/active/completed
   useEffect(() => {
-    // Party A signature is loaded from local asset (always available if shouldShowPartyASignature)
-    // We don't need to set URL, we'll use require() directly in render
+    // Load Party A signature from local asset and convert to base64
+    const loadPartyASignature = async () => {
+      try {
+        // Get the asset URI
+        const asset = Asset.fromModule(require("../../assets/images/signature.png"));
+        await asset.downloadAsync();
+        
+        // Read the file as base64
+        const base64 = await FileSystem.readAsStringAsync(asset.localUri || asset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // Create data URL
+        const dataUrl = `data:image/png;base64,${base64}`;
+        setPartyASignatureUrl(dataUrl);
+      } catch (error) {
+        console.error('Error loading Party A signature image:', error);
+        setPartyASignatureUrl(null);
+        // Don't show error message - just don't display signature
+      }
+    };
 
     // Load Party B signature from backend API
     const fetchPartyBSignature = async () => {
@@ -126,10 +147,12 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       }
     };
 
+    // Load both signatures
+    loadPartyASignature();
     fetchPartyBSignature();
   }, [contract?.contractId, shouldShowPartyBSignature]);
 
-  const generateContractHtml = (partyBSignatureDataUrl = null) => {
+  const generateContractHtml = (partyASignatureDataUrl = null, partyBSignatureDataUrl = null) => {
     const contractNumber = contract?.contractNumber || contract?.contractId || "N/A";
     const contractType = contract?.contractType || "N/A";
     const statusText = statusConfig.text;
@@ -147,7 +170,8 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     const htmlShouldShowPartyASignature = htmlIsSigned || htmlIsActive || htmlIsCompleted;
     const htmlShouldShowPartyBSignature = contract?.customerSignedAt || htmlIsSigned || htmlIsActive || htmlIsCompleted;
     
-    // Use provided signature URL or fallback to state
+    // Use provided signature URLs or fallback to state
+    const htmlPartyASignatureUrl = partyASignatureDataUrl || partyASignatureUrl;
     const htmlPartyBSignatureUrl = partyBSignatureDataUrl || partyBSignatureUrl;
     
     const formatCurrencyHTML = (amount, curr = "VND") => {
@@ -609,7 +633,11 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
         <p><strong>Party A Representative</strong></p>
         ${htmlShouldShowPartyASignature ? `
         <div style="margin: 20px 0;">
+          ${htmlPartyASignatureUrl ? `
+          <img src="${htmlPartyASignatureUrl}" alt="Party A Signature" class="signature-image" />
+          ` : `
           <p style="font-style: italic; color: #666; margin-bottom: 10px;">[Digital Signature]</p>
+          `}
           <p style="font-weight: 600; margin: 8px 0;">CEO - MuTraPro Studio Co., Ltd</p>
           <p style="font-size: 12px; color: #666;">Signed: ${formatDateHTML(contract?.signedAt || contract?.sentAt)}</p>
         </div>
@@ -656,22 +684,43 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
     try {
       setExporting(true);
       
+      // Fetch Party A signature if needed for export
+      let partyASignatureDataUrl = partyASignatureUrl;
+      if (shouldShowPartyASignature && !partyASignatureDataUrl) {
+        try {
+          // Get the asset URI
+          const asset = Asset.fromModule(require("../../assets/images/signature.png"));
+          await asset.downloadAsync();
+          
+          // Read the file as base64
+          const base64 = await FileSystem.readAsStringAsync(asset.localUri || asset.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          // Create data URL
+          partyASignatureDataUrl = `data:image/png;base64,${base64}`;
+        } catch (error) {
+          console.error('Error loading Party A signature for export:', error);
+          // Continue without signature image
+        }
+      }
+
       // Fetch Party B signature if needed for export
-      let signatureDataUrl = partyBSignatureUrl;
-      if (shouldShowPartyBSignature && !signatureDataUrl && contract?.contractId) {
+      let partyBSignatureDataUrl = partyBSignatureUrl;
+      if (shouldShowPartyBSignature && !partyBSignatureDataUrl && contract?.contractId) {
         try {
           const signatureResponse = await getSignatureImage(contract.contractId);
           if (signatureResponse?.data) {
-            signatureDataUrl = signatureResponse.data;
+            partyBSignatureDataUrl = signatureResponse.data;
           }
         } catch (error) {
-          console.error('Error loading signature for export:', error);
+          console.error('Error loading Party B signature for export:', error);
           // Continue without signature image
         }
       }
       
-      // Generate HTML from contract data with signature
-      const htmlContent = generateContractHtml(signatureDataUrl);
+      // Generate HTML from contract data with signatures
+      const htmlContent = generateContractHtml(partyASignatureDataUrl, partyBSignatureDataUrl);
       
       // Generate filename
       const contractNumber = contract?.contractNumber || contract?.contractId || "contract";
