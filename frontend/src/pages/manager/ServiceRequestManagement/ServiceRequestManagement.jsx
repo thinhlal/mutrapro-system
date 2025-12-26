@@ -269,46 +269,6 @@ export default function ServiceRequestManagement() {
     });
   };
 
-  // Refresh khi tab được focus lại (khi user quay lại từ contract builder)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Refresh danh sách khi tab được focus lại
-        fetchAllRequests(
-          allPagination.current - 1,
-          allPagination.pageSize,
-          allSort,
-          allRequestTypeFilter,
-          allStatusFilter
-        );
-        if (activeTab === 'my-assigned') {
-          fetchMyAssignedRequests(
-            myAssignedPagination.current - 1,
-            myAssignedPagination.pageSize,
-            myAssignedSort,
-            myAssignedRequestTypeFilter,
-            myAssignedStatusFilter
-          );
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [
-    allPagination,
-    allSort,
-    allRequestTypeFilter,
-    allStatusFilter,
-    myAssignedPagination,
-    myAssignedSort,
-    myAssignedRequestTypeFilter,
-    myAssignedStatusFilter,
-    activeTab,
-  ]);
-
   useEffect(() => {
     fetchAllRequests(0, allPagination.pageSize, allSort);
     fetchMyAssignedRequests(0, myAssignedPagination.pageSize, myAssignedSort);
@@ -672,6 +632,7 @@ export default function ServiceRequestManagement() {
           showTotal: total => `Total ${total} requests`,
           onChange: (page, pageSize) => {
             if (activeTab === 'all') {
+              setAllPagination(prev => ({ ...prev, current: page, pageSize }));
               fetchAllRequests(
                 page - 1,
                 pageSize,
@@ -680,6 +641,7 @@ export default function ServiceRequestManagement() {
                 allStatusFilter
               );
             } else {
+              setMyAssignedPagination(prev => ({ ...prev, current: page, pageSize }));
               fetchMyAssignedRequests(
                 page - 1,
                 pageSize,
@@ -691,6 +653,7 @@ export default function ServiceRequestManagement() {
           },
           onShowSizeChange: (current, size) => {
             if (activeTab === 'all') {
+              setAllPagination(prev => ({ ...prev, current: 1, pageSize: size }));
               fetchAllRequests(
                 0,
                 size,
@@ -699,6 +662,7 @@ export default function ServiceRequestManagement() {
                 allStatusFilter
               );
             } else {
+              setMyAssignedPagination(prev => ({ ...prev, current: 1, pageSize: size }));
               fetchMyAssignedRequests(
                 0,
                 size,

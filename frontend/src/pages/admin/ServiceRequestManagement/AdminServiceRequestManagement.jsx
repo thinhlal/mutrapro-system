@@ -159,27 +159,6 @@ export default function AdminServiceRequestManagement() {
     });
   };
 
-  // Refresh khi tab được focus lại (khi user quay lại từ contract builder)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Refresh danh sách khi tab được focus lại
-        fetchAllRequests(
-          allPagination.current - 1,
-          allPagination.pageSize,
-          allSort,
-          allRequestTypeFilter,
-          allStatusFilter
-        );
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [allPagination, allSort, allRequestTypeFilter, allStatusFilter]);
-
   useEffect(() => {
     fetchAllRequests(0, allPagination.pageSize, allSort);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -375,6 +354,7 @@ export default function AdminServiceRequestManagement() {
 
   const handleAllSortChange = value => {
     setAllSort(value);
+    setAllPagination(prev => ({ ...prev, current: 1 }));
     fetchAllRequests(
       0,
       allPagination.pageSize,
@@ -386,6 +366,7 @@ export default function AdminServiceRequestManagement() {
 
   const handleAllRequestTypeFilterChange = value => {
     setAllRequestTypeFilter(value);
+    setAllPagination(prev => ({ ...prev, current: 1 }));
     fetchAllRequests(
       0,
       allPagination.pageSize,
@@ -397,6 +378,7 @@ export default function AdminServiceRequestManagement() {
 
   const handleAllStatusFilterChange = value => {
     setAllStatusFilter(value);
+    setAllPagination(prev => ({ ...prev, current: 1 }));
     fetchAllRequests(
       0,
       allPagination.pageSize,
@@ -481,6 +463,7 @@ export default function AdminServiceRequestManagement() {
             showSizeChanger: true,
             showTotal: total => `Total ${total} requests`,
             onChange: (page, pageSize) => {
+              setAllPagination(prev => ({ ...prev, current: page, pageSize }));
               fetchAllRequests(
                 page - 1,
                 pageSize,
@@ -490,6 +473,7 @@ export default function AdminServiceRequestManagement() {
               ); // Spring Data page starts from 0
             },
             onShowSizeChange: (current, size) => {
+              setAllPagination(prev => ({ ...prev, current: 1, pageSize: size }));
               fetchAllRequests(
                 0,
                 size,
