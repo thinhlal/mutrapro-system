@@ -149,7 +149,7 @@ export const resendVerification = async email => {
  * Endpoint: POST /admin/users/search
  *
  * @param {Object} filters - Search filters
- * @param {string} filters.keyword - Search keyword (email, fullName, phone)
+ * @param {string} filters.keyword - Search keyword (userId, email, fullName, phone)
  * @param {string} filters.role - Filter by role
  * @param {boolean} filters.emailVerified - Filter by email verified status
  * @param {string} filters.authProvider - Filter by auth provider (LOCAL, GOOGLE)

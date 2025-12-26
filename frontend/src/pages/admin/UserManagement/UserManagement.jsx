@@ -23,6 +23,7 @@ import {
   SearchOutlined,
   ClearOutlined,
   PlusOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import {
   searchUsers,
@@ -154,6 +155,7 @@ const UserManagement = () => {
       // Map frontend field names to backend field names (UsersAuth entity fields)
       // Note: fullName is not sortable as it's in User entity, not UsersAuth
       const fieldMapping = {
+        userId: 'userId',
         email: 'email',
         role: 'role',
         createdAt: 'createdAt',
@@ -295,8 +297,39 @@ const UserManagement = () => {
     return names[role] || role;
   };
 
+  // Handle copy user ID
+  const handleCopyUserId = (userId) => {
+    navigator.clipboard.writeText(userId).then(() => {
+      message.success('User ID copied to clipboard');
+    }).catch(() => {
+      message.error('Failed to copy User ID');
+    });
+  };
+
   // Table columns
   const columns = [
+    {
+      title: 'User ID',
+      width: 180,
+      dataIndex: 'userId',
+      key: 'userId',
+      sorter: true,
+      ellipsis: true,
+      render: (text) => (
+        <Space size="small">
+          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+            {text.length > 20 ? `${text.substring(0, 20)}...` : text}
+          </span>
+          <Button
+            type="text"
+            size="small"
+            icon={<CopyOutlined />}
+            onClick={() => handleCopyUserId(text)}
+            title="Copy User ID"
+          />
+        </Space>
+      ),
+    },
     {
       title: 'Full Name',
       width: 150,
@@ -420,7 +453,7 @@ const UserManagement = () => {
           <Row gutter={16}>
             <Col span={8}>
               <Search
-                placeholder="Search by email, name, phone..."
+                placeholder="Search by user ID, email, name, phone..."
                 allowClear
                 enterButton={<SearchOutlined />}
                 onSearch={handleSearch}

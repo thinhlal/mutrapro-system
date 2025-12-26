@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserSearchRequest {
 
-    private String keyword; // Search in email, fullName, phone
+    private String keyword; // Search in userId, email, fullName, phone
 
     private Role role;
 

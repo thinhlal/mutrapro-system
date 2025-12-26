@@ -16,16 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -493,15 +489,20 @@ public class UserService {
     public UserPageResponse searchUsers(UserSearchRequest request) {
         log.info("Searching users with filters: {}", request);
 
-        // Build specification for dynamic filtering
-        Specification<UsersAuth> spec = buildSearchSpecification(request);
+        // Prepare parameters
+        String keyword = (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+            ? request.getKeyword().trim() : null;
+        String roleStr = request.getRole() != null ? request.getRole().name() : null;
+        Boolean emailVerified = request.getEmailVerified();
+        String authProvider = request.getAuthProvider();
 
-        // Build pageable
-        Sort sort = buildSearchSort(request.getSortBy(), request.getSortDirection());
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
+        // Simple pagination - sorting is handled in query (ORDER BY created_at DESC)
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
-        // Execute search
-        Page<UsersAuth> usersAuthPage = usersAuthRepository.findAll(spec, pageable);
+        // Execute native query - Spring Data JPA handles pagination automatically!
+        Page<UsersAuth> usersAuthPage = usersAuthRepository.searchUsersWithFilters(
+            keyword, roleStr, emailVerified, authProvider, pageable
+        );
         List<UsersAuth> usersAuthList = usersAuthPage.getContent();
 
         // Batch load all User entities to avoid N+1 query problem
@@ -528,54 +529,6 @@ public class UserService {
             .totalElements(usersAuthPage.getTotalElements())
             .pageSize(usersAuthPage.getSize())
             .build();
-    }
-
-    /**
-     * Build dynamic specification for filtering
-     */
-    private Specification<UsersAuth> buildSearchSpecification(UserSearchRequest request) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // Filter by keyword (search in email)
-            if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
-                String keyword = "%" + request.getKeyword().toLowerCase() + "%";
-                predicates.add(
-                    criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("email")),
-                        keyword
-                    )
-                );
-            }
-
-            // Filter by role
-            if (request.getRole() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("role"), request.getRole()));
-            }
-
-            // Filter by email verified
-            if (request.getEmailVerified() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("emailVerified"), request.getEmailVerified()));
-            }
-
-            // Filter by auth provider
-            if (request.getAuthProvider() != null && !request.getAuthProvider().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("authProvider"), request.getAuthProvider()));
-            }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    /**
-     * Build sort criteria for search
-     */
-    private Sort buildSearchSort(String sortBy, String sortDirection) {
-        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection)
-            ? Sort.Direction.ASC
-            : Sort.Direction.DESC;
-
-        return Sort.by(direction, sortBy);
     }
 
     /**
