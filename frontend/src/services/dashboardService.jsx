@@ -176,7 +176,7 @@ export const getLatestContracts = async (size = 10) => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy danh sách contracts',
+        message: 'Error when loading contracts list',
       }
     );
   }
@@ -197,7 +197,7 @@ export const getAllModuleStatistics = async () => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy thống kê module statistics',
+        message: 'Error when loading module statistics',
       }
     );
   }
@@ -218,7 +218,7 @@ export const getAllSpecialistModuleStatistics = async () => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy thống kê specialist module statistics',
+        message: 'Error when loading specialist module statistics',
       }
     );
   }

@@ -282,28 +282,28 @@ const RevisionRequestsManagement = () => {
             </Title>
             <Space>
               <Select
-                placeholder="Lọc theo status"
+                placeholder="Filter by status"
                 allowClear
                 style={{ width: 200 }}
                 value={statusFilter}
                 onChange={setStatusFilter}
               >
                 <Option value="PENDING_MANAGER_REVIEW">
-                  Chờ Manager duyệt
+                  Waiting Manager approval
                 </Option>
-                <Option value="IN_REVISION">Đang chỉnh sửa</Option>
+                <Option value="IN_REVISION">In revision</Option>
                 <Option value="WAITING_MANAGER_REVIEW">
-                  Chờ Manager review
+                  Waiting Manager review
                 </Option>
                 <Option value="APPROVED_PENDING_DELIVERY">
-                  Đã duyệt, chờ deliver
+                  Approved, waiting delivery
                 </Option>
                 <Option value="WAITING_CUSTOMER_CONFIRM">
-                  Chờ Customer xác nhận
+                  Waiting Customer confirmation
                 </Option>
-                <Option value="COMPLETED">Hoàn thành</Option>
-                <Option value="REJECTED">Từ chối</Option>
-                <Option value="CANCELED">Đã hủy</Option>
+                <Option value="COMPLETED">Completed</Option>
+                <Option value="REJECTED">Rejected</Option>
+                <Option value="CANCELED">Cancelled</Option>
               </Select>
               <Button
                 icon={<ReloadOutlined />}
