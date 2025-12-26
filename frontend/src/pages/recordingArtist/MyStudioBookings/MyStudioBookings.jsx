@@ -12,6 +12,7 @@ import {
   Card,
   Tooltip,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { EyeOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getMyStudioBookings } from '../../../services/studioBookingService';
@@ -93,7 +94,7 @@ const MyStudioBookings = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      message.error(error?.message || 'Error loading bookings list');
+      toast.error(error?.message || 'Error loading bookings list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import {
   Empty,
   Avatar,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CopyOutlined,
@@ -159,7 +160,7 @@ const StudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading booking:', error);
-      message.error(error?.message || 'Error loading booking details');
+      toast.error(error?.message || 'Error loading booking details', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

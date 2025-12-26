@@ -19,6 +19,7 @@ import {
   Tooltip,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   CheckCircleOutlined,
@@ -151,10 +152,8 @@ const WithdrawalRequestsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading withdrawal requests:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Error loading withdrawal requests'
-      );
+      toast.error(error?.response?.data?.message ||
+          'Error loading withdrawal requests', { duration: 5000, position: 'top-center' });
       setWithdrawalRequests([]);
     } finally {
       setLoading(false);
@@ -178,15 +177,11 @@ const WithdrawalRequestsManagement = () => {
         setAdminNote('');
         await loadWithdrawalRequests();
       } else {
-        message.error(
-          response?.message || 'Error approving withdrawal request'
-        );
+        toast.error(response?.message || 'Error approving withdrawal request', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error approving withdrawal:', error);
-      message.error(
-        error?.response?.data?.message || 'Error approving withdrawal request'
-      );
+      toast.error(error?.response?.data?.message || 'Error approving withdrawal request', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -214,15 +209,11 @@ const WithdrawalRequestsManagement = () => {
         setAdminNote('');
         await loadWithdrawalRequests();
       } else {
-        message.error(
-          response?.message || 'Error rejecting withdrawal request'
-        );
+        toast.error(response?.message || 'Error rejecting withdrawal request', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
-      message.error(
-        error?.response?.data?.message || 'Error rejecting withdrawal request'
-      );
+      toast.error(error?.response?.data?.message || 'Error rejecting withdrawal request', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -262,13 +253,11 @@ const WithdrawalRequestsManagement = () => {
         setConfirmComplete(false);
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Error completing withdrawal');
+        toast.error(response?.message || 'Error completing withdrawal', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error completing withdrawal:', error);
-      message.error(
-        error?.response?.data?.message || 'Error completing withdrawal'
-      );
+      toast.error(error?.response?.data?.message || 'Error completing withdrawal', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -294,15 +283,11 @@ const WithdrawalRequestsManagement = () => {
         setRejectionReason('');
         await loadWithdrawalRequests();
       } else {
-        message.error(
-          response?.message || 'Error marking withdrawal as failed'
-        );
+        toast.error(response?.message || 'Error marking withdrawal as failed', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error failing withdrawal:', error);
-      message.error(
-        error?.response?.data?.message || 'Error marking withdrawal as failed'
-      );
+      toast.error(error?.response?.data?.message || 'Error marking withdrawal as failed', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -321,7 +306,7 @@ const WithdrawalRequestsManagement = () => {
       setProofImageUrl(url);
     } catch (error) {
       console.error('Error loading proof:', error);
-      message.error('Error loading proof file');
+      toast.error('Error loading proof file', { duration: 5000, position: 'top-center' });
       setProofImageUrl(null);
     } finally {
       setLoadingProof(false);
@@ -341,7 +326,7 @@ const WithdrawalRequestsManagement = () => {
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Error viewing proof:', error);
-      message.error('Error viewing proof file');
+      toast.error('Error viewing proof file', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -731,7 +716,7 @@ const WithdrawalRequestsManagement = () => {
                             );
                             message.success('Account number copied!');
                           } catch (error) {
-                            message.error('Error copying account number');
+                            toast.error('Error copying account number', { duration: 5000, position: 'top-center' });
                           }
                         }}
                       >
@@ -836,15 +821,14 @@ const WithdrawalRequestsManagement = () => {
                     file.type.startsWith('image/') ||
                     file.type === 'application/pdf';
                   if (!isValidType) {
-                    message.error(
-                      'Only allows image files (.jpg, .png) or PDF!'
+                    toast.error('Only allows image files (.jpg, .png, { duration: 5000, position: 'top-center' }); or PDF!'
                     );
                     return Upload.LIST_IGNORE;
                   }
                   // Check size (max 10MB)
                   const isLt10M = file.size / 1024 / 1024 < 10;
                   if (!isLt10M) {
-                    message.error('File must be less than 10MB!');
+                    toast.error('File must be less than 10MB!', { duration: 5000, position: 'top-center' });
                     return Upload.LIST_IGNORE;
                   }
                   setProofFile(file);

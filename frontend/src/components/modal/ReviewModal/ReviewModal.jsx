@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, message, Space, Typography } from 'antd';
+import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
 import RatingStars from '../../common/RatingStars/RatingStars';
 
@@ -60,7 +61,7 @@ const ReviewModal = ({
       // Validate rating từ form values
       const formRating = values.rating || rating;
       if (!formRating || formRating < 1 || formRating > 5) {
-        message.error('Vui lòng chọn rating từ 1 đến 5 sao');
+        toast.error('Vui lòng chọn rating từ 1 đến 5 sao', { duration: 5000, position: 'top-center' });
         return;
       }
 
@@ -76,7 +77,7 @@ const ReviewModal = ({
         // Validation errors - already handled by Form
         return;
       }
-      message.error('Lỗi khi gửi review');
+      toast.error('Lỗi khi gửi review', { duration: 5000, position: 'top-center' });
     }
   };
 

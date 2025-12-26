@@ -10,6 +10,7 @@ import {
   message,
   Spin,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   UserOutlined,
   UserAddOutlined,
@@ -114,7 +115,7 @@ const Dashboard = () => {
         setChartsLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        message.error('Lỗi khi tải dữ liệu dashboard');
+        toast.error('Error loading dashboard data', { duration: 5000, position: 'top-center' });
         setInitialLoading(false);
         setChartsLoading(false);
       }

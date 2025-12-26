@@ -13,6 +13,7 @@ import {
   DatePicker,
   Tooltip,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -80,7 +81,7 @@ const AdminStudioBookingsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      message.error(error?.message || 'Lỗi khi tải danh sách bookings');
+      toast.error(error?.message || 'Lỗi khi tải danh sách bookings', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

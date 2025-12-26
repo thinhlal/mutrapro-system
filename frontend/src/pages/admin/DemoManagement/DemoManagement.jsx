@@ -12,6 +12,7 @@ import {
   Typography,
   Descriptions,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { EditOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import {
   getAllDemos,
@@ -40,7 +41,7 @@ const DemoManagement = () => {
         setDemos(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách demos');
+      toast.error(error.message || 'Không thể tải danh sách demos', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -57,7 +58,7 @@ const DemoManagement = () => {
       setSelectedDemo(response.data);
       setViewModalVisible(true);
     } catch (error) {
-      message.error('Không thể tải thông tin demo');
+      toast.error('Không thể tải thông tin demo', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -82,7 +83,7 @@ const DemoManagement = () => {
     } catch (error) {
       const errorMsg =
         error.message || error.error || 'Không thể cập nhật visibility';
-      message.error(errorMsg);
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setVisibilityLoading(false);
     }

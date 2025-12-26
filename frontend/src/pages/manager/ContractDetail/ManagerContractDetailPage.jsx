@@ -12,6 +12,7 @@ import {
   message,
   Modal,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   ArrowLeftOutlined,
@@ -201,7 +202,7 @@ const ManagerContractDetailPage = () => {
     } catch (error) {
       console.error('Error loading contract:', error);
       setError(error?.message || 'Failed to load contract');
-      message.error('Failed to load contract data');
+      toast.error('Failed to load contract data', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -1281,7 +1282,7 @@ const ManagerContractDetailPage = () => {
   // Handle export PDF
   const handleExportPdf = async () => {
     if (!contract) {
-      message.error('Contract data not available');
+      toast.error('Contract data not available', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -1314,7 +1315,7 @@ const ManagerContractDetailPage = () => {
     } catch (error) {
       console.error('Error exporting PDF:', error);
       message.destroy();
-      message.error('Failed to export PDF. Please try again.');
+      toast.error('Failed to export PDF. Please try again.', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -3198,7 +3199,7 @@ const ManagerContractDetailPage = () => {
             loadContract();
           } catch (err) {
             console.error('Failed to start contract work:', err);
-            message.error(err?.message || 'Cannot start contract');
+            toast.error(err?.message || 'Cannot start contract', { duration: 5000, position: 'top-center' });
           } finally {
             setStartingWork(false);
           }

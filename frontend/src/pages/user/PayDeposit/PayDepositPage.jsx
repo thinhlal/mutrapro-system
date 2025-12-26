@@ -14,6 +14,7 @@ import {
   Modal,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   DollarOutlined,
   WalletOutlined,
@@ -78,13 +79,11 @@ const PayDepositPage = () => {
         const isValidStatus = contractStatus === 'signed';
 
         if (isCanceled || isExpired || !isValidStatus) {
-          message.error(
-            isCanceled
+          toast.error(isCanceled
               ? 'Contract has been canceled. Payment is not allowed.'
               : isExpired
                 ? 'Contract has expired. Payment is not allowed.'
-                : 'Contract must be signed before deposit payment.'
-          );
+                : 'Contract must be signed before deposit payment.', { duration: 5000, position: 'top-center' });
           navigate(`/contracts/${contractId}`);
           return;
         }
@@ -94,7 +93,7 @@ const PayDepositPage = () => {
         );
 
         if (!deposit) {
-          message.error('Deposit installment not found for this contract');
+          toast.error('Deposit installment not found for this contract', { duration: 5000, position: 'top-center' });
           navigate(`/contracts/${contractId}`);
           return;
         }
@@ -112,7 +111,7 @@ const PayDepositPage = () => {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      message.error('Failed to load payment information');
+      toast.error('Failed to load payment information', { duration: 5000, position: 'top-center' });
       navigate(`/contracts/${contractId}`);
     } finally {
       setLoading(false);
@@ -136,7 +135,7 @@ const PayDepositPage = () => {
     }
 
     if (!wallet || !depositInstallment) {
-      message.error('Wallet or deposit information not available');
+      toast.error('Wallet or deposit information not available', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -174,7 +173,7 @@ const PayDepositPage = () => {
       }
     } catch (error) {
       console.error('Error paying deposit:', error);
-      message.error(error?.message || 'Failed to process payment');
+      toast.error(error?.message || 'Failed to process payment', { duration: 5000, position: 'top-center' });
     } finally {
       setPaying(false);
     }
@@ -188,7 +187,7 @@ const PayDepositPage = () => {
       message.info('Please complete top-up in your wallet page');
       navigate('/wallet');
     } catch (error) {
-      message.error('Failed to process top-up');
+      toast.error('Failed to process top-up', { duration: 5000, position: 'top-center' });
     }
   };
 

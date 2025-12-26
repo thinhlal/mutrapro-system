@@ -10,6 +10,7 @@ import {
   Descriptions,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { CheckCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { getActiveStudio } from '../../../../../../services/studioBookingService';
 import { formatPrice } from '../../../../../../services/pricingMatrixService';
@@ -34,13 +35,11 @@ export default function RecordingStep0({ data, onComplete }) {
         if (response?.status === 'success' && response?.data) {
           setStudio(response.data);
         } else {
-          message.error('Không thể tải thông tin studio');
+          toast.error('Không thể tải thông tin studio', { duration: 5000, position: 'top-center' });
         }
       } catch (error) {
         console.error('Error fetching studio:', error);
-        message.error(
-          error.message || 'Không thể tải thông tin studio. Vui lòng thử lại.'
-        );
+        toast.error(error.message || 'Không thể tải thông tin studio. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }

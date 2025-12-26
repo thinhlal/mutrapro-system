@@ -13,6 +13,7 @@ import {
   Modal,
   Checkbox,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   CheckOutlined,
   CloseOutlined,
@@ -79,7 +80,7 @@ const MySlotsPage = () => {
         setDaySlots(slots);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải slots. Vui lòng thử lại.');
+      toast.error(error.message || 'Lỗi khi tải slots. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -187,9 +188,7 @@ const MySlotsPage = () => {
       const endOfMonth = selectedDate.endOf('month');
       await loadMonthSlots(startOfMonth, endOfMonth);
     } catch (error) {
-      message.error(
-        error.message || 'Lỗi khi cập nhật slots. Vui lòng thử lại.'
-      );
+      toast.error(error.message || 'Lỗi khi cập nhật slots. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -215,7 +214,7 @@ const MySlotsPage = () => {
         const endOfMonth = selectedDate.endOf('month');
         await loadMonthSlots(startOfMonth, endOfMonth);
       } catch (error) {
-        message.error(error.message || 'Lỗi khi mở slot');
+        toast.error(error.message || 'Lỗi khi mở slot', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }
@@ -233,7 +232,7 @@ const MySlotsPage = () => {
         const endOfMonth = selectedDate.endOf('month');
         await loadMonthSlots(startOfMonth, endOfMonth);
       } catch (error) {
-        message.error(error.message || 'Lỗi khi cập nhật slot');
+        toast.error(error.message || 'Lỗi khi cập nhật slot', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }
@@ -289,9 +288,7 @@ const MySlotsPage = () => {
       const endOfMonth = selectedDate.endOf('month');
       await loadMonthSlots(startOfMonth, endOfMonth);
     } catch (error) {
-      message.error(
-        error.message || 'Lỗi khi mở slots cho 7 ngày. Vui lòng thử lại.'
-      );
+      toast.error(error.message || 'Lỗi khi mở slots cho 7 ngày. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

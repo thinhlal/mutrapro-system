@@ -12,6 +12,7 @@ import {
   Alert,
   Table,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   InboxOutlined,
   FileTextOutlined,
@@ -1078,7 +1079,7 @@ export default function ArrangementWithRecordingUploader({
                 handleSubmit();
               } catch (error) {
                 console.error('Error in handleSubmit:', error);
-                message.error('An error occurred: ' + error.message);
+                toast.error('An error occurred: ' + error.message, { duration: 5000, position: 'top-center' });
               }
             }}
             loading={submitting}

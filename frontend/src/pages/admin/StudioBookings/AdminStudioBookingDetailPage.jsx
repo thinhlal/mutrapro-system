@@ -10,6 +10,7 @@ import {
   Descriptions,
   Empty,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CopyOutlined,
@@ -150,7 +151,7 @@ const AdminStudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading booking detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết booking');
+      toast.error(error?.message || 'Lỗi khi tải chi tiết booking', { duration: 5000, position: 'top-center' });
       navigate('/admin/studio-bookings');
     } finally {
       setLoading(false);

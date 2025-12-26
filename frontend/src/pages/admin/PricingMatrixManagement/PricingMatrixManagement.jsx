@@ -15,6 +15,7 @@ import {
   Switch,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   PlusOutlined,
   EditOutlined,
@@ -74,7 +75,7 @@ const PricingMatrixManagement = () => {
         setPricingList(filtered);
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load pricing matrix list');
+      toast.error(error.message || 'Unable to load pricing matrix list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ const PricingMatrixManagement = () => {
           message.success('Pricing matrix deleted successfully');
           fetchPricingMatrix();
         } catch (error) {
-          message.error(error.message || 'Failed to delete pricing matrix');
+          toast.error(error.message || 'Failed to delete pricing matrix', { duration: 5000, position: 'top-center' });
         }
       },
     });
@@ -160,7 +161,7 @@ const PricingMatrixManagement = () => {
     } catch (error) {
       const errorMessage =
         error.message || error.response?.data?.message || 'An error occurred';
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     }
   };
 

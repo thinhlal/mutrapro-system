@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Spin, Alert, Button, message, Select } from 'antd';
+import toast from 'react-hot-toast';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useChat } from '../../../hooks/useChat';
 import chatService from '../../../services/chatService';
@@ -117,7 +118,7 @@ const ChatConversationPage = () => {
       );
     } catch (error) {
       console.error('Failed to send message:', error);
-      message.error('Không thể gửi tin nhắn');
+      toast.error('Không thể gửi tin nhắn', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -151,7 +152,7 @@ const ChatConversationPage = () => {
       );
     } catch (error) {
       console.error('Failed to send file message:', error);
-      message.error('Không thể gửi file');
+      toast.error('Không thể gửi file', { duration: 5000, position: 'top-center' });
     }
   };
 

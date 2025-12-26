@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Badge, Spin, message, Alert } from 'antd';
+import toast from 'react-hot-toast';
 import {
   MessageOutlined,
   CloseOutlined,
@@ -199,7 +200,7 @@ const ChatPopup = ({
       await sendMessage(content, 'TEXT', null, contextType, contextId);
     } catch (error) {
       console.error('Failed to send message:', error);
-      message.error('Không thể gửi tin nhắn');
+      toast.error('Không thể gửi tin nhắn', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -234,7 +235,7 @@ const ChatPopup = ({
       );
     } catch (error) {
       console.error('Failed to send file message:', error);
-      message.error('Không thể gửi file');
+      toast.error('Không thể gửi file', { duration: 5000, position: 'top-center' });
     }
   };
 

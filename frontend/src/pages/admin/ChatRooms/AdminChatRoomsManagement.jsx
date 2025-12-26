@@ -16,6 +16,7 @@ import {
   Modal,
   Badge,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -78,7 +79,7 @@ const AdminChatRoomsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading chat rooms:', error);
-      message.error(error?.message || 'Lỗi khi tải danh sách chat rooms');
+      toast.error(error?.message || 'Lỗi khi tải danh sách chat rooms', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,7 @@ const AdminChatRoomsManagement = () => {
       }
     } catch (error) {
       console.error('Error deactivating room:', error);
-      message.error(error?.message || 'Error closing chat room');
+      toast.error(error?.message || 'Error closing chat room', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -143,7 +144,7 @@ const AdminChatRoomsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading room detail:', error);
-      message.error(error?.message || 'Error loading chat room detail');
+      toast.error(error?.message || 'Error loading chat room detail', { duration: 5000, position: 'top-center' });
     } finally {
       setDetailLoading(false);
     }

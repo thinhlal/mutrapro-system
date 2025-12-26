@@ -20,6 +20,7 @@ import {
   message,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   CheckOutlined,
@@ -307,7 +308,10 @@ const MyTasksPage = ({ onOpenTask }) => {
         }
       } catch (error) {
         console.error('Error accepting task:', error);
-        message.error(error?.message || 'Error accepting task');
+        toast.error(error?.message || 'Error accepting task', {
+          duration: 5000,
+          position: 'top-center',
+        });
       }
     },
     [loadTasks]
@@ -338,7 +342,10 @@ const MyTasksPage = ({ onOpenTask }) => {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Error cancelling task');
+      toast.error(error?.message || 'Error cancelling task', {
+        duration: 5000,
+        position: 'top-center',
+      });
     }
   }, [cancelTask, cancelForm, loadTasks]);
 
@@ -353,7 +360,10 @@ const MyTasksPage = ({ onOpenTask }) => {
         }
       } catch (error) {
         console.error('Error starting task:', error);
-        message.error(error?.message || 'Failed to start task');
+        toast.error(error?.message || 'Failed to start task', {
+          duration: 5000,
+          position: 'top-center',
+        });
       } finally {
         setStartingAssignmentId(null);
       }
@@ -674,7 +684,8 @@ const MyTasksPage = ({ onOpenTask }) => {
                       );
 
                       // Check contract status - chỉ cho phép start nếu contract đã active
-                      const contractStatus = record.contract?.contractStatus?.toLowerCase();
+                      // Normalize contract status: trim whitespace and convert to lowercase for comparison
+                      const contractStatus = record.contract?.contractStatus?.toLowerCase()?.trim();
                       const isContractActive = contractStatus === 'active';
                       const contractNotActiveMessage = contractStatus === 'active_pending_assignment' 
                         ? 'The contract has not yet been started by the Manager. Please wait for the Manager to start the contract before beginning the task.'

@@ -9,6 +9,7 @@ import {
   Image,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { UploadOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
@@ -59,12 +60,12 @@ function InstrumentFormModal({
     beforeUpload: file => {
       const isImage = file.type.startsWith('image/');
       if (!isImage) {
-        message.error('Chỉ có thể upload file ảnh!');
+        toast.error('Only image files can be uploaded!', { duration: 5000, position: 'top-center' });
         return false;
       }
       const isLt5M = file.size / 1024 / 1024 < 5;
       if (!isLt5M) {
-        message.error('Ảnh phải nhỏ hơn 5MB!');
+        toast.error('Image must be smaller than 5MB!', { duration: 5000, position: 'top-center' });
         return false;
       }
       return false;

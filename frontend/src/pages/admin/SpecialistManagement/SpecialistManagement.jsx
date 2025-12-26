@@ -15,6 +15,7 @@ import {
   Descriptions,
   Checkbox,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   ReloadOutlined,
@@ -70,7 +71,7 @@ const SpecialistManagement = () => {
         setSpecialists(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách specialist');
+      toast.error(error.message || 'Cannot load specialists list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ const SpecialistManagement = () => {
       // Chỉ thêm recordingRoles nếu là RECORDING_ARTIST
       if (values.specialization === 'RECORDING_ARTIST') {
         if (!values.recordingRoles || values.recordingRoles.length === 0) {
-          message.error('Vui lòng chọn ít nhất một recording role');
+          toast.error('Please select at least one recording role', { duration: 5000, position: 'top-center' });
           setCreateLoading(false);
           return;
         }
@@ -101,14 +102,14 @@ const SpecialistManagement = () => {
       }
 
       await createSpecialist(payload);
-      message.success('Tạo specialist thành công');
+      message.success('Specialist created successfully');
       setCreateModalVisible(false);
       createForm.resetFields();
       fetchSpecialists();
     } catch (error) {
       const errorMsg =
-        error.message || error.error || 'Không thể tạo specialist';
-      message.error(errorMsg);
+        error.message || error.error || 'Cannot create specialist';
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setCreateLoading(false);
     }
@@ -121,7 +122,7 @@ const SpecialistManagement = () => {
       setSelectedSpecialist(response.data);
       setViewModalVisible(true);
     } catch (error) {
-      message.error('Không thể tải thông tin specialist');
+      toast.error('Cannot load specialist information', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -139,13 +140,13 @@ const SpecialistManagement = () => {
         selectedSpecialist.specialistId,
         values.status
       );
-      message.success('Cập nhật status thành công');
+      message.success('Status updated successfully');
       setStatusModalVisible(false);
       fetchSpecialists();
     } catch (error) {
       const errorMsg =
-        error.message || error.error || 'Không thể cập nhật status';
-      message.error(errorMsg);
+        error.message || error.error || 'Cannot update status';
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setStatusLoading(false);
     }
@@ -164,13 +165,13 @@ const SpecialistManagement = () => {
     setSettingsLoading(true);
     try {
       await updateSpecialistSettings(selectedSpecialist.specialistId, values);
-      message.success('Cập nhật settings thành công');
+      message.success('Settings updated successfully');
       setSettingsModalVisible(false);
       fetchSpecialists();
     } catch (error) {
       const errorMsg =
-        error.message || error.error || 'Không thể cập nhật settings';
-      message.error(errorMsg);
+        error.message || error.error || 'Cannot update settings';
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setSettingsLoading(false);
     }
@@ -396,8 +397,8 @@ const SpecialistManagement = () => {
             name="email"
             label="Email"
             rules={[
-              { required: true, message: 'Vui lòng nhập email' },
-              { type: 'email', message: 'Email không hợp lệ' },
+              { required: true, message: 'Please enter email' },
+              { type: 'email', message: 'Invalid email format' },
             ]}
           >
             <Input placeholder="Enter user email" />
@@ -406,7 +407,7 @@ const SpecialistManagement = () => {
             name="specialization"
             label="Specialization"
             rules={[
-              { required: true, message: 'Vui lòng chọn specialization' },
+              { required: true, message: 'Please select specialization' },
             ]}
           >
             <Select placeholder="Select specialization">
@@ -431,12 +432,12 @@ const SpecialistManagement = () => {
                   rules={[
                     {
                       required: true,
-                      message: 'Vui lòng chọn ít nhất một recording role',
+                      message: 'Please select at least one recording role',
                     },
                     {
                       type: 'array',
                       min: 1,
-                      message: 'Vui lòng chọn ít nhất một recording role',
+                      message: 'Please select at least one recording role',
                     },
                   ]}
                 >
@@ -529,7 +530,7 @@ const SpecialistManagement = () => {
           <Form.Item
             name="status"
             label="Status"
-            rules={[{ required: true, message: 'Vui lòng chọn status' }]}
+            rules={[{ required: true, message: 'Please select status' }]}
           >
             <Select placeholder="Select status">
               <Option value="ACTIVE">Active</Option>
@@ -561,8 +562,8 @@ const SpecialistManagement = () => {
             name="maxConcurrentTasks"
             label="Max Concurrent Tasks"
             rules={[
-              { required: true, message: 'Vui lòng nhập max concurrent tasks' },
-              { type: 'number', min: 1, max: 20, message: 'Phải từ 1 đến 20' },
+              { required: true, message: 'Please enter max concurrent tasks' },
+              { type: 'number', min: 1, max: 20, message: 'Must be between 1 and 20' },
             ]}
           >
             <InputNumber min={1} max={20} style={{ width: '100%' }} />

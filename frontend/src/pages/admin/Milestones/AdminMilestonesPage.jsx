@@ -13,6 +13,7 @@ import {
   Row,
   Col,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   UserAddOutlined,
@@ -176,7 +177,7 @@ const AdminMilestonesPage = () => {
       }
     } catch (error) {
       console.error('Error fetching milestone slots:', error);
-      message.error(error?.message || 'Không thể tải danh sách milestone');
+      toast.error(error?.message || 'Không thể tải danh sách milestone', { duration: 5000, position: 'top-center' });
       setSlots([]);
       setSummary({
         total: 0,

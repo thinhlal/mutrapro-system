@@ -13,6 +13,7 @@ import {
   Tabs,
   Badge,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   FileTextOutlined,
@@ -150,7 +151,7 @@ export default function ServiceRequestManagement() {
       }
     } catch (error) {
       console.error('Error fetching all requests:', error);
-      message.error('Failed to load service requests');
+      toast.error('Failed to load service requests', { duration: 5000, position: 'top-center' });
     } finally {
       setLoadingAll(false);
     }
@@ -197,7 +198,7 @@ export default function ServiceRequestManagement() {
       }
     } catch (error) {
       console.error('Error fetching my assigned requests:', error);
-      message.error('Failed to load my assigned requests');
+      toast.error('Failed to load my assigned requests', { duration: 5000, position: 'top-center' });
     } finally {
       setLoadingMyAssigned(false);
     }
@@ -209,7 +210,7 @@ export default function ServiceRequestManagement() {
 
     const requestId = record.requestId || record.id;
     if (!requestId) {
-      message.error('Request ID not found');
+      toast.error('Request ID not found', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -236,9 +237,7 @@ export default function ServiceRequestManagement() {
       }
     } catch (error) {
       console.error('Error assigning request:', error);
-      message.error(
-        error.response?.data?.message || 'Cannot assign request'
-      );
+      toast.error(error.response?.data?.message || 'Cannot assign request', { duration: 5000, position: 'top-center' });
     } finally {
       setAssigning(false);
     }
@@ -258,7 +257,7 @@ export default function ServiceRequestManagement() {
   const handleViewContracts = record => {
     const requestId = record.requestId || record.id;
     if (!requestId) {
-      message.error('Request ID not found');
+      toast.error('Request ID not found', { duration: 5000, position: 'top-center' });
       return;
     }
     const basePath = location.pathname.startsWith('/admin')

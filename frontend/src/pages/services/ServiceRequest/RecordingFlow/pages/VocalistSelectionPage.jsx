@@ -11,6 +11,7 @@ import {
   Radio,
   Select,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
 import { getVocalists } from '../../../../../services/specialistService';
 import { getAvailableArtistsForRequest } from '../../../../../services/studioBookingService';
@@ -168,7 +169,7 @@ export default function VocalistSelectionPage() {
         }
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load vocalists list');
+      toast.error(error.message || 'Unable to load vocalists list', { duration: 5000, position: 'top-center' });
       setVocalists([]);
     } finally {
       setLoading(false);
@@ -300,7 +301,7 @@ export default function VocalistSelectionPage() {
       }
     } catch (error) {
       console.error('Error saving vocalist selection:', error);
-      message.error('Failed to save vocalist selection. Please try again.');
+      toast.error('Failed to save vocalist selection. Please try again.', { duration: 5000, position: 'top-center' });
     }
   };
 

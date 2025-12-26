@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
+import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
 
 const { TextArea } = Input;
@@ -17,7 +18,7 @@ const RevisionRequestModal = ({ open, onCancel, onConfirm, loading }) => {
         // Validation errors - already handled by Form
         return;
       }
-      message.error('Lỗi khi gửi yêu cầu chỉnh sửa contract');
+      toast.error('Error sending revision request for contract', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -28,34 +29,34 @@ const RevisionRequestModal = ({ open, onCancel, onConfirm, loading }) => {
 
   return (
     <Modal
-      title="Yêu cầu chỉnh sửa Contract"
+      title="Request Contract Revision"
       open={open}
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="Gửi yêu cầu"
-      cancelText="Hủy"
+      okText="Send Request"
+      cancelText="Cancel"
       width={600}
     >
       <p style={{ marginBottom: 16, color: '#666' }}>
-        Vui lòng mô tả những thay đổi bạn muốn thực hiện cho contract này.
-        Manager sẽ tạo một phiên bản mới dựa trên yêu cầu của bạn.
+        Please describe the changes you want to make to this contract.
+        The manager will create a new version based on your request.
       </p>
       <Form form={form} layout="vertical">
         <Form.Item
           name="reason"
-          label="Lý do yêu cầu chỉnh sửa"
+          label="Revision Request Reason"
           rules={[
             {
               required: true,
-              message: 'Vui lòng nhập lý do yêu cầu chỉnh sửa',
+              message: 'Please enter the revision request reason',
             },
-            { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+            { min: 10, message: 'Reason must be at least 10 characters' },
           ]}
         >
           <TextArea
             rows={6}
-            placeholder="Ví dụ: Tôi muốn thay đổi SLA từ 7 ngày thành 10 ngày, và tăng số lần revision miễn phí từ 1 lên 2..."
+            placeholder="Example: I want to change the SLA from 7 days to 10 days, and increase the number of free revisions from 1 to 2..."
             maxLength={1000}
             showCount
           />

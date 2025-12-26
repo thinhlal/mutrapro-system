@@ -16,6 +16,7 @@ import {
   Col,
   Radio,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -126,7 +127,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading milestone:', error);
-        message.error('Error when loading milestone info');
+        toast.error('Error when loading milestone info', { duration: 5000, position: 'top-center' });
         navigate(-1);
       } finally {
         setLoading(false);
@@ -152,7 +153,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading slots:', error);
-        message.error('Error when loading available slots');
+        toast.error('Error when loading available slots', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingSlots(false);
       }
@@ -186,7 +187,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading artists:', error);
-        message.error('Error when loading available artists');
+        toast.error('Error when loading available artists', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingArtists(false);
       }
@@ -227,7 +228,7 @@ const StudioBookingPage = () => {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedSlot || !selectedArtist) {
-      message.error('Please select all information');
+      toast.error('Please select all information', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -261,7 +262,7 @@ const StudioBookingPage = () => {
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-      message.error(error?.message || 'Error when creating booking');
+      toast.error(error?.message || 'Error when creating booking', { duration: 5000, position: 'top-center' });
     } finally {
       setSubmitting(false);
     }

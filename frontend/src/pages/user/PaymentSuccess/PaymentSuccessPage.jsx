@@ -10,6 +10,7 @@ import {
   Spin,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   CheckCircleOutlined,
   WalletOutlined,
@@ -54,7 +55,7 @@ const PaymentSuccessPage = () => {
         setWallet(walletResponse.data);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải thông tin');
+      toast.error(error.message || 'Lỗi khi tải thông tin', { duration: 5000, position: 'top-center' });
       navigate('/wallet');
     } finally {
       setLoading(false);

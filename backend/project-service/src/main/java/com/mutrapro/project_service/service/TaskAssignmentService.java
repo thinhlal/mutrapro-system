@@ -1301,15 +1301,21 @@ public class TaskAssignmentService {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
         enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
         
-        // Enrich contract info với contract status
-        if (assignment.getContractId() != null && response.getContract() != null) {
+        // Enrich contract info với contract status từ snapshot data
+        if (assignment.getContractId() != null) {
             try {
+                // Tạo ContractInfo từ snapshot data trong TaskAssignment
                 Contract contract = contractRepository.findById(assignment.getContractId()).orElse(null);
-                if (contract != null) {
-                    response.getContract().setContractStatus(contract.getStatus() != null ? contract.getStatus().name() : null);
-                }
+                TaskAssignmentResponse.ContractInfo contractInfo = TaskAssignmentResponse.ContractInfo.builder()
+                    .contractId(assignment.getContractId())
+                    .contractNumber(assignment.getContractNumberSnapshot())
+                    .nameSnapshot(assignment.getContractNameSnapshot())
+                    .contractCreatedAt(assignment.getContractCreatedAtSnapshot())
+                    .contractStatus(contract != null && contract.getStatus() != null ? contract.getStatus().name() : null)
+                    .build();
+                response.setContract(contractInfo);
             } catch (Exception e) {
-                log.warn("Failed to fetch contract status for contractId={}: {}", assignment.getContractId(), e.getMessage());
+                log.warn("Failed to fetch contract info for contractId={}: {}", assignment.getContractId(), e.getMessage());
             }
         }
         
@@ -2960,6 +2966,45 @@ public class TaskAssignmentService {
             }
         });
         log.info("[Performance] Step 5 - Map studio bookings: {}ms", System.currentTimeMillis() - step5Start);
+        
+        // Batch fetch contracts để populate contract info với contract status
+        long step6Start = System.currentTimeMillis();
+        Map<String, Contract> contractsCache = new HashMap<>();
+        List<String> contractIds = assignments.stream()
+            .map(TaskAssignment::getContractId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (!contractIds.isEmpty()) {
+            List<Contract> contracts = contractRepository.findAllById(contractIds);
+            contractsCache = contracts.stream()
+                .collect(Collectors.toMap(Contract::getContractId, contract -> contract));
+        }
+        
+        Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
+        for (TaskAssignment assignment : assignments) {
+            if (assignment.getContractId() != null && !contractsMap.containsKey(assignment.getContractId())) {
+                Contract contract = contractsCache.get(assignment.getContractId());
+                // Sử dụng snapshot từ TaskAssignment (không cần query DB thêm)
+                contractsMap.put(assignment.getContractId(),
+                    TaskAssignmentResponse.ContractInfo.builder()
+                        .contractId(assignment.getContractId())
+                        .contractNumber(assignment.getContractNumberSnapshot())
+                        .nameSnapshot(assignment.getContractNameSnapshot())
+                        .contractCreatedAt(assignment.getContractCreatedAtSnapshot())
+                        .contractStatus(contract != null && contract.getStatus() != null ? contract.getStatus().name() : null)
+                        .build());
+            }
+        }
+        
+        // Attach contracts to responses
+        for (TaskAssignmentResponse response : enrichedAssignments) {
+            if (response.getContractId() != null) {
+                response.setContract(contractsMap.get(response.getContractId()));
+            }
+        }
+        log.info("[Performance] Step 6 - Batch fetch and attach contracts: {}ms (fetched {} contracts from {} contractIds)", 
+            System.currentTimeMillis() - step6Start, contractsCache.size(), contractIds.size());
         
         long totalTime = System.currentTimeMillis() - totalStart;
         log.info("[Performance] getMyTaskAssignments COMPLETED: {} assignments, totalTime={}ms", 

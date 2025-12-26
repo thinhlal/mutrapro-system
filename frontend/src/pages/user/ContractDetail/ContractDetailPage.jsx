@@ -13,6 +13,7 @@ import {
   Modal,
   Empty,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   CheckOutlined,
   CloseOutlined,
@@ -409,7 +410,7 @@ const ContractDetailPage = () => {
     } catch (error) {
       console.error('Error loading contract:', error);
       setError(error?.message || 'Failed to load contract');
-      message.error('Failed to load contract data');
+      toast.error('Failed to load contract data', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -483,7 +484,7 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error approving contract:', error);
-      message.error(error?.message || 'Failed to approve contract');
+      toast.error(error?.message || 'Failed to approve contract', { duration: 5000, position: 'top-center' });
     } finally {
       setApproveLoading(false);
     }
@@ -520,9 +521,7 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error initializing e-signature:', error);
-      message.error(
-        error?.message || 'Failed to initialize e-signature. Please try again.'
-      );
+      toast.error(error?.message || 'Failed to initialize e-signature. Please try again.', { duration: 5000, position: 'top-center' });
     } finally {
       setSignatureLoading(false);
     }
@@ -604,9 +603,7 @@ const ContractDetailPage = () => {
 
   const handleVerifyOtp = async otpCode => {
     if (!eSignSession?.sessionId) {
-      message.error(
-        'Signing session not found. Please restart the signing process.'
-      );
+      toast.error('Signing session not found. Please restart the signing process.', { duration: 5000, position: 'top-center' });
       setOtpModalOpen(false);
       return;
     }
@@ -679,7 +676,7 @@ const ContractDetailPage = () => {
       console.error('Error verifying OTP:', error);
       const errorMessage = error?.message || 'Invalid OTP. Please try again.';
       setOtpError(errorMessage);
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     } finally {
       setOtpLoading(false);
     }
@@ -712,9 +709,7 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error resending OTP:', error);
-      message.error(
-        error?.message || 'Failed to resend OTP. Please try again.'
-      );
+      toast.error(error?.message || 'Failed to resend OTP. Please try again.', { duration: 5000, position: 'top-center' });
     } finally {
       setOtpLoading(false);
     }
@@ -740,7 +735,7 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error canceling contract:', error);
-      message.error(error?.message || 'Failed to cancel contract');
+      toast.error(error?.message || 'Failed to cancel contract', { duration: 5000, position: 'top-center' });
       throw error; // Re-throw để modal không đóng
     } finally {
       setCancelLoading(false);
@@ -759,7 +754,7 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error requesting revision:', error);
-      message.error(error?.message || 'Failed to request revision');
+      toast.error(error?.message || 'Failed to request revision', { duration: 5000, position: 'top-center' });
       throw error; // Re-throw để modal không đóng
     } finally {
       setRevisionLoading(false);
@@ -1640,7 +1635,7 @@ const ContractDetailPage = () => {
   // Handle export PDF
   const handleExportPdf = async () => {
     if (!contract) {
-      message.error('Contract data not available');
+      toast.error('Contract data not available', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -1673,7 +1668,7 @@ const ContractDetailPage = () => {
     } catch (error) {
       console.error('Error exporting PDF:', error);
       message.destroy();
-      message.error('Failed to export PDF. Please try again.');
+      toast.error('Failed to export PDF. Please try again.', { duration: 5000, position: 'top-center' });
     }
   };
 

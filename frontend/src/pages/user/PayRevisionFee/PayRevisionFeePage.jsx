@@ -16,6 +16,7 @@ import {
   Divider,
   Input,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   DollarOutlined,
   WalletOutlined,
@@ -63,7 +64,7 @@ const PayRevisionFeePage = () => {
 
   useEffect(() => {
     if (!contractId || !feeAmount || !submissionId || !taskAssignmentId) {
-      message.error('Missing required information for revision fee payment');
+      toast.error('Missing required information for revision fee payment', { duration: 5000, position: 'top-center' });
       navigate(-1);
       return;
     }
@@ -88,11 +89,9 @@ const PayRevisionFeePage = () => {
         const isExpired = contractStatus === 'expired';
 
         if (isCanceled || isExpired) {
-          message.error(
-            isCanceled
+          toast.error(isCanceled
               ? 'Contract has been canceled. Payment is not allowed.'
-              : 'Contract has expired. Payment is not allowed.'
-          );
+              : 'Contract has expired. Payment is not allowed.', { duration: 5000, position: 'top-center' });
           navigate(`/contracts/${contractId}`);
           return;
         }
@@ -110,7 +109,7 @@ const PayRevisionFeePage = () => {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      message.error('Failed to load payment information');
+      toast.error('Failed to load payment information', { duration: 5000, position: 'top-center' });
       navigate(-1);
     } finally {
       setLoading(false);
@@ -132,7 +131,7 @@ const PayRevisionFeePage = () => {
     }
 
     if (!wallet || !feeAmount) {
-      message.error('Wallet or fee amount information not available');
+      toast.error('Wallet or fee amount information not available', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -195,7 +194,7 @@ const PayRevisionFeePage = () => {
       console.error('Error paying revision fee:', error);
       const errorMessage =
         error?.message || error?.data?.message || 'Failed to process payment';
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     } finally {
       setPaying(false);
     }
@@ -209,7 +208,7 @@ const PayRevisionFeePage = () => {
       message.info('Please complete top-up in your wallet page');
       navigate('/wallet');
     } catch (error) {
-      message.error('Failed to process top-up');
+      toast.error('Failed to process top-up', { duration: 5000, position: 'top-center' });
     }
   };
 

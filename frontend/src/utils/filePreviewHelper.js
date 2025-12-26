@@ -1,4 +1,5 @@
 import { message } from 'antd';
+import toast from 'react-hot-toast';
 import { fetchFileForPreview } from '../services/fileService';
 
 /**
@@ -9,7 +10,7 @@ import { fetchFileForPreview } from '../services/fileService';
  */
 export const previewFile = async (fileId, fallbackMimeType = null) => {
   if (!fileId) {
-    message.error('File ID not available');
+    toast.error('File ID not available', { duration: 5000, position: 'top-center' });
     return;
   }
 
@@ -27,7 +28,7 @@ export const previewFile = async (fileId, fallbackMimeType = null) => {
     const newWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer');
 
     if (!newWindow) {
-      message.error('Please allow popups to preview file');
+      toast.error('Please allow popups to preview file', { duration: 5000, position: 'top-center' });
       window.URL.revokeObjectURL(blobUrl);
       return;
     }
@@ -41,11 +42,11 @@ export const previewFile = async (fileId, fallbackMimeType = null) => {
 
     // Handle specific errors
     if (error.response?.status === 403) {
-      message.error('You do not have permission to view this file');
+      toast.error('You do not have permission to view this file', { duration: 5000, position: 'top-center' });
     } else if (error.response?.status === 404) {
-      message.error('File not found');
+      toast.error('File not found', { duration: 5000, position: 'top-center' });
     } else {
-      message.error(error?.message || 'Failed to preview file');
+      toast.error(error?.message || 'Failed to preview file', { duration: 5000, position: 'top-center' });
     }
   }
 };
@@ -58,7 +59,7 @@ export const previewFile = async (fileId, fallbackMimeType = null) => {
  */
 export const downloadFileHelper = async (fileId, fileName = null) => {
   if (!fileId) {
-    message.error('File ID not available');
+    toast.error('File ID not available', { duration: 5000, position: 'top-center' });
     return;
   }
 
@@ -89,11 +90,11 @@ export const downloadFileHelper = async (fileId, fileName = null) => {
     console.error('Error downloading file:', error);
 
     if (error.response?.status === 403) {
-      message.error('You do not have permission to download this file');
+      toast.error('You do not have permission to download this file', { duration: 5000, position: 'top-center' });
     } else if (error.response?.status === 404) {
-      message.error('File not found');
+      toast.error('File not found', { duration: 5000, position: 'top-center' });
     } else {
-      message.error(error?.message || 'Failed to download file');
+      toast.error(error?.message || 'Failed to download file', { duration: 5000, position: 'top-center' });
     }
   }
 };

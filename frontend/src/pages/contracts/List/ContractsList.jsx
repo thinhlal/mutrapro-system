@@ -15,6 +15,7 @@ import {
   Modal,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   EditOutlined,
@@ -221,7 +222,7 @@ export default function ContractsList() {
       } catch (err) {
         console.error('Error fetching contracts:', err);
         setError(err.message || 'Lỗi khi tải danh sách contracts');
-        message.error(err.message || 'Lỗi khi tải danh sách contracts');
+        toast.error(err.message || 'Lỗi khi tải danh sách contracts', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }
@@ -312,7 +313,7 @@ export default function ContractsList() {
         setLoading(false);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi gửi contract');
+      toast.error(error.message || 'Lỗi khi gửi contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -337,7 +338,7 @@ export default function ContractsList() {
         setLoading(false);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi hủy contract');
+      toast.error(error.message || 'Lỗi khi hủy contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -575,7 +576,7 @@ export default function ContractsList() {
               setContracts(response.data || []);
               message.success('List refreshed successfully');
             } catch (err) {
-              message.error('Error refreshing list');
+              toast.error('Error refreshing list', { duration: 5000, position: 'top-center' });
             } finally {
               setLoading(false);
             }

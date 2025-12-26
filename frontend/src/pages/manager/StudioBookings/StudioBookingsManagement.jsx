@@ -13,6 +13,7 @@ import {
   DatePicker,
   Tooltip,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -80,7 +81,7 @@ const StudioBookingsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      message.error(error?.message || 'Error when loading bookings list');
+      toast.error(error?.message || 'Error when loading bookings list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,7 @@ import {
   Col,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   WalletOutlined,
   ArrowLeftOutlined,
@@ -62,7 +63,7 @@ const TopupPaymentPage = () => {
     } else if (amount) {
       createNewOrder();
     } else {
-      message.error('Thiếu thông tin đơn hàng');
+      toast.error('Thiếu thông tin đơn hàng', { duration: 5000, position: 'top-center' });
       navigate('/wallet');
     }
 
@@ -149,7 +150,7 @@ const TopupPaymentPage = () => {
         );
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tạo đơn hàng thanh toán');
+      toast.error(error.message || 'Lỗi khi tạo đơn hàng thanh toán', { duration: 5000, position: 'top-center' });
       navigate('/wallet');
     } finally {
       setCreating(false);
@@ -191,7 +192,7 @@ const TopupPaymentPage = () => {
         }
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải thông tin đơn hàng');
+      toast.error(error.message || 'Lỗi khi tải thông tin đơn hàng', { duration: 5000, position: 'top-center' });
       navigate('/wallet');
     } finally {
       setLoading(false);

@@ -20,6 +20,7 @@ import {
   List,
   Input,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import {
   CheckCircleOutlined,
@@ -154,7 +155,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         }
       } catch (error) {
         console.error('Error fetching skills:', error);
-        message.error('Unable to load instrument list');
+        toast.error('Unable to load instrument list', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingSkills(false);
       }
@@ -282,28 +283,24 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
   const handleContinue = () => {
     // Validation
     if (hasLiveInstruments === null) {
-      message.error('Please choose whether live instruments will be used');
+      toast.error('Please choose whether live instruments will be used', { duration: 5000, position: 'top-center' });
       return;
     }
 
     // If no vocal needed, must have at least one instrument
     if (vocalChoice === 'NONE') {
       if (hasLiveInstruments === false) {
-        message.error(
-          'Since you selected "No vocal needed", you must use at least one live instrument. Please select "Yes, use live instruments" and choose instruments.'
-        );
+        toast.error('Since you selected "No vocal needed", you must use at least one live instrument. Please select "Yes, use live instruments" and choose instruments.', { duration: 5000, position: 'top-center' });
         return;
       }
       if (hasLiveInstruments === true && selectedInstruments.length === 0) {
-        message.error(
-          'Since you selected "No vocal needed", you must select at least one instrument to record.'
-        );
+        toast.error('Since you selected "No vocal needed", you must select at least one instrument to record.', { duration: 5000, position: 'top-center' });
         return;
       }
     }
 
     if (hasLiveInstruments === true && selectedInstruments.length === 0) {
-      message.error('Please select at least one instrument');
+      toast.error('Please select at least one instrument', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -314,9 +311,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.isCustomInstrument &&
         inst.performerSource !== PERFORMER_SOURCE.CUSTOMER_SELF
       ) {
-        message.error(
-          `Custom instruments can only be played by yourself: ${inst.skillName}`
-        );
+        toast.error(`Custom instruments can only be played by yourself: ${inst.skillName}`, { duration: 5000, position: 'top-center' });
         return;
       }
 
@@ -324,7 +319,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
         !inst.specialistId
       ) {
-        message.error(`Please choose an instrumentalist for ${inst.skillName}`);
+        toast.error(`Please choose an instrumentalist for ${inst.skillName}`, { duration: 5000, position: 'top-center' });
         return;
       }
 
@@ -333,9 +328,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.isCustomInstrument &&
         inst.instrumentSource !== INSTRUMENT_SOURCE.CUSTOMER_SIDE
       ) {
-        message.error(
-          `Custom instruments must be brought by yourself: ${inst.skillName}`
-        );
+        toast.error(`Custom instruments must be brought by yourself: ${inst.skillName}`, { duration: 5000, position: 'top-center' });
         return;
       }
 
@@ -343,7 +336,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
         !inst.equipmentId
       ) {
-        message.error(`Please choose equipment for ${inst.skillName}`);
+        toast.error(`Please choose equipment for ${inst.skillName}`, { duration: 5000, position: 'top-center' });
         return;
       }
     }
@@ -890,7 +883,7 @@ function InstrumentConfig({
           response: error.response?.data,
           status: error.response?.status,
         });
-        message.error('Unable to load instrumentalist list');
+        toast.error('Unable to load instrumentalist list', { duration: 5000, position: 'top-center' });
         setAvailableInstrumentalists([]);
       } finally {
         setLoadingInstrumentalists(false);
@@ -931,7 +924,7 @@ function InstrumentConfig({
         }
       } catch (error) {
         console.error('Error fetching equipment:', error);
-        message.error('Unable to load equipment list');
+        toast.error('Unable to load equipment list', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingEquipment(false);
       }

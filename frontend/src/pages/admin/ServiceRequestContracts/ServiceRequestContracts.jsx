@@ -12,6 +12,7 @@ import {
   Spin,
   Empty,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -139,7 +140,7 @@ export default function ServiceRequestContracts() {
 
   const fetchRequest = async () => {
     if (!requestId) {
-      message.error('Không tìm thấy requestId trên URL');
+      toast.error('Không tìm thấy requestId trên URL', { duration: 5000, position: 'top-center' });
       return;
     }
     try {
@@ -152,7 +153,7 @@ export default function ServiceRequestContracts() {
       }
     } catch (error) {
       console.error('Error fetching request detail:', error);
-      message.error(error?.message || 'Không thể tải thông tin request');
+      toast.error(error?.message || 'Không thể tải thông tin request', { duration: 5000, position: 'top-center' });
     } finally {
       setLoadingRequest(false);
     }
@@ -194,7 +195,7 @@ export default function ServiceRequestContracts() {
       }
     } catch (error) {
       console.error('Error fetching contracts:', error);
-      message.error(error?.message || 'Không thể tải danh sách hợp đồng');
+      toast.error(error?.message || 'Không thể tải danh sách hợp đồng', { duration: 5000, position: 'top-center' });
     } finally {
       setLoadingContracts(false);
     }

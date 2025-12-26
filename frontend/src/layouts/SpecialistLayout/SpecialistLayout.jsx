@@ -8,6 +8,7 @@ import {
   ProfileOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
+import toast from 'react-hot-toast';
 import NotificationBell from '../../components/NotificationBell/NotificationBell';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './SpecialistLayout.module.css';
@@ -31,7 +32,7 @@ const SpecialistLayout = ({ specialization, menuItems }) => {
       message.success('Đăng xuất thành công');
       navigate('/login');
     } catch (error) {
-      message.error('Lỗi khi đăng xuất');
+      toast.error('Lỗi khi đăng xuất', { duration: 5000, position: 'top-center' });
       setLoggingOut(false);
     }
   };

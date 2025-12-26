@@ -15,6 +15,7 @@ import {
   Descriptions,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   ReloadOutlined,
@@ -46,7 +47,7 @@ const StudioManagement = () => {
         setStudios(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load studios list');
+      toast.error(error.message || 'Unable to load studios list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ const StudioManagement = () => {
     } catch (error) {
       const errorMessage =
         error.message || error.response?.data?.message || 'An error occurred';
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     }
   };
 
