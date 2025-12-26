@@ -41,8 +41,8 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       const amountNum = parseFloat(amount);
       if (!amountNum || amountNum < 1000) {
         Alert.alert(
-          "Lỗi",
-          "Số tiền tối thiểu là 1,000 VND",
+          "Error",
+          "Minimum amount is 1,000 VND",
           [{ text: "OK", onPress: () => navigation.goBack() }]
         );
         return;
@@ -50,7 +50,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       createNewOrder();
     } else {
       // If no amount and no orderId, go back
-      Alert.alert("Error", "Thiếu thông tin đơn hàng", [
+      Alert.alert("Error", "Missing order information", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     }
@@ -78,7 +78,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
-        Alert.alert("Hết hạn", "Đơn hàng đã hết hạn");
+        Alert.alert("Expired", "Order has expired");
         return;
       }
 
@@ -107,7 +107,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       const orderResponse = await createPaymentOrder({
         amount: parseFloat(amount),
         currency: "VND",
-        description: description || "Nạp tiền vào ví",
+        description: description || "Top up wallet",
       });
 
       if (orderResponse?.status === "success" && orderResponse?.data) {
@@ -126,7 +126,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         startPolling(newOrder.paymentOrderId);
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Lỗi khi tạo đơn hàng thanh toán", [
+      Alert.alert("Error", error.message || "Error creating payment order", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } finally {
@@ -173,7 +173,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         }
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Lỗi khi tải thông tin đơn hàng", [
+      Alert.alert("Error", error.message || "Error loading order information", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } finally {
@@ -220,7 +220,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
             console.log("❌ Order expired or cancelled");
             clearInterval(interval);
             pollingIntervalRef.current = null;
-            Alert.alert("Thông báo", "Đơn hàng đã hết hạn hoặc bị hủy");
+            Alert.alert("Notification", "Order has expired or been cancelled");
           }
         }
       } catch (error) {
@@ -260,7 +260,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       // Reload order
       await loadPaymentOrder(orderIdToRefresh);
     } else {
-      Alert.alert("Lỗi", "Không thể làm mới. Vui lòng quay lại và thử lại.");
+      Alert.alert("Error", "Unable to refresh. Please go back and try again.");
     }
   };
 
@@ -274,10 +274,10 @@ const TopupPaymentScreen = ({ navigation, route }) => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      PENDING: "Đang chờ thanh toán",
-      COMPLETED: "Đã thanh toán",
-      EXPIRED: "Đã hết hạn",
-      CANCELLED: "Đã hủy",
+      PENDING: "Pending payment",
+      COMPLETED: "Paid",
+      EXPIRED: "Expired",
+      CANCELLED: "Cancelled",
     };
     return labels[status] || status;
   };
@@ -289,7 +289,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>
-            {creating ? "Đang tạo đơn hàng..." : "Đang tải thông tin..."}
+            {creating ? "Creating order..." : "Loading information..."}
           </Text>
         </View>
       </SafeAreaView>
@@ -317,10 +317,10 @@ const TopupPaymentScreen = ({ navigation, route }) => {
           <View style={styles.headerIconContainer}>
             <Ionicons name="wallet-outline" size={32} color={COLORS.primary} />
           </View>
-          <Text style={styles.title}>Thanh toán nạp tiền</Text>
+          <Text style={styles.title}>Top up payment</Text>
           {isPending && (
             <Text style={styles.subtitle}>
-              Quét mã QR bằng app ngân hàng để thanh toán
+              Scan QR code with banking app to pay
             </Text>
           )}
         </View>
@@ -330,7 +330,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
           <View style={[styles.alert, styles.alertInfo]}>
             <Ionicons name="time-outline" size={20} color={COLORS.info} />
             <Text style={styles.alertText}>
-              Vui lòng quét mã QR và hoàn tất thanh toán trong app ngân hàng
+              Please scan the QR code and complete payment in the banking app
             </Text>
           </View>
         )}
@@ -338,7 +338,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         {isCompleted && (
           <View style={[styles.alert, styles.alertSuccess]}>
             <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-            <Text style={styles.alertText}>Thanh toán thành công</Text>
+            <Text style={styles.alertText}>Payment successful</Text>
           </View>
         )}
 
@@ -346,7 +346,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
           <View style={[styles.alert, styles.alertWarning]}>
             <Ionicons name="warning" size={20} color={COLORS.warning} />
             <Text style={styles.alertText}>
-              Đơn hàng đã hết hạn. Vui lòng tạo đơn hàng mới để tiếp tục thanh toán
+              Order has expired. Please create a new order to continue payment
             </Text>
           </View>
         )}
@@ -354,28 +354,28 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         {/* Payment Info Card */}
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Số tiền</Text>
+            <Text style={styles.infoLabel}>Amount</Text>
             <Text style={styles.infoValue}>
               {formatCurrency(paymentOrder.amount, paymentOrder.currency)}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.infoRowOrderId}>
-            <Text style={styles.infoLabelOrderId}>Mã đơn hàng</Text>
+            <Text style={styles.infoLabelOrderId}>Order ID</Text>
             <Text style={styles.infoCode}>
               {paymentOrder.paymentOrderId}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Mô tả</Text>
+            <Text style={styles.infoLabel}>Description</Text>
             <Text style={styles.infoText}>
-              {paymentOrder.description || "Nạp tiền vào ví"}
+              {paymentOrder.description || "Top up wallet"}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Trạng thái</Text>
+            <Text style={styles.infoLabel}>Status</Text>
             <View style={styles.statusContainer}>
               {isPending && (
                 <Ionicons name="time-outline" size={16} color={COLORS.warning} />
@@ -392,9 +392,9 @@ const TopupPaymentScreen = ({ navigation, route }) => {
             <>
               <View style={styles.divider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Thời gian còn lại</Text>
+                <Text style={styles.infoLabel}>Time remaining</Text>
                 <Text style={styles.timeRemaining}>
-                  {timeRemaining || "Đã hết hạn"}
+                  {timeRemaining || "Expired"}
                 </Text>
               </View>
             </>
@@ -406,7 +406,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
           <View style={styles.qrContainer}>
             <View style={styles.qrHeader}>
               <Ionicons name="qr-code-outline" size={24} color={COLORS.primary} />
-              <Text style={styles.qrTitle}>Quét mã QR để thanh toán</Text>
+              <Text style={styles.qrTitle}>Scan QR code to pay</Text>
             </View>
             <View style={styles.qrImageContainer}>
               <Image
@@ -419,7 +419,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
               />
             </View>
             <Text style={styles.qrHint}>
-              Mở app ngân hàng và quét mã QR này
+              Open banking app and scan this QR code
             </Text>
           </View>
         )}
@@ -427,20 +427,20 @@ const TopupPaymentScreen = ({ navigation, route }) => {
         {/* Instructions */}
         {isPending && (
           <View style={styles.instructionsCard}>
-            <Text style={styles.instructionsTitle}>Hướng dẫn thanh toán:</Text>
+            <Text style={styles.instructionsTitle}>Payment instructions:</Text>
             <View style={styles.instructionsList}>
               <Text style={styles.instructionItem}>
-                1. Mở app ngân hàng trên điện thoại
+                1. Open the banking app on your phone
               </Text>
               <Text style={styles.instructionItem}>
-                2. Chọn tính năng quét QR code
+                2. Select the QR code scanning feature
               </Text>
-              <Text style={styles.instructionItem}>3. Quét mã QR ở trên</Text>
+              <Text style={styles.instructionItem}>3. Scan the QR code above</Text>
               <Text style={styles.instructionItem}>
-                4. Kiểm tra thông tin và xác nhận thanh toán
+                4. Check information and confirm payment
               </Text>
               <Text style={styles.instructionItem}>
-                5. Hệ thống sẽ tự động cập nhật sau khi nhận được thanh toán
+                5. The system will automatically update after receiving payment
               </Text>
             </View>
           </View>
@@ -454,7 +454,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
               onPress={handleRefresh}
             >
               <Ionicons name="refresh" size={20} color={COLORS.primary} />
-              <Text style={styles.refreshButtonText}>Làm mới trạng thái</Text>
+              <Text style={styles.refreshButtonText}>Refresh status</Text>
             </TouchableOpacity>
           )}
           {isCompleted && (
@@ -462,7 +462,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
               style={styles.primaryButton}
               onPress={() => navigation.navigate("Wallet")}
             >
-              <Text style={styles.primaryButtonText}>Xem ví của tôi</Text>
+              <Text style={styles.primaryButtonText}>View my wallet</Text>
             </TouchableOpacity>
           )}
           {isExpired && (
@@ -470,7 +470,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
               style={styles.primaryButton}
               onPress={() => navigation.navigate("Wallet")}
             >
-              <Text style={styles.primaryButtonText}>Tạo đơn hàng mới</Text>
+              <Text style={styles.primaryButtonText}>Create new order</Text>
             </TouchableOpacity>
           )}
         </View>

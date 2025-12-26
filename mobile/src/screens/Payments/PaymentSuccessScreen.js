@@ -49,7 +49,7 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error("Error loading payment data:", error);
-      Alert.alert("Error", error.message || "Lỗi khi tải thông tin", [
+      Alert.alert("Error", error.message || "Error loading information", [
         { text: "OK", onPress: () => navigation.navigate("Wallet") },
       ]);
     } finally {
@@ -77,7 +77,7 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Đang tải thông tin...</Text>
+        <Text style={styles.loadingText}>Loading information...</Text>
       </View>
     );
   }
@@ -86,9 +86,9 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="alert-circle-outline" size={64} color={COLORS.error} />
-        <Text style={styles.emptyText}>Không tìm thấy thông tin đơn hàng</Text>
+        <Text style={styles.emptyText}>Order information not found</Text>
         <TouchableOpacity style={styles.button} onPress={handleGoHome}>
-          <Text style={styles.buttonText}>Về trang chủ</Text>
+          <Text style={styles.buttonText}>Back to home</Text>
         </TouchableOpacity>
       </View>
     );
@@ -105,43 +105,43 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
           <View style={styles.successIconContainer}>
             <Ionicons name="checkmark-circle" size={80} color={COLORS.success} />
           </View>
-          <Text style={styles.successTitle}>Thanh toán thành công!</Text>
+          <Text style={styles.successTitle}>Payment successful!</Text>
           <Text style={styles.successSubtitle}>
-            Đơn hàng của bạn đã được thanh toán thành công.
+            Your order has been successfully paid.
             {"\n"}
-            Số tiền đã được cộng vào ví của bạn.
+            The amount has been added to your wallet.
           </Text>
         </View>
 
         {/* Payment Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Chi tiết giao dịch</Text>
+          <Text style={styles.cardTitle}>Transaction details</Text>
           <InfoRow
             icon="receipt-outline"
-            label="Mã đơn hàng"
+            label="Order ID"
             value={paymentOrder.paymentOrderId}
           />
           <InfoRow
             icon="cash-outline"
-            label="Số tiền"
+            label="Amount"
             value={formatCurrency(paymentOrder.amount, paymentOrder.currency)}
             valueStyle={styles.amountValue}
           />
           <InfoRow
             icon="document-text-outline"
-            label="Mô tả"
-            value={paymentOrder.description || "Nạp tiền vào ví"}
+            label="Description"
+            value={paymentOrder.description || "Top up wallet"}
           />
           <InfoRow
             icon="checkmark-circle-outline"
-            label="Trạng thái"
-            value="Đã thanh toán"
+            label="Status"
+            value="Paid"
             valueStyle={styles.successValue}
           />
           {paymentOrder.completedAt && (
             <InfoRow
               icon="time-outline"
-              label="Thời gian hoàn thành"
+              label="Completion time"
               value={dayjs(paymentOrder.completedAt).format(
                 "DD/MM/YYYY HH:mm:ss"
               )}
@@ -150,7 +150,7 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
           {wallet && (
             <InfoRow
               icon="wallet-outline"
-              label="Số dư ví hiện tại"
+              label="Available balance"
               value={formatCurrency(wallet.balance, wallet.currency)}
               valueStyle={styles.walletValue}
             />
@@ -164,7 +164,7 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
             onPress={handleViewWallet}
           >
             <Ionicons name="wallet-outline" size={20} color={COLORS.white} />
-            <Text style={styles.primaryButtonText}>Xem ví của tôi</Text>
+            <Text style={styles.primaryButtonText}>View my wallet</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -172,7 +172,7 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
             onPress={handleGoHome}
           >
             <Ionicons name="home-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.secondaryButtonText}>Về trang chủ</Text>
+            <Text style={styles.secondaryButtonText}>Back to home</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
