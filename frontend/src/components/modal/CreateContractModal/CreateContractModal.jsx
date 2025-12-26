@@ -9,6 +9,7 @@ import {
   Switch,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { createContractFromRequest } from '../../../services/contractService';
@@ -87,7 +88,7 @@ export default function CreateContractModal({
 
   const handleSubmit = async values => {
     if (!serviceRequest) {
-      message.error('Service request not found');
+      toast.error('Service request not found', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -127,11 +128,9 @@ export default function CreateContractModal({
       }
     } catch (error) {
       console.error('Error creating contract:', error);
-      message.error(
-        error?.message ||
+      toast.error(error?.message ||
           error?.response?.data?.message ||
-          'Failed to create contract'
-      );
+          'Failed to create contract', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

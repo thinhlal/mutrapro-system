@@ -12,6 +12,7 @@ import {
   Spin,
   InputNumber,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getAvailableSlots } from '../../../../../../services/studioBookingService';
@@ -154,7 +155,7 @@ export default function RecordingStep1({ data, onComplete }) {
 
   const handleContinue = () => {
     if (!selectedDate) {
-      message.error('Please select a date');
+      toast.error('Please select a date', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -162,14 +163,12 @@ export default function RecordingStep1({ data, onComplete }) {
     const today = dayjs().startOf('day');
     const selectedDay = selectedDate.startOf('day');
     if (selectedDay.isBefore(today) || selectedDay.isSame(today)) {
-      message.error(
-        'Cannot book for today or past dates. Please select a future date.'
-      );
+      toast.error('Cannot book for today or past dates. Please select a future date.', { duration: 5000, position: 'top-center' });
       return;
     }
 
     if (!selectedTimeRange) {
-      message.error('Please select a time range');
+      toast.error('Please select a time range', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -179,7 +178,7 @@ export default function RecordingStep1({ data, onComplete }) {
     const durationHours = end.diff(start, 'hour', true); // Calculate duration in hours (decimal)
 
     if (!isTimeSlotAvailable(startStr, endStr)) {
-      message.error('Selected time slot is no longer available');
+      toast.error('Selected time slot is no longer available', { duration: 5000, position: 'top-center' });
       return;
     }
 

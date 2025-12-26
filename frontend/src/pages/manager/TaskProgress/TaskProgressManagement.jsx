@@ -29,6 +29,7 @@ import {
   Popconfirm,
   Select,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -257,7 +258,7 @@ export default function TaskProgressManagement() {
         }
       } catch (error) {
         console.error('Error fetching task assignments:', error);
-        message.error(error?.message || 'Error when loading task assignments list');
+        toast.error(error?.message || 'Error when loading task assignments list', { duration: 5000, position: 'top-center' });
         setTaskAssignments([]);
         setPagination(prev => ({ ...prev, total: 0 }));
       } finally {
@@ -453,7 +454,7 @@ export default function TaskProgressManagement() {
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(error?.message || 'Error resolving issue');
+      toast.error(error?.message || 'Error resolving issue', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -481,7 +482,7 @@ export default function TaskProgressManagement() {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Error cancelling task');
+      toast.error(error?.message || 'Error cancelling task', { duration: 5000, position: 'top-center' });
     } finally {
       setCancellingTask(false);
     }

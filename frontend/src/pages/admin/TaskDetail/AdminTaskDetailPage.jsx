@@ -19,6 +19,7 @@ import {
   Timeline,
   Collapse,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -280,7 +281,7 @@ const AdminTaskDetailPage = () => {
       // (sẽ được trigger bởi useEffect khi task thay đổi)
     } catch (error) {
       console.error('Error loading data:', error);
-      message.error('Failed to load task data');
+      toast.error('Failed to load task data', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -294,7 +295,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading task:', error);
-      message.error('Failed to load task info');
+      toast.error('Failed to load task info', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -368,12 +369,12 @@ const AdminTaskDetailPage = () => {
         }
       } catch (error) {
         console.error('Error loading submissions:', error);
-        message.error('Failed to load submissions');
+        toast.error('Failed to load submissions', { duration: 5000, position: 'top-center' });
         setSubmissions([]);
       }
     } catch (error) {
       console.error('Error loading files:', error);
-      message.error('Failed to load files');
+      toast.error('Failed to load files', { duration: 5000, position: 'top-center' });
       setSubmissions([]);
     } finally {
       setFilesLoading(false);
@@ -408,7 +409,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error approving file:', error);
-      message.error(error?.response?.data?.message || 'Failed to approve file');
+      toast.error(error?.response?.data?.message || 'Failed to approve file', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -434,9 +435,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error requesting revision:', error);
-      message.error(
-        error?.response?.data?.message || 'Failed to request file revision'
-      );
+      toast.error(error?.response?.data?.message || 'Failed to request file revision', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -453,10 +452,8 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error delivering submission:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Failed to send submission to customer'
-      );
+      toast.error(error?.response?.data?.message ||
+          'Failed to send submission to customer', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -473,9 +470,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error approving submission:', error);
-      message.error(
-        error?.response?.data?.message || 'Failed to approve submission'
-      );
+      toast.error(error?.response?.data?.message || 'Failed to approve submission', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -504,9 +499,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error rejecting submission:', error);
-      message.error(
-        error?.response?.data?.message || 'Failed to reject submission'
-      );
+      toast.error(error?.response?.data?.message || 'Failed to reject submission', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -542,9 +535,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error reviewing revision request:', error);
-      message.error(
-        error?.response?.data?.message || 'Failed to review revision request'
-      );
+      toast.error(error?.response?.data?.message || 'Failed to review revision request', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -564,9 +555,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(
-        error?.response?.data?.message || 'Failed to resolve issue'
-      );
+      toast.error(error?.response?.data?.message || 'Failed to resolve issue', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -591,7 +580,7 @@ const AdminTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.response?.data?.message || 'Failed to cancel task');
+      toast.error(error?.response?.data?.message || 'Failed to cancel task', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -617,7 +606,7 @@ const AdminTaskDetailPage = () => {
       message.success('Đã tải file thành công');
     } catch (error) {
       console.error('Error downloading file:', error);
-      message.error('Lỗi khi tải file');
+      toast.error('Lỗi khi tải file', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -644,7 +633,7 @@ const AdminTaskDetailPage = () => {
       }));
     } catch (error) {
       console.error('Error previewing file:', error);
-      message.error('Lỗi khi xem file');
+      toast.error('Lỗi khi xem file', { duration: 5000, position: 'top-center' });
       setPreviewModalVisible(false);
       setPreviewFile(null);
     } finally {

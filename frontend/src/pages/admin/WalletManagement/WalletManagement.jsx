@@ -18,6 +18,7 @@ import {
   Form,
   InputNumber,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   WalletOutlined,
   ReloadOutlined,
@@ -91,7 +92,7 @@ const WalletManagement = () => {
         });
       }
     } catch (error) {
-      message.error(error.message || 'Error loading wallets list');
+      toast.error(error.message || 'Error loading wallets list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ const WalletManagement = () => {
         loadTransactions(walletId);
       }
     } catch (error) {
-      message.error(error.message || 'Error loading wallet details');
+      toast.error(error.message || 'Error loading wallet details', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -128,7 +129,7 @@ const WalletManagement = () => {
         });
       }
     } catch (error) {
-      message.error(error.message || 'Error loading transaction history');
+      toast.error(error.message || 'Error loading transaction history', { duration: 5000, position: 'top-center' });
     } finally {
       setTransactionsLoading(false);
     }
@@ -194,9 +195,7 @@ const WalletManagement = () => {
         loadWalletDetail(selectedWallet.walletId);
       }
     } catch (error) {
-      message.error(
-        error.message || 'Lỗi khi điều chỉnh số dư ví'
-      );
+      toast.error(error.message || 'Lỗi khi điều chỉnh số dư ví', { duration: 5000, position: 'top-center' });
     } finally {
       setAdjustLoading(false);
     }

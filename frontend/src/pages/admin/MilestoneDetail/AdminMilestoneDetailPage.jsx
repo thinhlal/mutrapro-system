@@ -11,6 +11,7 @@ import {
   Empty,
   Table,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   EyeOutlined,
@@ -282,7 +283,7 @@ const AdminMilestoneDetailPage = () => {
       await Promise.all(promises);
     } catch (error) {
       console.error('Error fetching milestone detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết milestone');
+      toast.error(error?.message || 'Lỗi khi tải chi tiết milestone', { duration: 5000, position: 'top-center' });
       navigate(-1);
     } finally {
       setLoading(false);

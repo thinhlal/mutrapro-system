@@ -14,6 +14,7 @@ import {
   Modal,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   EditOutlined,
@@ -247,7 +248,7 @@ export default function AdminContractsManagement() {
     } catch (err) {
       console.error('Error fetching contracts:', err);
       setError(err.message || 'Lỗi khi tải danh sách contracts');
-      message.error(err.message || 'Lỗi khi tải danh sách contracts');
+      toast.error(err.message || 'Lỗi khi tải danh sách contracts', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -307,7 +308,7 @@ export default function AdminContractsManagement() {
       // Reload contracts với filter và pagination hiện tại
       fetchContracts(pagination.current - 1, pagination.pageSize);
     } catch (error) {
-      message.error(error.message || 'Error sending contract');
+      toast.error(error.message || 'Error sending contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -325,7 +326,7 @@ export default function AdminContractsManagement() {
       // Reload contracts với filter và pagination hiện tại
       fetchContracts(pagination.current - 1, pagination.pageSize);
     } catch (error) {
-      message.error(error.message || 'Error cancelling contract');
+      toast.error(error.message || 'Error cancelling contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -1191,9 +1192,7 @@ export default function AdminContractsManagement() {
             });
           } catch (err) {
             console.error('Failed to start contract work from list:', err);
-            message.error(
-              err?.message || 'Không thể Start Work từ danh sách contracts'
-            );
+            toast.error(err?.message || 'Không thể Start Work từ danh sách contracts', { duration: 5000, position: 'top-center' });
           } finally {
             const contractId = startWorkContext.contract?.contractId;
             if (contractId) {

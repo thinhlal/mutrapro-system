@@ -15,6 +15,7 @@ import {
   Alert,
   Collapse,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   CheckCircleOutlined,
@@ -82,10 +83,8 @@ const RevisionRequestsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading revision requests:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Error when loading revision requests'
-      );
+      toast.error(error?.response?.data?.message ||
+          'Error when loading revision requests', { duration: 5000, position: 'top-center' });
       setRevisionRequests([]);
     } finally {
       setLoading(false);
@@ -121,13 +120,11 @@ const RevisionRequestsManagement = () => {
         setManagerNote('');
         await loadRevisionRequests();
       } else {
-        message.error(response?.message || 'Error when reviewing revision request');
+        toast.error(response?.message || 'Error when reviewing revision request', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error reviewing revision request:', error);
-      message.error(
-        error?.response?.data?.message || 'Error when reviewing revision request'
-      );
+      toast.error(error?.response?.data?.message || 'Error when reviewing revision request', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }

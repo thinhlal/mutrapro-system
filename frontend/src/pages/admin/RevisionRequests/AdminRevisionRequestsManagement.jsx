@@ -15,6 +15,7 @@ import {
   Alert,
   Collapse,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   CheckCircleOutlined,
@@ -82,10 +83,8 @@ const AdminRevisionRequestsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading revision requests:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Lỗi khi tải danh sách revision requests'
-      );
+      toast.error(error?.response?.data?.message ||
+          'Lỗi khi tải danh sách revision requests', { duration: 5000, position: 'top-center' });
       setRevisionRequests([]);
     } finally {
       setLoading(false);
@@ -121,13 +120,11 @@ const AdminRevisionRequestsManagement = () => {
         setManagerNote('');
         await loadRevisionRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi review revision request');
+        toast.error(response?.message || 'Lỗi khi review revision request', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error reviewing revision request:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi review revision request'
-      );
+      toast.error(error?.response?.data?.message || 'Lỗi khi review revision request', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }

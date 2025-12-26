@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Typography, Spin, message } from 'antd';
+import toast from 'react-hot-toast';
 import { PROS_CATEGORIES } from '../../../constants/index';
 import CategoryCard from './components/CategoryCard/CategoryCard';
 import Header from '../../../components/common/Header/Header';
@@ -46,9 +47,7 @@ export default function DiscoverProsPage() {
         }
       } catch (error) {
         console.error('Error fetching pricing:', error);
-        message.error(
-          'Unable to load pricing information. Using default data.'
-        );
+        toast.error('Unable to load pricing information. Using default data.', { duration: 5000, position: 'top-center' });
         // Fallback to original data
         setCategories(PROS_CATEGORIES);
       } finally {

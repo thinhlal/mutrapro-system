@@ -22,6 +22,7 @@ import {
   Alert,
   Empty,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -225,7 +226,7 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error fetching contract detail:', error);
-      message.error('Error when loading contract detail');
+      toast.error('Error when loading contract detail', { duration: 5000, position: 'top-center' });
       setInstrumentFiltersReady(true);
     } finally {
       setLoading(false);
@@ -313,7 +314,7 @@ export default function TaskAssignmentWorkspace() {
         }
       } catch (error) {
         console.error('Error fetching specialists:', error);
-        message.error('Error when loading specialists list');
+        toast.error('Error when loading specialists list', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingSpecialists(false);
       }
@@ -367,7 +368,7 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error fetching assignment detail:', error);
-      message.error('Error when loading task assignment detail');
+      toast.error('Error when loading task assignment detail', { duration: 5000, position: 'top-center' });
     }
   }, [assignmentId, contractId]);
 
@@ -661,9 +662,7 @@ export default function TaskAssignmentWorkspace() {
       return;
     }
     if (isSlaWindowFull(selectedSpecialist)) {
-      message.error(
-        'Specialist is full in SLA window, please select a different specialist'
-      );
+      toast.error('Specialist is full in SLA window, please select a different specialist', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -676,10 +675,8 @@ export default function TaskAssignmentWorkspace() {
         workStatus !== 'READY_TO_START' &&
         workStatus !== 'IN_PROGRESS'
       ) {
-        message.error(
-          `Cannot create task: Milestone must be in the state PLANNED, WAITING_ASSIGNMENT, READY_TO_START or IN_PROGRESS. ` +
-            `Current status: ${selectedMilestone.workStatus}`
-        );
+        toast.error(`Cannot create task: Milestone must be in the state PLANNED, WAITING_ASSIGNMENT, READY_TO_START or IN_PROGRESS. ` +
+            `Current status: ${selectedMilestone.workStatus}`, { duration: 5000, position: 'top-center' });
         return;
       }
     }
@@ -713,10 +710,10 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error assigning task:', error);
-      message.error(
-        error?.message ||
-          (isEditMode ? 'Cannot update task' : 'Cannot assign task')
-      );
+      toast.error(error?.message || (isEditMode ? 'Cannot update task' : 'Cannot assign task'), {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setAssigning(false);
     }

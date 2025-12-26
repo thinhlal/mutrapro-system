@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Space, Button, Typography, Modal, Spin, Alert, message } from 'antd';
+import toast from 'react-hot-toast';
 import {
   FileTextOutlined,
   DownloadOutlined,
@@ -64,7 +65,7 @@ const FileList = ({
   const handleViewFile = async file => {
     const fileId = file.fileId || file.id;
     if (!fileId) {
-      message.error('File ID not found');
+      toast.error('File ID not found', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -112,7 +113,7 @@ const FileList = ({
       }
     } catch (error) {
       console.error('Error previewing file:', error);
-      message.error('Lỗi khi xem file');
+      toast.error('Lỗi khi xem file', { duration: 5000, position: 'top-center' });
       setPreviewModalVisible(false);
       setPreviewFile(null);
       setViewingFileIds(prev => {
@@ -295,7 +296,7 @@ const FileList = ({
                     }}
                     onError={() => {
                       setPreviewLoading(false);
-                      message.error('Lỗi khi load file audio');
+                      toast.error('Lỗi khi load file audio', { duration: 5000, position: 'top-center' });
                       setViewingFileIds(prev => {
                         const newSet = new Set(prev);
                         if (previewFile?.fileId)
@@ -330,7 +331,7 @@ const FileList = ({
                   }}
                   onError={() => {
                     setPreviewLoading(false);
-                    message.error('Lỗi khi load file video');
+                    toast.error('Lỗi khi load file video', { duration: 5000, position: 'top-center' });
                     setViewingFileIds(prev => {
                       const newSet = new Set(prev);
                       if (previewFile?.fileId)

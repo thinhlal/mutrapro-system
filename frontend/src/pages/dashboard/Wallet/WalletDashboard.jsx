@@ -5,6 +5,7 @@ import {
   message,
   Spin,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   WalletOutlined,
   ExportOutlined,
@@ -39,7 +40,7 @@ const WalletDashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching wallet data:', error);
-        message.error('Lỗi khi tải dữ liệu wallet');
+        toast.error('Lỗi khi tải dữ liệu wallet', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }

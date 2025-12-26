@@ -11,6 +11,7 @@ import {
   Alert,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './RecordingStep5.module.css';
@@ -107,7 +108,7 @@ export default function RecordingStep5({ data, onComplete }) {
 
     // Validate time range
     if (end.isBefore(start) || end.isSame(start)) {
-      message.error('End time must be after start time');
+      toast.error('End time must be after start time', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -124,12 +125,12 @@ export default function RecordingStep5({ data, onComplete }) {
 
   const handleSubmit = () => {
     if (!selectedDate) {
-      message.error('Please select a date');
+      toast.error('Please select a date', { duration: 5000, position: 'top-center' });
       return;
     }
 
     if (!selectedTimeRange) {
-      message.error('Please select a time range');
+      toast.error('Please select a time range', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -138,7 +139,7 @@ export default function RecordingStep5({ data, onComplete }) {
     const endStr = end.format('HH:mm');
 
     if (!isTimeSlotAvailable(startStr, endStr)) {
-      message.error('Selected time slot is no longer available');
+      toast.error('Selected time slot is no longer available', { duration: 5000, position: 'top-center' });
       return;
     }
 

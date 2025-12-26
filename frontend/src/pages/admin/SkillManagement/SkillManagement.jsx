@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Select,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -52,7 +53,7 @@ const SkillManagement = () => {
         setSkills(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách skills');
+      toast.error(error.message || 'Không thể tải danh sách skills', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ const SkillManagement = () => {
       fetchSkills();
     } catch (error) {
       const errorMsg = error.message || error.error || 'Không thể tạo skill';
-      message.error(errorMsg);
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setCreateLoading(false);
     }
@@ -122,7 +123,7 @@ const SkillManagement = () => {
     } catch (error) {
       const errorMsg =
         error.message || error.error || 'Không thể cập nhật skill';
-      message.error(errorMsg);
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     } finally {
       setEditLoading(false);
     }
@@ -136,7 +137,7 @@ const SkillManagement = () => {
       fetchSkills();
     } catch (error) {
       const errorMsg = error.message || error.error || 'Không thể xóa skill';
-      message.error(errorMsg);
+      toast.error(errorMsg, { duration: 5000, position: 'top-center' });
     }
   };
 

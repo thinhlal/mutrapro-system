@@ -11,6 +11,7 @@ import {
   message,
   Space,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { PlayCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import { SINGER_DETAIL_DATA as staticSingerData } from '../../../../constants/index';
 import { getSpecialistDetail } from '../../../../services/specialistService';
@@ -337,7 +338,7 @@ export default function SingerDetailPage() {
           }
         } catch (error) {
           console.error('Error fetching specialist detail:', error);
-          message.error(error.message || 'Không thể tải thông tin specialist');
+          toast.error(error.message || 'Không thể tải thông tin specialist', { duration: 5000, position: 'top-center' });
         } finally {
           setLoading(false);
         }

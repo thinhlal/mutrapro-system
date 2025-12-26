@@ -431,8 +431,20 @@ public class UserService {
     public UserStatisticsByDateResponse getUserStatisticsByDate(int days) {
         log.info("Getting user statistics by date for last {} days", days);
         
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days);
+        // Set endDate to start of tomorrow to include all users from today
+        // Query uses < :endDate, so this will include everything up to end of today
+        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        
+        // For "today" (days=1), start from beginning of today (00:00:00)
+        // For other ranges, use last N days from now
+        LocalDateTime startDate;
+        if (days == 1) {
+            startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
+        } else {
+            startDate = endDate.minusDays(days);
+        }
+        
+        log.debug("User statistics date range: startDate={}, endDate={}, days={}", startDate, endDate, days);
         
         List<Object[]> results = usersAuthRepository.countUsersByDateRange(startDate, endDate);
         

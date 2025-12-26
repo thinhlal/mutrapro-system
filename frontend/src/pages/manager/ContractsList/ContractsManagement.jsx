@@ -14,6 +14,7 @@ import {
   Modal,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EyeOutlined,
   EditOutlined,
@@ -247,7 +248,7 @@ export default function ContractsManagement() {
     } catch (err) {
       console.error('Error fetching contracts:', err);
       setError(err.message || 'Error fetching contracts');
-      message.error(err.message || 'Error fetching contracts');
+      toast.error(err.message || 'Error fetching contracts', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -307,7 +308,7 @@ export default function ContractsManagement() {
       // Reload contracts với filter và pagination hiện tại
       fetchContracts(pagination.current - 1, pagination.pageSize);
     } catch (error) {
-      message.error(error.message || 'Error sending contract');
+      toast.error(error.message || 'Error sending contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -325,7 +326,7 @@ export default function ContractsManagement() {
       // Reload contracts với filter và pagination hiện tại
       fetchContracts(pagination.current - 1, pagination.pageSize);
     } catch (error) {
-      message.error(error.message || 'Error cancelling contract');
+      toast.error(error.message || 'Error cancelling contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -1202,9 +1203,7 @@ export default function ContractsManagement() {
             });
           } catch (err) {
             console.error('Failed to start contract work from list:', err);
-            message.error(
-              err?.message || 'Cannot Start Work from contracts list'
-            );
+            toast.error(err?.message || 'Cannot Start Work from contracts list', { duration: 5000, position: 'top-center' });
           } finally {
             const contractId = startWorkContext.contract?.contractId;
             if (contractId) {

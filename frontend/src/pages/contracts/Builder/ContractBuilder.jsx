@@ -19,6 +19,7 @@ import {
   Card,
   Collapse,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   QuestionCircleOutlined,
   MinusCircleOutlined,
@@ -432,6 +433,9 @@ const ContractBuilder = () => {
   const [serviceRequest, setServiceRequest] = useState(null);
   const [bookingData, setBookingData] = useState(null);
   const [existingContract, setExistingContract] = useState(null);
+  const [milestonesToAdd, setMilestonesToAdd] = useState([]); // Store milestones to be added to Form.List
+  const formListAddRef = useRef(null); // Ref to store Form.List add function
+  const milestonesPopulatedRef = useRef(false); // Track if milestones have been populated
   const [creatingContract, setCreatingContract] = useState(false);
   const [error, setError] = useState(null);
 
@@ -470,6 +474,32 @@ const ContractBuilder = () => {
       form.setFieldValue('revision_deadline_days', defaultRevisionDeadlineDays);
     }
   }, [contractType, form]);
+
+  // Populate Form.List milestones when milestonesToAdd is set (for edit mode)
+  useEffect(() => {
+    if (isEditMode && milestonesToAdd.length > 0 && formListAddRef.current && !milestonesPopulatedRef.current) {
+      const currentMilestones = form.getFieldValue('milestones') || [];
+      
+      // Only add if not already populated
+      if (currentMilestones.length === 0) {
+        // Use setTimeout to ensure Form.List is ready
+        const timer = setTimeout(() => {
+          const milestonesCopy = [...milestonesToAdd]; // Copy to avoid stale closure
+          milestonesCopy.forEach((milestone) => {
+            formListAddRef.current(milestone);
+          });
+          milestonesPopulatedRef.current = true;
+          // Clear milestonesToAdd after populating
+          setMilestonesToAdd([]);
+        }, 500); // Increased timeout to ensure Form.List is fully ready
+        
+        return () => clearTimeout(timer);
+      } else {
+        milestonesPopulatedRef.current = true;
+        setMilestonesToAdd([]); // Clear even if already populated
+      }
+    }
+  }, [milestonesToAdd, form, isEditMode]);
 
   // Auto-fill Terms & Conditions and Special Clauses when contract_type changes
   useEffect(() => {
@@ -555,9 +585,10 @@ const ContractBuilder = () => {
       setError(
         'Request ID is required. Please create contract from Service Request Management page.'
       );
-      message.error(
-        'Request ID is required. Please navigate from Service Request Management page.'
-      );
+      toast.error('Request ID is required. Please navigate from Service Request Management page.', {
+        duration: 5000,
+        position: 'top-center',
+      });
       // Redirect về trang manage requests sau 2 giây
       const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
       setTimeout(() => {
@@ -585,11 +616,12 @@ const ContractBuilder = () => {
           requestStatus === 'rejected'
         ) {
           setError(
-            `Không thể tạo contract: Request đã ở trạng thái "${request.status}"`
+            `Cannot create contract: Request is already in status "${request.status}"`
           );
-          message.error(
-            `Không thể tạo contract cho request đã ${request.status}`
-          );
+          toast.error(`Cannot create contract for request that is ${request.status}`, {
+            duration: 5000,
+            position: 'top-center',
+          });
           setLoadingServiceRequest(false);
           return;
         }
@@ -606,10 +638,6 @@ const ContractBuilder = () => {
               setBookingData(bookingResponse.data); // Save booking data to display
               if (bookingResponse.data.totalCost) {
                 totalPrice = bookingResponse.data.totalCost;
-                console.log(
-                  'Using booking totalCost for recording contract:',
-                  totalPrice
-                );
               }
             } else {
               console.warn(
@@ -786,11 +814,15 @@ const ContractBuilder = () => {
             if (notesText) overrideValues.notes = notesText;
 
             form.setFieldsValue(overrideValues);
-            message.success(
-              'Service request data loaded. Contract data copied from previous contract.'
-            );
+            toast.success('Service request data loaded. Contract data copied from previous contract.', {
+              duration: 3000,
+              position: 'top-center',
+            });
           } else {
-            message.success('Service request data loaded successfully');
+            toast.success('Service request data loaded successfully', {
+              duration: 3000,
+              position: 'top-center',
+            });
           }
 
           // Update terms & conditions with actual values if it's still default
@@ -821,7 +853,10 @@ const ContractBuilder = () => {
     } catch (error) {
       console.error('Error loading service request:', error);
       setError(error?.message || 'Failed to load service request');
-      message.error('Failed to load service request data');
+      toast.error('Failed to load service request data', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setLoadingServiceRequest(false);
     }
@@ -839,10 +874,14 @@ const ContractBuilder = () => {
         const contract = response.data;
         setExistingContract(contract);
 
+
         // Check if contract is in DRAFT status
         if (contract.status?.toLowerCase() !== 'draft') {
-          setError('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
-          message.error('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
+          setError('Only contracts with DRAFT status can be edited');
+          toast.error('Only contracts with DRAFT status can be edited', {
+            duration: 5000,
+            position: 'top-center',
+          });
           const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
           setTimeout(() => {
             navigate(`${basePath}/contracts`);
@@ -851,28 +890,29 @@ const ContractBuilder = () => {
         }
 
         // Pre-fill form with existing contract data FIRST
+        const milestonesData = contract.milestones?.map(m => {
+          // Tìm installment tương ứng để lấy paymentPercent
+          const installment = contract.installments?.find(
+            inst => inst.milestoneId === m.milestoneId
+          );
+
+          return {
+            name: m.name,
+            description: m.description,
+            orderIndex: m.orderIndex,
+            milestoneType: m.milestoneType || null, // Include milestoneType
+            hasPayment: m.hasPayment || false,
+            paymentPercent: installment?.percent || null,
+            milestoneSlaDays: m.milestoneSlaDays || null,
+          };
+        }) || [];
+
         form.setFieldsValue({
           request_id: contract.requestId,
           customer_id: contract.userId,
           contract_type: contract.contractType,
           deposit_percent: contract.depositPercent,
           total_price: contract.totalPrice,
-          milestones:
-            contract.milestones?.map(m => {
-              // Tìm installment tương ứng để lấy paymentPercent
-              const installment = contract.installments?.find(
-                inst => inst.milestoneId === m.milestoneId
-              );
-
-              return {
-                name: m.name,
-                description: m.description,
-                orderIndex: m.orderIndex,
-                hasPayment: m.hasPayment || false,
-                paymentPercent: installment?.percent || null,
-                milestoneSlaDays: m.milestoneSlaDays || null,
-              };
-            }) || [],
           sla_days: contract.slaDays,
           show_watermark: false, // Always show watermark in edit mode
           free_revisions_included: contract.freeRevisionsIncluded,
@@ -888,6 +928,9 @@ const ContractBuilder = () => {
               )
             : 7,
         });
+        
+        // Store milestones to be added to Form.List (Form.List needs add() method to populate)
+        setMilestonesToAdd(milestonesData);
 
         // Prepare party info from contract data
         const newPartyInfo = {
@@ -934,10 +977,7 @@ const ContractBuilder = () => {
                     bookingResponse.data
                   ) {
                     setBookingData(bookingResponse.data);
-                    console.log(
-                      'Loaded booking data for recording contract in edit mode:',
-                      bookingResponse.data
-                    );
+                    // Loaded booking data for recording contract in edit mode
                   }
                 } catch (error) {
                   console.warn(
@@ -1017,7 +1057,6 @@ const ContractBuilder = () => {
             partyBPhone: newPartyInfo.partyBPhone,
             partyBEmail: newPartyInfo.partyBEmail,
           };
-          console.log('Preview data for edit mode:', normalized);
           setData(normalized);
         }, 200);
       } else {
@@ -1026,7 +1065,10 @@ const ContractBuilder = () => {
     } catch (error) {
       console.error('Error loading contract:', error);
       setError(error?.message || 'Failed to load contract');
-      message.error('Failed to load contract data');
+      toast.error('Failed to load contract data', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setLoadingContract(false);
     }
@@ -1263,35 +1305,59 @@ const ContractBuilder = () => {
   };
 
   // Create or Update contract
-  const handleSaveContract = async () => {
+  const handleSaveContract = async (formValues) => {
     // Validate based on mode
     if (!isEditMode && !requestId) {
-      message.error(
-        'Request ID is required. Please create contract from Service Request Management page.'
-      );
+      toast.error('Request ID is required. Please create contract from Service Request Management page.', {
+        duration: 5000,
+        position: 'top-center',
+      });
       const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
       navigate(`${basePath}/service-requests`);
       return;
     }
 
     try {
-      await form.validateFields();
-      const values = form.getFieldsValue();
-
-      // Validate milestones based on contract type
-      const milestones = values.milestones || [];
+      // Validate form fields - this will throw if validation fails
+      try {
+        await form.validateFields();
+      } catch (validationError) {
+        // Form validation failed
+        let errorMessage = 'Please fix the validation errors before submitting';
+        if (validationError?.errorFields && validationError.errorFields.length > 0) {
+          const firstError = validationError.errorFields[0];
+          errorMessage = firstError.errors?.[0] || errorMessage;
+        }
+        // Use both message and notification for better visibility
+        toast.error(errorMessage, {
+          duration: 5000,
+          position: 'top-center',
+        });
+        return; // Stop execution
+      }
+      
+      // Use formValues from parameter (from onFinish) if provided, otherwise get from form
+      // Note: Form.List might not serialize milestones into formValues, so always get from form
+      const allFormValues = form.getFieldsValue();
+      const values = formValues || allFormValues;
+      // Ensure milestones are always from form, not from formValues (Form.List serialization issue)
+      const milestones = allFormValues.milestones || values.milestones || [];
+      
       const contractType = values.contract_type;
 
       if (!isEditMode) {
         // For arrangement_with_recording, require at least 2 milestones
         if (contractType === 'arrangement_with_recording') {
           if (!milestones || milestones.length < 2) {
+            const errorMsg = 'Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones'],
-                errors: [
-                  'Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording',
-                ],
+                errors: [errorMsg],
               },
             ]);
             return;
@@ -1299,10 +1365,15 @@ const ContractBuilder = () => {
         } else {
           // For other contract types, require at least 1 milestone
           if (!milestones || milestones.length === 0) {
+            const errorMsg = 'At least one milestone is required';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones'],
-                errors: ['At least one milestone is required'],
+                errors: [errorMsg],
               },
             ]);
             return;
@@ -1310,11 +1381,32 @@ const ContractBuilder = () => {
         }
       }
 
+      // Validate milestones for edit mode (should have at least 1 milestone)
+      if (isEditMode && (!milestones || milestones.length === 0)) {
+        const errorMsg = 'At least one milestone is required';
+        toast.error(errorMsg, {
+          duration: 5000,
+          position: 'top-center',
+        });
+        form.setFields([
+          {
+            name: ['milestones'],
+            errors: [errorMsg],
+          },
+        ]);
+        return;
+      }
+
       // Validate milestone data is complete (for both create and update)
       if (milestones.length > 0) {
         for (let i = 0; i < milestones.length; i++) {
           const m = milestones[i];
           if (!m.name || !m.name.trim()) {
+            const errorMsg = `Milestone ${i + 1}: Name is required`;
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones', i, 'name'],
@@ -1324,6 +1416,11 @@ const ContractBuilder = () => {
             return;
           }
           if (!m.milestoneSlaDays || Number(m.milestoneSlaDays) <= 0) {
+            const errorMsg = `Milestone ${i + 1}: SLA days must be greater than 0`;
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones', i, 'milestoneSlaDays'],
@@ -1344,12 +1441,15 @@ const ContractBuilder = () => {
             const firstMissingIndex = milestones.findIndex(
               m => !m.milestoneType
             );
+            const errorMsg = 'Milestone type is required for Arrangement with Recording milestones';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones', firstMissingIndex, 'milestoneType'],
-                errors: [
-                  'Milestone type is required for Arrangement with Recording milestones',
-                ],
+                errors: [errorMsg],
               },
             ]);
             return;
@@ -1364,19 +1464,29 @@ const ContractBuilder = () => {
 
           // Phải có ít nhất 1 Arrangement và 1 Recording
           if (arrangementMilestones.length === 0) {
+            const errorMsg = 'At least one Arrangement milestone is required';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones'],
-                errors: ['At least one Arrangement milestone is required'],
+                errors: [errorMsg],
               },
             ]);
             return;
           }
           if (recordingMilestones.length === 0) {
+            const errorMsg = 'At least one Recording milestone is required';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones'],
-                errors: ['At least one Recording milestone is required'],
+                errors: [errorMsg],
               },
             ]);
             return;
@@ -1391,12 +1501,15 @@ const ContractBuilder = () => {
           );
 
           if (minRecordingOrder <= maxArrangementOrder) {
+            const errorMsg = 'Recording milestone(s) must come after Arrangement milestone(s). Please adjust the order.';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones'],
-                errors: [
-                  'Recording milestone(s) must come after Arrangement milestone(s). Please adjust the order.',
-                ],
+                errors: [errorMsg],
               },
             ]);
             return;
@@ -1410,12 +1523,15 @@ const ContractBuilder = () => {
             m.hasPayment &&
             (!m.paymentPercent || Number(m.paymentPercent) <= 0)
           ) {
+            const errorMsg = `Milestone ${i + 1}: Payment percent is required when hasPayment is enabled`;
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
             form.setFields([
               {
                 name: ['milestones', i, 'paymentPercent'],
-                errors: [
-                  'Payment percent is required when hasPayment is enabled',
-                ],
+                errors: ['Payment percent is required when hasPayment is enabled'],
               },
             ]);
             return;
@@ -1431,6 +1547,11 @@ const ContractBuilder = () => {
       );
 
       if (!paymentValidation.valid) {
+        const errorMsg = paymentValidation.message || 'Payment validation failed';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
         return;
       }
 
@@ -1442,6 +1563,11 @@ const ContractBuilder = () => {
       );
 
       if (!slaValidation.valid) {
+        const errorMsg = slaValidation.message || 'SLA validation failed';
+            toast.error(errorMsg, {
+              duration: 5000,
+              position: 'top-center',
+            });
         return;
       }
 
@@ -1500,41 +1626,38 @@ const ContractBuilder = () => {
       }
 
       let response;
-      if (isEditMode) {
-        // Update existing contract
-        response = await updateContract(contractId, contractData);
-      } else {
-        // Create new contract
-        response = await createContractFromRequest(requestId, contractData);
-      }
+      try {
+        if (isEditMode) {
+          // Update existing contract
+          response = await updateContract(contractId, contractData);
+        } else {
+          // Create new contract
+          response = await createContractFromRequest(requestId, contractData);
+        }
 
-      // Check response status
-      if (response?.status === 'success' && response?.data) {
-        notification.success({
-          message: 'Success',
-          description: `Contract ${isEditMode ? 'updated' : 'created'} successfully!`,
-          placement: 'topRight',
-        });
-        // Navigate to contracts list
-        navigate(`${basePath}/contracts`);
-      } else {
-        const errorMessage =
-          response?.message ||
-          `Failed to ${isEditMode ? 'update' : 'create'} contract`;
-        notification.error({
-          message: 'Error',
-          description: errorMessage,
-          placement: 'topRight',
-        });
-        // Don't set error state to avoid redirecting to error page
-        // setError(errorMessage);
+        // Check response status
+        if (response?.status === 'success' && response?.data) {
+          toast.success(`Contract ${isEditMode ? 'updated' : 'created'} successfully!`, {
+            duration: 3000,
+            position: 'top-center',
+          });
+          // Navigate to contracts list
+          const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+          navigate(`${basePath}/contracts`);
+        } else {
+          const errorMessage =
+            response?.message ||
+            `Failed to ${isEditMode ? 'update' : 'create'} contract`;
+          toast.error(errorMessage, {
+            duration: 5000,
+            position: 'top-center',
+          });
+        }
+      } catch (apiError) {
+        // Re-throw to be caught by outer catch block
+        throw apiError;
       }
     } catch (error) {
-      console.error(
-        `Error ${isEditMode ? 'updating' : 'creating'} contract:`,
-        error
-      );
-
       // Extract error message from different error formats
       let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} contract`;
 
@@ -1550,15 +1673,10 @@ const ContractBuilder = () => {
           error.response.data.message || JSON.stringify(error.response.data);
       }
 
-      notification.error({
-        message: 'Error',
-        description: errorMessage,
-        placement: 'topRight',
-        duration: 5,
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
       });
-      // Don't set error state to avoid redirecting to error page for validation errors
-      // Only set for critical errors that require redirect
-      // setError(errorMessage);
     } finally {
       setCreatingContract(false);
     }
@@ -1617,7 +1735,7 @@ const ContractBuilder = () => {
       <div className={styles.page}>
         <div className={styles.card} style={{ padding: '50px' }}>
           <Alert
-            message="Không thể tạo Contract"
+            message="Cannot Create Contract"
             description={error}
             type="error"
             showIcon
@@ -1897,8 +2015,8 @@ const ContractBuilder = () => {
               )}
               {copyFromContract && (
                 <Alert
-                  message="Tạo contract mới từ contract cũ"
-                  description={`Data đã được copy từ contract ${copyFromContract.contractId}. Lý do yêu cầu sửa đã được thêm vào phần Notes.`}
+                  message="Create new contract from existing contract"
+                  description={`Data has been copied from contract ${copyFromContract.contractId}. The revision request reason has been added to the Notes section.`}
                   type="warning"
                   showIcon
                   style={{ marginBottom: 6, padding: '6px 8px' }}
@@ -1924,6 +2042,7 @@ const ContractBuilder = () => {
                   layout="vertical"
                   className={styles.formGrid}
                   onValuesChange={onValuesChange}
+                  onFinish={handleSaveContract}
                 >
                   {/* Cột trái */}
                   <Form.Item
@@ -2129,16 +2248,15 @@ const ContractBuilder = () => {
                     />
                   </Form.Item>
 
-                  {!isEditMode && (
-                    <>
-                      <Divider className={styles.fullRow}>Milestones</Divider>
+                  <>
+                    <Divider className={styles.fullRow}>Milestones</Divider>
 
-                      <Form.Item
+                    <Form.Item
                         className={styles.fullRow}
                         label={
                           <span>
                             Milestones{' '}
-                            <Tooltip title="Cấu hình các milestones và phần trăm thanh toán. Tổng depositPercent + sum(paymentPercent của milestones có hasPayment=true) phải = 100%">
+                            <Tooltip title="Configure milestones and payment percentages. Total depositPercent + sum(paymentPercent of milestones with hasPayment=true) must equal 100%">
                               <QuestionCircleOutlined
                                 style={{ color: '#1890ff', cursor: 'help' }}
                               />
@@ -2165,6 +2283,10 @@ const ContractBuilder = () => {
                       >
                         <Form.List name="milestones" initialValue={[]}>
                           {(fields, { add, remove }) => {
+                            // Store add function in ref for later use (for populating milestones in edit mode)
+                            // Always update to ensure we have the latest add function
+                            formListAddRef.current = add;
+                            
                             const contractType =
                               form.getFieldValue('contract_type');
                             return (
@@ -2451,7 +2573,6 @@ const ContractBuilder = () => {
                         }}
                       </Form.Item>
                     </>
-                  )}
 
                   <Divider className={styles.fullRow}>Terms</Divider>
                   <Form.Item
@@ -2488,7 +2609,7 @@ const ContractBuilder = () => {
                       danger
                       size="small"
                       loading={creatingContract}
-                      onClick={handleCreateContract}
+                      htmlType="submit"
                     >
                       {isEditMode ? 'Update Contract' : 'Create Contract'}
                     </Button>

@@ -11,6 +11,7 @@ import {
   message,
   Card,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   BellOutlined,
   CheckCircleOutlined,
@@ -68,7 +69,7 @@ const NotificationsPage = () => {
         setPage(pageNum);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
-        message.error('Cannot load notifications');
+        toast.error('Cannot load notifications', { duration: 5000, position: 'top-center' });
       } finally {
         setLoading(false);
       }
@@ -103,7 +104,7 @@ const NotificationsPage = () => {
       message.success('Marked as read');
     } catch (error) {
       console.error('Failed to mark as read:', error);
-      message.error('Cannot mark as read');
+      toast.error('Cannot mark as read', { duration: 5000, position: 'top-center' });
     }
   }, []);
 
@@ -119,7 +120,7 @@ const NotificationsPage = () => {
       message.success('Marked all as read');
     } catch (error) {
       console.error('Failed to mark all as read:', error);
-      message.error('Cannot mark all as read');
+      toast.error('Cannot mark all as read', { duration: 5000, position: 'top-center' });
     } finally {
       setMarkAllLoading(false);
     }

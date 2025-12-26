@@ -11,6 +11,7 @@ import {
   message,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   CheckCircleOutlined,
   DollarOutlined,
@@ -61,7 +62,7 @@ const ContractSignedSuccessPage = () => {
       }
     } catch (error) {
       console.error('Error loading contract:', error);
-      message.error('Failed to load contract information');
+      toast.error('Failed to load contract information', { duration: 5000, position: 'top-center' });
       navigate('/my-requests');
     } finally {
       setLoading(false);

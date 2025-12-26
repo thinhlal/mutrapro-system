@@ -22,6 +22,7 @@ import {
   Input,
   Tabs,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   WalletOutlined,
   PlusOutlined,
@@ -109,7 +110,7 @@ const WalletContent = () => {
         setWallet(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Error loading wallet information');
+      toast.error(error.message || 'Error loading wallet information', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -137,11 +138,9 @@ const WalletContent = () => {
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
-      message.error(
-        error.message ||
+      toast.error(error.message ||
           error.response?.data?.message ||
-          'Error loading transaction list'
-      );
+          'Error loading transaction list', { duration: 5000, position: 'top-center' });
       setTransactions([]);
     } finally {
       setTransactionsLoading(false);
@@ -221,10 +220,8 @@ const WalletContent = () => {
       }
     } catch (error) {
       console.error('Error loading withdrawal requests:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Lỗi khi tải danh sách withdrawal requests'
-      );
+      toast.error(error?.response?.data?.message ||
+          'Lỗi khi tải danh sách withdrawal requests', { duration: 5000, position: 'top-center' });
       setWithdrawalRequests([]);
     } finally {
       setWithdrawalRequestsLoading(false);
@@ -243,16 +240,14 @@ const WalletContent = () => {
       setTopupModalVisible(false);
       topupForm.resetFields();
     } catch (error) {
-      message.error(
-        error.message || error.details?.message || 'Error processing deposit'
-      );
+      toast.error(error.message || error.details?.message || 'Error processing deposit', { duration: 5000, position: 'top-center' });
     }
   };
 
   // Handle withdraw
   const handleWithdraw = async values => {
     if (!wallet?.walletId) {
-      message.error('Không tìm thấy thông tin ví');
+      toast.error('Không tìm thấy thông tin ví', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -281,9 +276,7 @@ const WalletContent = () => {
         }
       }
     } catch (error) {
-      message.error(
-        error?.message || error?.details?.message || 'Lỗi khi rút tiền từ ví'
-      );
+      toast.error(error?.message || error?.details?.message || 'Lỗi khi rút tiền từ ví', { duration: 5000, position: 'top-center' });
     } finally {
       setWithdrawLoading(false);
     }

@@ -12,6 +12,7 @@ import {
   Tooltip,
   Switch,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   getAllEquipment,
@@ -44,7 +45,7 @@ const EquipmentManagement = () => {
         setEquipments(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load equipment list');
+      toast.error(error.message || 'Unable to load equipment list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ const EquipmentManagement = () => {
         setSelectedEquipment(equipmentDetail);
       }
     } catch (error) {
-      message.error('Unable to load equipment details');
+      toast.error('Unable to load equipment details', { duration: 5000, position: 'top-center' });
       // Fallback to basic data
       form.setFieldsValue({
         equipmentName: equipment.equipmentName,
@@ -161,7 +162,7 @@ const EquipmentManagement = () => {
       fetchEquipment();
     } catch (error) {
       setSubmitting(false);
-      message.error(error.message || 'An error occurred');
+      toast.error(error.message || 'An error occurred', { duration: 5000, position: 'top-center' });
     }
   };
 

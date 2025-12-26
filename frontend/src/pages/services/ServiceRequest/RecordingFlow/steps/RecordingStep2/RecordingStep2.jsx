@@ -13,6 +13,7 @@ import {
   List,
   Avatar,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   UserOutlined,
   CheckCircleOutlined,
@@ -118,7 +119,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
         vocalChoice === VOCAL_CHOICES.BOTH) &&
       selectedVocalists.length === 0
     ) {
-      message.error('Please select at least one vocalist');
+      toast.error('Please select at least one vocalist', { duration: 5000, position: 'top-center' });
       return;
     }
 

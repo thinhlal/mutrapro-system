@@ -11,6 +11,7 @@ import {
   Select,
   Tooltip,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   FileTextOutlined,
@@ -131,7 +132,7 @@ export default function AdminServiceRequestManagement() {
       }
     } catch (error) {
       console.error('Error fetching all requests:', error);
-      message.error('Failed to load service requests');
+      toast.error('Failed to load service requests', { duration: 5000, position: 'top-center' });
     } finally {
       setLoadingAll(false);
     }
@@ -148,7 +149,7 @@ export default function AdminServiceRequestManagement() {
   const handleViewContracts = record => {
     const requestId = record.requestId || record.id;
     if (!requestId) {
-      message.error('Không tìm thấy requestId');
+      toast.error('Không tìm thấy requestId', { duration: 5000, position: 'top-center' });
       return;
     }
     const basePath = location.pathname.startsWith('/admin')

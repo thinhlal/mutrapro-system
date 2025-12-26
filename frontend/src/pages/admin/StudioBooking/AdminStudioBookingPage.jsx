@@ -16,6 +16,7 @@ import {
   Col,
   Radio,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -126,7 +127,7 @@ const AdminStudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading milestone:', error);
-        message.error('Lỗi khi tải thông tin milestone');
+        toast.error('Lỗi khi tải thông tin milestone', { duration: 5000, position: 'top-center' });
         navigate(-1);
       } finally {
         setLoading(false);
@@ -152,7 +153,7 @@ const AdminStudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading slots:', error);
-        message.error('Lỗi khi tải available slots');
+        toast.error('Lỗi khi tải available slots', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingSlots(false);
       }
@@ -186,7 +187,7 @@ const AdminStudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading artists:', error);
-        message.error('Lỗi khi tải available artists');
+        toast.error('Lỗi khi tải available artists', { duration: 5000, position: 'top-center' });
       } finally {
         setLoadingArtists(false);
       }
@@ -227,7 +228,7 @@ const AdminStudioBookingPage = () => {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedSlot || !selectedArtist) {
-      message.error('Vui lòng chọn đầy đủ thông tin');
+      toast.error('Vui lòng chọn đầy đủ thông tin', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -261,7 +262,7 @@ const AdminStudioBookingPage = () => {
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-      message.error(error?.message || 'Lỗi khi tạo booking');
+      toast.error(error?.message || 'Lỗi khi tạo booking', { duration: 5000, position: 'top-center' });
     } finally {
       setSubmitting(false);
     }

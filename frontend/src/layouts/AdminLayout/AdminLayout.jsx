@@ -23,6 +23,7 @@ import {
   FundOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationBell from '../../components/NotificationBell/NotificationBell';
 import styles from './AdminLayout.module.css';
@@ -181,7 +182,7 @@ const AdminLayout = () => {
       message.success('Đăng xuất thành công');
       navigate('/login');
     } catch (error) {
-      message.error('Lỗi khi đăng xuất');
+      toast.error('Lỗi khi đăng xuất', { duration: 5000, position: 'top-center' });
       setLoggingOut(false);
     }
   };

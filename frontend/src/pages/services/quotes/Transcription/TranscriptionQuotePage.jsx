@@ -19,6 +19,7 @@ import {
   Spin,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
@@ -250,7 +251,7 @@ export default function TranscriptionQuotePage() {
       try {
         await fetchInstruments();
       } catch (error) {
-        message.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.');
+        toast.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
         console.error('Error fetching instruments:', error);
       }
     };

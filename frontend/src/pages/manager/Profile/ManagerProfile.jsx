@@ -9,6 +9,7 @@ import {
   message,
   Typography,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { UserOutlined, EditOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,7 @@ const ManagerProfile = () => {
       message.success('Logged out successfully');
       navigate('/login');
     } catch (error) {
-      message.error('Error when logging out');
+      toast.error('Error when logging out', { duration: 5000, position: 'top-center' });
       setLoggingOut(false);
     }
   };

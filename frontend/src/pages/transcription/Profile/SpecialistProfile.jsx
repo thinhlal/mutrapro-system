@@ -26,6 +26,7 @@ import {
   Row,
   Col,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -150,7 +151,7 @@ const SpecialistProfile = () => {
         }
       }
     } catch (error) {
-      message.error(error.message || 'Cannot load profile');
+      toast.error(error.message || 'Cannot load profile', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -205,7 +206,7 @@ const SpecialistProfile = () => {
         setDemos(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Cannot load demos');
+      toast.error(error.message || 'Cannot load demos', { duration: 5000, position: 'top-center' });
     } finally {
       setDemosLoading(false);
     }
@@ -221,7 +222,7 @@ const SpecialistProfile = () => {
         setSkills([]);
       }
     } catch (error) {
-      message.error(error.message || 'Cannot load skills');
+      toast.error(error.message || 'Cannot load skills', { duration: 5000, position: 'top-center' });
       setSkills([]);
     } finally {
       setSkillsLoading(false);
@@ -238,7 +239,7 @@ const SpecialistProfile = () => {
         setAvailableSkills([]);
       }
     } catch (error) {
-      message.error(error.message || 'Cannot load skills list');
+      toast.error(error.message || 'Cannot load skills list', { duration: 5000, position: 'top-center' });
       setAvailableSkills([]);
     } finally {
       setAvailableSkillsLoading(false);
@@ -252,7 +253,7 @@ const SpecialistProfile = () => {
       message.success('Update profile successfully');
       fetchProfile();
     } catch (error) {
-      message.error(error.message || 'Cannot update profile');
+      toast.error(error.message || 'Cannot update profile', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -267,7 +268,7 @@ const SpecialistProfile = () => {
       // Validate file type
       const isImage = file.type?.startsWith('image/');
       if (!isImage) {
-        message.error('Only image files are accepted');
+        toast.error('Only image files are accepted', { duration: 5000, position: 'top-center' });
         setAvatarUploading(false);
         return;
       }
@@ -275,7 +276,7 @@ const SpecialistProfile = () => {
       // Validate file size (5MB)
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        message.error('File size must be less than 5MB');
+        toast.error('File size must be less than 5MB', { duration: 5000, position: 'top-center' });
         setAvatarUploading(false);
         return;
       }
@@ -309,7 +310,7 @@ const SpecialistProfile = () => {
         error.message ||
         error.response?.data?.message ||
         'Cannot upload avatar';
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     } finally {
       setAvatarUploading(false);
     }
@@ -405,7 +406,7 @@ const SpecialistProfile = () => {
       skillForm.resetFields();
       fetchSkills();
     } catch (error) {
-      message.error(error.message || 'Cannot save skill');
+      toast.error(error.message || 'Cannot save skill', { duration: 5000, position: 'top-center' });
     } finally {
       setSkillLoading(false);
     }
@@ -417,7 +418,7 @@ const SpecialistProfile = () => {
       message.success('Delete skill successfully');
       fetchSkills();
     } catch (error) {
-      message.error(error.message || 'Cannot delete skill');
+      toast.error(error.message || 'Cannot delete skill', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -466,13 +467,13 @@ const SpecialistProfile = () => {
           if (uploadResponse?.data) {
             previewUrl = uploadResponse.data;
           } else {
-            message.error('Failed to upload file');
+            toast.error('Failed to upload file', { duration: 5000, position: 'top-center' });
             setUploadingDemoFile(false);
             setDemoLoading(false);
             return;
           }
         } catch (error) {
-          message.error(error?.message || 'Error uploading file');
+          toast.error(error?.message || 'Error uploading file', { duration: 5000, position: 'top-center' });
           setUploadingDemoFile(false);
           setDemoLoading(false);
           return;
@@ -509,7 +510,7 @@ const SpecialistProfile = () => {
       setSelectedDemoFile(null); // Reset file tạm
       fetchDemos();
     } catch (error) {
-      message.error(error.message || 'Cannot save demo');
+      toast.error(error.message || 'Cannot save demo', { duration: 5000, position: 'top-center' });
     } finally {
       setDemoLoading(false);
     }
@@ -521,7 +522,7 @@ const SpecialistProfile = () => {
       message.success('Delete demo successfully');
       fetchDemos();
     } catch (error) {
-      message.error(error.message || 'Cannot delete demo');
+      toast.error(error.message || 'Cannot delete demo', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -1678,7 +1679,7 @@ const SpecialistProfile = () => {
                 // Validate file size (50MB)
                 const maxSize = 50 * 1024 * 1024; // 50MB
                 if (file.size > maxSize) {
-                  message.error('File size must be less than 50MB');
+                  toast.error('File size must be less than 50MB', { duration: 5000, position: 'top-center' });
                   return Upload.LIST_IGNORE;
                 }
 
@@ -1693,9 +1694,10 @@ const SpecialistProfile = () => {
                   file.type.startsWith('audio/');
 
                 if (!isAudio) {
-                  message.error(
-                    'Only audio files (mp3, wav, m4a, flac, aac) are accepted'
-                  );
+                  toast.error('Only audio files (mp3, wav, m4a, flac, aac) are accepted', {
+                    duration: 5000,
+                    position: 'top-center',
+                  });
                   return Upload.LIST_IGNORE;
                 }
 

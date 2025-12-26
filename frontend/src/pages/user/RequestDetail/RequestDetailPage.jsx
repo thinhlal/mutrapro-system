@@ -13,6 +13,7 @@ import {
   Modal,
   Input,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   ClockCircleOutlined,
@@ -124,12 +125,12 @@ const RequestDetailPage = () => {
           setRequest(response.data);
           console.log('Request data:', response.data);
         } else {
-          message.error('Unable to load request details');
+          toast.error('Unable to load request details', { duration: 5000, position: 'top-center' });
           navigate('/my-requests');
         }
       } catch (error) {
         console.error('Error loading request:', error);
-        message.error(error.message || 'Failed to load request details');
+        toast.error(error.message || 'Failed to load request details', { duration: 5000, position: 'top-center' });
         navigate('/my-requests');
       } finally {
         setLoading(false);
@@ -282,13 +283,11 @@ const RequestDetailPage = () => {
         setParticipantReviewModalVisible(false);
         setSelectedParticipantIdForReview(null);
       } else {
-        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+        toast.error(response?.message || 'Lỗi khi gửi đánh giá', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error submitting participant review:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi đánh giá participant'
-      );
+      toast.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá participant', { duration: 5000, position: 'top-center' });
     } finally {
       setParticipantReviewLoading(false);
     }
@@ -297,7 +296,7 @@ const RequestDetailPage = () => {
   // Handle submit request review
   const handleSubmitRequestReview = async reviewData => {
     if (!requestId) {
-      message.error('Request ID không tồn tại');
+      toast.error('Request ID không tồn tại', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -310,13 +309,11 @@ const RequestDetailPage = () => {
         setExistingRequestReview(response.data);
         setRequestReviewModalVisible(false);
       } else {
-        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+        toast.error(response?.message || 'Lỗi khi gửi đánh giá', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error submitting request review:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi đánh giá request'
-      );
+      toast.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá request', { duration: 5000, position: 'top-center' });
     } finally {
       setRequestReviewLoading(false);
     }
@@ -446,7 +443,7 @@ const RequestDetailPage = () => {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Failed to approve contract');
+      toast.error(error.message || 'Failed to approve contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -471,7 +468,7 @@ const RequestDetailPage = () => {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Failed to request contract change');
+      toast.error(error.message || 'Failed to request contract change', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -492,7 +489,7 @@ const RequestDetailPage = () => {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Failed to cancel contract');
+      toast.error(error.message || 'Failed to cancel contract', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }

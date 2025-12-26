@@ -23,6 +23,7 @@ import {
   Collapse,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   LeftOutlined,
   ReloadOutlined,
@@ -593,11 +594,17 @@ const SpecialistTaskDetailPage = () => {
           loadSubmissions(task.assignmentId),
         ]);
       } else {
-        message.error(response?.message || 'Error submitting for review');
+        toast.error(response?.message || 'Error submitting for review', {
+          duration: 5000,
+          position: 'top-center',
+        });
       }
     } catch (error) {
       console.error('Error submitting for review:', error);
-      message.error(error?.message || 'Error submitting for review');
+      toast.error(error?.message || 'Error submitting for review', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setSubmittingForReview(false);
     }
@@ -614,7 +621,10 @@ const SpecialistTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error accepting task:', error);
-      message.error(error?.message || 'Error accepting task');
+      toast.error(error?.message || 'Error accepting task', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setAcceptingTask(false);
     }
@@ -631,7 +641,10 @@ const SpecialistTaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error starting task:', error);
-      message.error(error?.message || 'Error starting task');
+      toast.error(error?.message || 'Error starting task', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setStartingTask(false);
     }
@@ -662,7 +675,10 @@ const SpecialistTaskDetailPage = () => {
     } catch (error) {
       if (error?.errorFields) return;
       console.error('Error reporting issue:', error);
-      message.error(error?.message || 'Error reporting issue');
+      toast.error(error?.message || 'Error reporting issue', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setReportingIssue(false);
     }
@@ -713,11 +729,17 @@ const SpecialistTaskDetailPage = () => {
         setDeleteModalVisible(false);
         setDeletingFileId(null);
       } else {
-        message.error(response?.message || 'Error deleting file');
+        toast.error(response?.message || 'Error deleting file', {
+          duration: 5000,
+          position: 'top-center',
+        });
       }
     } catch (error) {
       console.error('Error deleting file:', error);
-      message.error(error?.message || 'Error deleting file');
+      toast.error(error?.message || 'Error deleting file', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setDeletingFile(false);
     }
@@ -750,7 +772,10 @@ const SpecialistTaskDetailPage = () => {
 
   const handleUploadOk = async () => {
     if (!task?.assignmentId) {
-      message.error('Assignment ID not found');
+      toast.error('Assignment ID not found', {
+        duration: 5000,
+        position: 'top-center',
+      });
       return;
     }
 
@@ -764,7 +789,10 @@ const SpecialistTaskDetailPage = () => {
       const values = await uploadForm.validateFields();
 
       if (!selectedFile) {
-        message.error('Please select a file');
+        toast.error('Please select a file', {
+          duration: 5000,
+          position: 'top-center',
+        });
         setUploading(false);
         return;
       }
@@ -789,12 +817,18 @@ const SpecialistTaskDetailPage = () => {
           loadSubmissions(task.assignmentId),
         ]);
       } else {
-        message.error(response?.message || 'Failed to upload file');
+        toast.error(response?.message || 'Failed to upload file', {
+          duration: 5000,
+          position: 'top-center',
+        });
       }
     } catch (error) {
       if (error?.errorFields) return;
       console.error('Error uploading file:', error);
-      message.error(error?.message || 'Failed to upload file');
+      toast.error(error?.message || 'Failed to upload file', {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setUploading(false);
     }
@@ -1970,7 +2004,8 @@ const SpecialistTaskDetailPage = () => {
                   }
                 }
                 // Check contract status - chỉ cho phép start/submit nếu contract đã active
-                const contractStatus = task.contract?.contractStatus?.toLowerCase();
+                // Normalize contract status: trim whitespace and convert to lowercase for comparison
+                const contractStatus = task.contract?.contractStatus?.toLowerCase()?.trim();                
                 const isContractActive = contractStatus === 'active';
                 const contractNotActiveMessage = contractStatus === 'active_pending_assignment' 
                   ? 'The contract has not yet been started by the Manager. Please wait for the Manager to start the contract before beginning the task.'
@@ -2895,8 +2930,12 @@ const SpecialistTaskDetailPage = () => {
                 );
 
                 if (!hasValidExt) {
-                  message.error(
-                    `File type not allowed for ${taskType} task. Only ${allowedTypes} are allowed.`
+                  toast.error(
+                    `File type not allowed for ${taskType} task. Only ${allowedTypes} are allowed.`,
+                    {
+                      duration: 5000,
+                      position: 'top-center',
+                    }
                   );
                   return false; // Reject file - will not be added to fileList
                 }

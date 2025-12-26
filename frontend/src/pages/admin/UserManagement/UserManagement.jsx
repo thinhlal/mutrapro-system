@@ -14,6 +14,7 @@ import {
   Row,
   Col,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -83,7 +84,7 @@ const UserManagement = () => {
         });
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load user list');
+      toast.error(error.message || 'Unable to load user list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -189,7 +190,7 @@ const UserManagement = () => {
       });
       setEditModalVisible(true);
     } catch (error) {
-      message.error('Unable to load user information');
+      toast.error('Unable to load user information', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -200,7 +201,7 @@ const UserManagement = () => {
       setSelectedUser(response.data);
       setViewModalVisible(true);
     } catch (error) {
-      message.error('Unable to load user information');
+      toast.error('Unable to load user information', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -220,7 +221,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Update user error:', error);
       const errorMsg = error.message || error.error || 'Unable to update user';
-      message.error(errorMsg, 5); // Show error for 5 seconds
+      toast.error(errorMsg, 5, { duration: 5000, position: 'top-center' }); // Show error for 5 seconds
     }
   };
 
@@ -231,7 +232,7 @@ const UserManagement = () => {
       message.success('User deleted successfully');
       fetchUsers();
     } catch (error) {
-      message.error(error.message || 'Unable to delete user');
+      toast.error(error.message || 'Unable to delete user', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -262,7 +263,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Create user error:', error);
       const errorMsg = error.message || error.error || 'Unable to create user';
-      message.error(errorMsg, 5);
+      toast.error(errorMsg, 5, { duration: 5000, position: 'top-center' });
     } finally {
       setCreateLoading(false);
     }

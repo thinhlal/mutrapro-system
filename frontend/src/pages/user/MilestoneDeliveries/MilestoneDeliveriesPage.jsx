@@ -17,6 +17,7 @@ import {
   Divider,
   Collapse,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   EyeOutlined,
@@ -280,9 +281,7 @@ const MilestoneDeliveriesPage = () => {
       }
     } catch (error) {
       console.error('Error loading deliveries:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi tải danh sách deliveries'
-      );
+      toast.error(error?.response?.data?.message || 'Lỗi khi tải danh sách deliveries', { duration: 5000, position: 'top-center' });
       setContractInfo(null);
       setMilestoneInfo(null);
       setRequestInfo(null);
@@ -312,7 +311,7 @@ const MilestoneDeliveriesPage = () => {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Error downloading file:', error);
-      message.error('Error downloading file');
+      toast.error('Error downloading file', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -344,7 +343,7 @@ const MilestoneDeliveriesPage = () => {
       }
     } catch (error) {
       console.error('Error previewing file:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi xem file');
+      toast.error(error?.response?.data?.message || 'Lỗi khi xem file', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -406,11 +405,11 @@ const MilestoneDeliveriesPage = () => {
         setReviewModalVisible(false);
         setSelectedAssignmentForReview(null);
       } else {
-        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+        toast.error(response?.message || 'Lỗi khi gửi đánh giá', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá');
+      toast.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá', { duration: 5000, position: 'top-center' });
     } finally {
       setReviewLoading(false);
     }
@@ -457,15 +456,13 @@ const MilestoneDeliveriesPage = () => {
         }
       } else {
         // Nếu status không phải success, hiển thị lỗi
-        message.error(response?.message || 'Lỗi khi review submission');
+        toast.error(response?.message || 'Lỗi khi review submission', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error reviewing submission:', error);
-      message.error(
-        error?.response?.data?.message ||
+      toast.error(error?.response?.data?.message ||
           error?.message ||
-          'Lỗi khi review submission'
-      );
+          'Lỗi khi review submission', { duration: 5000, position: 'top-center' });
     } finally {
       setActionLoading(false);
     }
@@ -967,10 +964,8 @@ const MilestoneDeliveriesPage = () => {
                                           'Error previewing file:',
                                           error
                                         );
-                                        message.error(
-                                          error?.response?.data?.message ||
-                                            'Error previewing file'
-                                        );
+                                        toast.error(error?.response?.data?.message ||
+                                            'Error previewing file', { duration: 5000, position: 'top-center' });
                                       }
                                     }}
                                   >

@@ -15,6 +15,7 @@ import {
   InputNumber,
   Divider,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   DollarOutlined,
   WalletOutlined,
@@ -101,13 +102,11 @@ const PayMilestonePage = () => {
           contractStatus === 'active_pending_assignment';
 
         if (isCanceled || isExpired || !isValidStatus) {
-          message.error(
-            isCanceled
+          toast.error(isCanceled
               ? 'Contract has been canceled. Payment is not allowed.'
               : isExpired
                 ? 'Contract has expired. Payment is not allowed.'
-                : 'Contract is not in a valid status for payment.'
-          );
+                : 'Contract is not in a valid status for payment.', { duration: 5000, position: 'top-center' });
           navigate(`/contracts/${contractId}`);
           return;
         }
@@ -226,7 +225,7 @@ const PayMilestonePage = () => {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      message.error('Failed to load payment information');
+      toast.error('Failed to load payment information', { duration: 5000, position: 'top-center' });
       navigate(`/contracts/${contractId}`);
     } finally {
       setLoading(false);
@@ -250,7 +249,7 @@ const PayMilestonePage = () => {
     }
 
     if (!wallet || !targetMilestone || !targetMilestone.installment) {
-      message.error('Wallet or installment information not available');
+      toast.error('Wallet or installment information not available', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -263,9 +262,7 @@ const PayMilestonePage = () => {
       return;
     }
     if (!paymentQuote?.payableAmount) {
-      message.error(
-        'Không lấy được số tiền cần thanh toán. Vui lòng tải lại trang.'
-      );
+      toast.error('Không lấy được số tiền cần thanh toán. Vui lòng tải lại trang.', { duration: 5000, position: 'top-center' });
       return;
     }
     const payableAmount = parseFloat(paymentQuote.payableAmount);
@@ -305,7 +302,7 @@ const PayMilestonePage = () => {
       }
     } catch (error) {
       console.error('Error paying milestone:', error);
-      message.error(error?.message || 'Failed to process payment');
+      toast.error(error?.message || 'Failed to process payment', { duration: 5000, position: 'top-center' });
     } finally {
       setPaying(false);
     }
@@ -321,7 +318,7 @@ const PayMilestonePage = () => {
       message.info('Please complete top-up in your wallet page');
       navigate('/wallet');
     } catch (error) {
-      message.error('Failed to process top-up');
+      toast.error('Failed to process top-up', { duration: 5000, position: 'top-center' });
     }
   };
 

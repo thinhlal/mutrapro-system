@@ -14,6 +14,7 @@ import {
   Descriptions,
   DatePicker,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -71,7 +72,7 @@ const ReviewManagement = () => {
         }));
       }
     } catch (error) {
-      message.error(error?.message || 'Không thể tải danh sách reviews');
+      toast.error(error?.message || 'Không thể tải danh sách reviews', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }

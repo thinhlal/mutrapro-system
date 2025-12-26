@@ -9,6 +9,7 @@ import {
   message,
   Typography,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { UserOutlined, EditOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,7 @@ const AdminProfile = () => {
       message.success('Đăng xuất thành công');
       navigate('/login');
     } catch (error) {
-      message.error('Lỗi khi đăng xuất');
+      toast.error('Lỗi khi đăng xuất', { duration: 5000, position: 'top-center' });
       setLoggingOut(false);
     }
   };

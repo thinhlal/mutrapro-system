@@ -1278,8 +1278,20 @@ public class WalletService {
     public TopupVolumeByDateResponse getTopupVolumeByDate(int days) {
         log.info("Getting topup volume statistics by date for last {} days", days);
         
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days);
+        // Set endDate to start of tomorrow to include all transactions from today
+        // Query uses < :endDate, so this will include everything up to end of today
+        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        
+        // For "today" (days=1), start from beginning of today (00:00:00)
+        // For other ranges, use last N days from now
+        LocalDateTime startDate;
+        if (days == 1) {
+            startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
+        } else {
+            startDate = endDate.minusDays(days);
+        }
+        
+        log.debug("Topup volume date range: startDate={}, endDate={}, days={}", startDate, endDate, days);
         
         List<Object[]> results = walletTransactionRepository.sumAmountsByDateRange(
             WalletTxType.topup, startDate, endDate);
@@ -1311,8 +1323,20 @@ public class WalletService {
     public RevenueStatisticsResponse getRevenueStatistics(int days) {
         log.info("Getting revenue statistics for last {} days", days);
         
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days);
+        // Set endDate to start of tomorrow to include all transactions from today
+        // Query uses < :endDate, so this will include everything up to end of today
+        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        
+        // For "today" (days=1), start from beginning of today (00:00:00)
+        // For other ranges, use last N days from now
+        LocalDateTime startDate;
+        if (days == 1) {
+            startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
+        } else {
+            startDate = endDate.minusDays(days);
+        }
+        
+        log.debug("Revenue statistics date range: startDate={}, endDate={}, days={}", startDate, endDate, days);
         
         // Calculate previous period for trend comparison
         LocalDateTime prevEndDate = startDate;
@@ -1457,15 +1481,17 @@ public class WalletService {
             .collect(Collectors.toList());
         
         // Fill missing dates with zero (for complete sparkline)
+        // endDate is start of tomorrow, so we want to include up to today
         List<RevenueStatisticsResponse.DailyRevenue> completeDailyStats = new ArrayList<>();
         LocalDate currentDate = startDate.toLocalDate();
-        LocalDate endLocalDate = endDate.toLocalDate().minusDays(1); // Exclude endDate as it's exclusive
+        LocalDate endLocalDate = endDate.toLocalDate().minusDays(1); // endDate is tomorrow, so minus 1 = today
         Map<LocalDate, RevenueStatisticsResponse.DailyRevenue> dailyMap = dailyStats.stream()
             .collect(Collectors.toMap(
                 RevenueStatisticsResponse.DailyRevenue::getDate,
                 d -> d
             ));
         
+        log.debug("Filling dates from {} to {} (inclusive)", currentDate, endLocalDate);
         while (!currentDate.isAfter(endLocalDate)) {
             RevenueStatisticsResponse.DailyRevenue daily = dailyMap.get(currentDate);
             if (daily != null) {

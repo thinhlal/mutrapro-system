@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
+import toast from 'react-hot-toast';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -24,7 +25,7 @@ const CancelContractModal = ({
         // Validation errors - already handled by Form
         return;
       }
-      message.error('Lỗi khi xác nhận hủy contract');
+      toast.error('Error when confirming cancel contract', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -52,32 +53,30 @@ const CancelContractModal = ({
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText={`Xác nhận ${actionText}`}
-      cancelText="Đóng"
+      okText={`Confirm ${actionText}`}
+      cancelText="Close"
       okButtonProps={{ danger: true }}
       width={600}
     >
       <div style={{ marginBottom: 16 }}>
         <p style={{ marginBottom: 8 }}>
-          Bạn có chắc chắn muốn {actionText} contract này không?
+          Are you sure you want to {actionText} this contract?
         </p>
         <p style={{ color: '#666', fontSize: '14px' }}>
           {isManager && isDraft ? (
             <>
-              Sau khi hủy, contract DRAFT sẽ chuyển sang trạng thái{' '}
+              After canceling, contract DRAFT will be changed to the status{' '}
               <strong>CANCELED_BY_MANAGER</strong>.
             </>
           ) : isManager ? (
             <>
-              Sau khi thu hồi, contract sẽ chuyển sang trạng thái{' '}
-              <strong>CANCELED_BY_MANAGER</strong> và customer sẽ nhận được
-              thông báo về việc thu hồi này.
+              After revoking, contract will be changed to the status{' '}
+              <strong>CANCELED_BY_MANAGER</strong> and customer will receive a notification about this revocation.
             </>
           ) : (
             <>
-              Sau khi hủy, contract sẽ chuyển sang trạng thái{' '}
-              <strong>CANCELED_BY_CUSTOMER</strong> và manager sẽ nhận được
-              thông báo về việc hủy này.
+              After canceling, contract will be changed to the status{' '}
+              <strong>CANCELED_BY_CUSTOMER</strong> and manager will receive a notification about this cancellation.
             </>
           )}
         </p>
@@ -86,21 +85,21 @@ const CancelContractModal = ({
       <Form form={form} layout="vertical">
         <Form.Item
           name="reason"
-          label={`Lý do ${actionText}`}
+          label={`Reason for ${actionText} contract`}
           rules={[
             {
               required: true,
-              message: `Vui lòng nhập lý do ${actionText} contract`,
+              message: `Please enter the reason for ${actionText} contract`,
             },
             {
               min: 10,
-              message: `Lý do ${actionText} phải có ít nhất 10 ký tự`,
+              message: `The reason for ${actionText} contract must be at least 10 characters`,
             },
           ]}
         >
           <TextArea
             rows={4}
-            placeholder={`Vui lòng nhập lý do ${actionText} contract (tối thiểu 10 ký tự)...`}
+            placeholder={`Please enter the reason for ${actionText} contract (minimum 10 characters)...`}
             showCount
             maxLength={500}
           />

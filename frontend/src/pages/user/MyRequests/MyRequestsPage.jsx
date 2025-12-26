@@ -9,6 +9,7 @@ import {
   Button,
   Pagination,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   FileTextOutlined,
   ClockCircleOutlined,
@@ -159,11 +160,11 @@ const MyRequestsContent = () => {
           loadBookings(recordingRequests.map(r => r.requestId));
         }
       } else {
-        message.error('Unable to load requests');
+        toast.error('Unable to load requests', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error loading requests:', error);
-      message.error(error.message || 'Failed to load requests');
+      toast.error(error.message || 'Failed to load requests', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -322,13 +323,11 @@ const MyRequestsContent = () => {
         setRequestReviewModalVisible(false);
         setSelectedRequestIdForReview(null);
       } else {
-        message.error(response?.message || 'Lỗi khi gửi đánh giá');
+        toast.error(response?.message || 'Lỗi khi gửi đánh giá', { duration: 5000, position: 'top-center' });
       }
     } catch (error) {
       console.error('Error submitting request review:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi đánh giá request'
-      );
+      toast.error(error?.response?.data?.message || 'Lỗi khi gửi đánh giá request', { duration: 5000, position: 'top-center' });
     } finally {
       setRequestReviewLoading(false);
     }

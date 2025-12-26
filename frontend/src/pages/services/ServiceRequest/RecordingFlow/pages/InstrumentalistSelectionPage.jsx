@@ -11,6 +11,7 @@ import {
   Empty,
   Alert,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
 import { getAvailableArtistsForRequest } from '../../../../../services/studioBookingService';
 import VocalistSelectionCard from './components/VocalistSelectionCard';
@@ -90,7 +91,7 @@ export default function InstrumentalistSelectionPage() {
         response: error.response?.data,
         status: error.response?.status,
       });
-      message.error(error.message || 'Unable to load instrumentalist list');
+      toast.error(error.message || 'Unable to load instrumentalist list', { duration: 5000, position: 'top-center' });
       setInstrumentalists([]);
     } finally {
       setLoading(false);
@@ -114,7 +115,7 @@ export default function InstrumentalistSelectionPage() {
       );
 
       if (!selectedInstrumentalist) {
-        message.error('Selected instrumentalist not found');
+        toast.error('Selected instrumentalist not found', { duration: 5000, position: 'top-center' });
         return;
       }
 
@@ -185,9 +186,7 @@ export default function InstrumentalistSelectionPage() {
       });
     } catch (error) {
       console.error('Error saving instrumentalist selection:', error);
-      message.error(
-        'Failed to save instrumentalist selection. Please try again.'
-      );
+      toast.error('Failed to save instrumentalist selection. Please try again.', { duration: 5000, position: 'top-center' });
     }
   };
 

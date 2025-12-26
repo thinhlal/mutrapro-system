@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Avatar, Button, Input, message, Spin } from 'antd';
+import toast from 'react-hot-toast';
 import {
   EditOutlined,
   UserOutlined,
@@ -54,7 +55,7 @@ const ProfileContent = () => {
   useEffect(() => {
     if (userId) {
       fetchUserProfile(userId).catch(err => {
-        message.error('Không thể tải thông tin profile');
+        toast.error('Không thể tải thông tin profile', { duration: 5000, position: 'top-center' });
       });
     }
   }, [userId, fetchUserProfile]);
@@ -118,7 +119,7 @@ const ProfileContent = () => {
 
   const handleSave = async field => {
     if (!userId) {
-      message.error('User ID không hợp lệ');
+      toast.error('User ID không hợp lệ', { duration: 5000, position: 'top-center' });
       return;
     }
 
@@ -146,7 +147,7 @@ const ProfileContent = () => {
           break;
       }
     } catch (err) {
-      message.error(err.message || 'Cập nhật thất bại');
+      toast.error(err.message || 'Cập nhật thất bại', { duration: 5000, position: 'top-center' });
     }
   };
 
@@ -228,15 +229,15 @@ const ProfileContent = () => {
                       loading={creating}
                       onClick={async () => {
                         if (!authUser?.email) {
-                          message.error('Không tìm thấy email tài khoản');
+                          toast.error('Không tìm thấy email tài khoản', { duration: 5000, position: 'top-center' });
                           return;
                         }
                         if (!newPassword || newPassword.length < 8) {
-                          message.error('Mật khẩu tối thiểu 8 ký tự');
+                          toast.error('Mật khẩu tối thiểu 8 ký tự', { duration: 5000, position: 'top-center' });
                           return;
                         }
                         if (newPassword !== confirmPassword) {
-                          message.error('Mật khẩu xác nhận không khớp');
+                          toast.error('Mật khẩu xác nhận không khớp', { duration: 5000, position: 'top-center' });
                           return;
                         }
                         try {
@@ -251,7 +252,7 @@ const ProfileContent = () => {
                           setNewPassword('');
                           setConfirmPassword('');
                         } catch (e) {
-                          message.error(e?.message || 'Tạo mật khẩu thất bại');
+                          toast.error(e?.message || 'Tạo mật khẩu thất bại', { duration: 5000, position: 'top-center' });
                         } finally {
                           setCreating(false);
                         }

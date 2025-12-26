@@ -13,6 +13,7 @@ import {
   Row,
   Col,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   ReloadOutlined,
   UserAddOutlined,
@@ -176,7 +177,7 @@ const MilestonesPage = () => {
       }
     } catch (error) {
       console.error('Error fetching milestone slots:', error);
-      message.error(error?.message || 'Failed to load milestones');
+      toast.error(error?.message || 'Failed to load milestones', { duration: 5000, position: 'top-center' });
       setSlots([]);
       setSummary({
         total: 0,

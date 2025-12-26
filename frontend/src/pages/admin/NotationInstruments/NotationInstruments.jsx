@@ -10,6 +10,7 @@ import {
   Image,
   Typography,
 } from 'antd';
+import toast from 'react-hot-toast';
 import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   getAllNotationInstruments,
@@ -38,7 +39,7 @@ const NotationInstruments = () => {
         setInstruments(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Unable to load instruments list');
+      toast.error(error.message || 'Unable to load instruments list', { duration: 5000, position: 'top-center' });
     } finally {
       setLoading(false);
     }
@@ -132,7 +133,7 @@ const NotationInstruments = () => {
         errorMessage = `Instrument name "${values.instrumentName}" already exists! Please choose a different name.`;
       }
       
-      message.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
     }
   };
 
