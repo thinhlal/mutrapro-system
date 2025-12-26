@@ -52,10 +52,20 @@ const PayDepositPage = () => {
     try {
       setLoading(true);
 
-      // Load contract
-      const contractResponse = await getContractById(contractId);
-      if (contractResponse?.status === 'success' && contractResponse?.data) {
-        const contractData = contractResponse.data;
+      // Load contract and wallet in parallel for better performance
+      const [contractResponse, walletResponse] = await Promise.allSettled([
+        getContractById(contractId),
+        getOrCreateMyWallet().catch(error => {
+          console.warn('Failed to load wallet:', error);
+          return null;
+        })
+      ]);
+
+      // Process contract response
+      if (contractResponse.status === 'fulfilled' && 
+          contractResponse.value?.status === 'success' && 
+          contractResponse.value?.data) {
+        const contractData = contractResponse.value.data;
         setContract(contractData);
 
         // Tìm DEPOSIT installment
@@ -90,16 +100,15 @@ const PayDepositPage = () => {
         }
 
         setDepositInstallment(deposit);
+      } else {
+        throw new Error('Failed to load contract');
       }
 
-      // Load wallet
-      try {
-        const walletResponse = await getOrCreateMyWallet();
-        if (walletResponse?.status === 'success' && walletResponse?.data) {
-          setWallet(walletResponse.data);
-        }
-      } catch (error) {
-        console.warn('Failed to load wallet:', error);
+      // Process wallet response
+      if (walletResponse.status === 'fulfilled' && 
+          walletResponse.value?.status === 'success' && 
+          walletResponse.value?.data) {
+        setWallet(walletResponse.value.data);
       }
     } catch (error) {
       console.error('Error loading data:', error);

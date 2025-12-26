@@ -526,7 +526,8 @@ public class ContractService {
         
         ContractResponse response = contractMapper.toResponse(contract);
         
-        return enrichWithMilestonesAndInstallments(response);
+        // Pass contract to avoid reloading it in enrich method
+        return enrichWithMilestonesAndInstallments(response, contract);
     }
 
     /**
@@ -659,23 +660,36 @@ public class ContractService {
      * Enrich ContractResponse với milestones và installments
      */
     private ContractResponse enrichWithMilestonesAndInstallments(ContractResponse response) {
+        return enrichWithMilestonesAndInstallments(response, null);
+    }
+    
+    private ContractResponse enrichWithMilestonesAndInstallments(ContractResponse response, Contract contract) {
         if (response == null || response.getContractId() == null) {
             return response;
         }
         
+        String contractId = response.getContractId();
+        
         // Load milestones
         List<ContractMilestone> milestones = contractMilestoneRepository
-            .findByContractIdOrderByOrderIndexAsc(response.getContractId());
+            .findByContractIdOrderByOrderIndexAsc(contractId);
         
-        Contract contract = null;
-        try {
-            contract = contractRepository.findById(response.getContractId()).orElse(null);
-        } catch (Exception e) {
-            log.warn("Failed to fetch contract when enriching milestones: contractId={}, error={}",
-                response.getContractId(), e.getMessage());
+        // Use provided contract if available, otherwise load only if needed for deadline calculations
+        Contract contractToUse = contract;
+        if (contractToUse == null) {
+            boolean needsContractForDeadlines = milestones.stream()
+                .anyMatch(m -> m.getPlannedDueDate() == null && m.getMilestoneSlaDays() != null);
+            
+            if (needsContractForDeadlines) {
+                try {
+                    contractToUse = contractRepository.findById(contractId).orElse(null);
+                } catch (Exception e) {
+                    log.warn("Failed to fetch contract when enriching milestones: contractId={}, error={}",
+                        contractId, e.getMessage());
+                }
+            }
         }
-
-        Contract finalContract = contract;
+        final Contract finalContract = contractToUse;
         List<ContractMilestoneResponse> milestoneResponses = milestones.stream()
             .map(m -> {
                 ContractMilestoneResponse r = contractMilestoneMapper.toResponse(m);

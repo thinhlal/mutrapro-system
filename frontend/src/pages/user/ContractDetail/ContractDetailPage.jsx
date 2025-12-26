@@ -629,13 +629,16 @@ const ContractDetailPage = () => {
         // Reload contract to get updated status
         await loadContract();
 
-        // Fetch fresh contract data to ensure we have the latest signature URL
-        // Wait a bit for state to update, then generate and upload PDF automatically
-        setTimeout(async () => {
+        // Generate and upload PDF in background (non-blocking redirect)
+        // Wait a short moment for backend to process signature, then generate PDF
+        (async () => {
           try {
+            // Wait briefly for backend to process signature
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             message.loading('Generating and uploading PDF...', 0);
 
-            // Fetch fresh contract data to ensure we have up-to-date contract information
+            // Fetch fresh contract data to ensure we have the latest signature URL
             const freshContractResponse = await getContractById(contractId);
             const freshContractData =
               freshContractResponse?.status === 'success'
@@ -665,12 +668,12 @@ const ContractDetailPage = () => {
               'Contract signed but PDF generation failed. You can export PDF manually.'
             );
           }
-        }, 1000); // Increased delay to ensure backend has processed the signature
+        })();
 
-        // Redirect to success page after a short delay
+        // Redirect to success page immediately (don't wait for PDF)
         setTimeout(() => {
           navigate(`/contracts/${contractId}/signed-success`);
-        }, 1500);
+        }, 500);
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
