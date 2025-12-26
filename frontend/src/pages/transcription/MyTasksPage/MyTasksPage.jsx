@@ -655,6 +655,17 @@ const MyTasksPage = ({ onOpenTask }) => {
                 {status === 'ready_to_start' && (
                   <>
                     {(() => {
+                      // Kiểm tra xem có cần booking không
+                      const isRecordingSupervision = record.taskType?.toLowerCase() === 'recording_supervision';
+                      const isRecordingMilestone = record.milestone?.milestoneType?.toLowerCase() === 'recording';
+                      const hasStudioBooking = record.studioBookingId && record.studioBookingId.trim().length > 0;
+                      const needsStudioBooking = isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
+                      
+                      // Ẩn nút Start Task nếu cần booking nhưng chưa có
+                      if (needsStudioBooking) {
+                        return null;
+                      }
+                      
                       // Validate booking cho recording tasks
                       const studioBooking = record.studioBooking;
                       const validation = validateBookingForStart(
