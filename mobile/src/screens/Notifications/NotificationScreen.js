@@ -363,6 +363,30 @@ const NotificationScreen = ({ navigation }) => {
         else if (url.startsWith('/profile')) {
           navigation.navigate('Profile');
         }
+        // Payment success navigation: /payments/success/{orderId} or /payments/success?orderId=...
+        else if (url.startsWith('/payments/success')) {
+          // Extract orderId from URL
+          // Format: /payments/success/{orderId} or /payments/success?orderId=...
+          let orderId = null;
+          
+          // Try path parameter first: /payments/success/{orderId}
+          const pathMatch = url.match(/\/payments\/success\/([^\/\?]+)/);
+          if (pathMatch) {
+            orderId = pathMatch[1];
+          } else {
+            // Try query parameter: /payments/success?orderId=...
+            const queryMatch = url.match(/[?&]orderId=([^&]+)/);
+            if (queryMatch) {
+              orderId = decodeURIComponent(queryMatch[1]);
+            }
+          }
+          
+          if (orderId) {
+            navigation.navigate('PaymentSuccess', { orderId });
+          } else {
+            console.warn('[Mobile] Payment success URL missing orderId:', url);
+          }
+        }
         // Default: just log it
         else {
           console.log('[Mobile] Unhandled actionUrl:', url);

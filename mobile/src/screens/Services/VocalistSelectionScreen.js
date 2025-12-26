@@ -326,7 +326,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
             {vocalists.map((vocalist) => {
               const vocalistId = vocalist.id || vocalist.specialistId;
               const vocalistName = vocalist.name || vocalist.fullName || `Vocalist ${vocalistId}`;
-              const avatar = vocalist.avatar || vocalist.avatarUrl;
+              const avatar = vocalist.avatarUrl || vocalist.avatar;
               const selected = isSelected(vocalist);
 
               return (
@@ -337,44 +337,108 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
                     selected && styles.vocalistCardSelected,
                   ]}
                 >
-                  <TouchableOpacity
-                    style={styles.vocalistCardContent}
-                    onPress={() => handleSelect(vocalist)}
-                  >
-                    <View style={styles.vocalistInfo}>
-                      {avatar ? (
-                        <Image source={{ uri: avatar }} style={styles.avatar} />
-                      ) : (
-                        <View style={styles.avatarPlaceholder}>
-                          <Ionicons name="person" size={32} color={COLORS.textSecondary} />
-                        </View>
-                      )}
-                      <View style={styles.vocalistDetails}>
-                        <Text style={styles.vocalistName}>{vocalistName}</Text>
-                        {vocalist.gender && (
-                          <Text style={styles.vocalistGender}>
-                        {vocalist.gender === "FEMALE" ? "Female" : "Male"}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    {selected && (
-                      <View style={styles.selectedBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                  {/* Khối trên: Avatar + Info */}
+                  <View style={styles.vocalistTopSection}>
+                    {avatar ? (
+                      <Image source={{ uri: avatar }} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <Ionicons name="person" size={30} color={COLORS.textSecondary} />
                       </View>
                     )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      navigation.navigate("VocalistDetail", {
-                        specialistId: vocalistId,
-                        vocalist: vocalist,
-                      });
-                    }}
-                  >
-                    <Ionicons name="information-circle-outline" size={24} color={COLORS.primary} />
-                  </TouchableOpacity>
+                    <View style={styles.vocalistInfo}>
+                      <Text style={styles.vocalistName}>
+                        {vocalistName}
+                      </Text>
+                      {vocalist.gender && (
+                        <Text style={styles.experience}>
+                          <Text style={styles.label}>Gender: </Text>
+                          {vocalist.gender === "FEMALE" ? "Female" : "Male"}
+                        </Text>
+                      )}
+                      {vocalist.experienceYears && (
+                        <Text style={styles.experience}>
+                          <Text style={styles.label}>Experience: </Text>
+                          {vocalist.experienceYears} years
+                        </Text>
+                      )}
+                      {vocalist.rating && (
+                        <View style={styles.ratingContainer}>
+                          <Ionicons name="star" size={14} color={COLORS.warning} />
+                          <Text style={styles.rating}>
+                            <Text style={styles.label}>Rating: </Text>
+                            {vocalist.rating.toFixed(1)}
+                          </Text>
+                        </View>
+                      )}
+                      {vocalist.hourlyRate && (
+                        <Text style={styles.rate}>
+                          <Text style={styles.label}>Rate: </Text>
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(vocalist.hourlyRate)}
+                          /hour
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Khối dưới: Description + Genres + Buttons (full width) */}
+                  <View style={styles.vocalistBottomSection}>
+                    {/* Description */}
+                    {vocalist.bio && (
+                      <Text style={styles.vocalistDescription} numberOfLines={2} ellipsizeMode="tail">
+                        {vocalist.bio}
+                      </Text>
+                    )}
+                    {/* Genres */}
+                    {vocalist.genres && vocalist.genres.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.vocalistGenresContainer}
+                        contentContainerStyle={styles.vocalistGenresContent}
+                      >
+                        {vocalist.genres.map((genre, idx) => (
+                          <View key={idx} style={styles.vocalistGenreTag}>
+                            <Text style={styles.vocalistGenreText}>{genre}</Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    )}
+                    {/* Action Buttons */}
+                    <View style={styles.actions}>
+                      <TouchableOpacity
+                        style={[
+                          styles.selectButton,
+                          selected && styles.selectButtonSelected
+                        ]}
+                        onPress={() => handleSelect(vocalist)}
+                      >
+                        {selected ? (
+                          <>
+                            <Ionicons name="checkmark-circle" size={14} color={COLORS.white} />
+                            <Text style={styles.selectButtonTextSelected}>Selected</Text>
+                          </>
+                        ) : (
+                          <Text style={styles.selectButtonText}>Select</Text>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.detailButton}
+                        onPress={() => {
+                          navigation.navigate("VocalistDetail", {
+                            specialistId: vocalistId,
+                            vocalist: vocalist,
+                          });
+                        }}
+                      >
+                        <Ionicons name="information-circle-outline" size={14} color={COLORS.primary} />
+                        <Text style={styles.detailButtonText}>Detail</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
               );
             })}
@@ -524,69 +588,156 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   vocalistCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 2,
+    borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    borderWidth: 2,
-    borderColor: "transparent",
-    marginBottom: SPACING.sm,
   },
-  vocalistCardContent: {
+  vocalistTopSection: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flex: 1,
+    alignItems: "flex-start",
+    marginBottom: SPACING.md,
   },
-  detailButton: {
-    padding: SPACING.sm,
-    marginLeft: SPACING.sm,
+  vocalistBottomSection: {
+    width: "100%",
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   vocalistCardSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "10",
   },
   vocalistInfo: {
-    flexDirection: "row",
-    alignItems: "center",
     flex: 1,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginRight: SPACING.md,
   },
   avatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.background,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.gray[200],
     alignItems: "center",
     justifyContent: "center",
     marginRight: SPACING.md,
-  },
-  vocalistDetails: {
-    flex: 1,
   },
   vocalistName: {
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
-    marginBottom: SPACING.xs / 2,
+    marginBottom: SPACING.xs,
   },
-  vocalistGender: {
+  label: {
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  vocalistGenresContainer: {
+    marginBottom: SPACING.sm,
+  },
+  vocalistGenresContent: {
+    paddingRight: SPACING.xs,
+  },
+  vocalistGenreTag: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary,
+    marginRight: SPACING.xs,
+  },
+  vocalistGenreText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.white,
+    fontWeight: "500",
+  },
+  vocalistDescription: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+    lineHeight: 18,
   },
-  selectedBadge: {
-    marginLeft: SPACING.sm,
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  rating: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs,
+  },
+  experience: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  rate: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+    justifyContent: "space-between",
+    marginTop: SPACING.sm,
+  },
+  selectButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.gray[100],
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: SPACING.xs / 2,
+  },
+  selectButtonSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  selectButtonText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  selectButtonTextSelected: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.white,
+  },
+  detailButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    gap: SPACING.xs / 2,
+  },
+  detailButtonText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   footer: {
     flexDirection: "row",

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../../config/constants';
 import { getItem, setItem } from '../../../utils/storage';
+import VocalistSelectionModal from '../../../components/VocalistSelectionModal';
 
 const VOCAL_CHOICES = {
   NONE: 'NONE',
@@ -30,6 +31,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
   const [selectedVocalists, setSelectedVocalists] = useState(
     data?.selectedVocalists || []
   );
+  const [showVocalistModal, setShowVocalistModal] = useState(false);
 
   // Extract slot info from previous step
   const { bookingDate, bookingStartTime, bookingEndTime } = data || {};
@@ -136,7 +138,7 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
     vocalChoice === VOCAL_CHOICES.BOTH;
 
   const handleBrowseVocalists = async () => {
-    // Save current state to storage before navigating
+    // Save current state to storage before opening modal
     try {
       const stored = await getItem('recordingFlowData') || {};
       stored.step2 = {
@@ -144,31 +146,43 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
         vocalChoice,
         selectedVocalists,
       };
+      // Preserve currentStep (should be 2 for RecordingStep2)
+      stored.currentStep = 2;
       await setItem('recordingFlowData', stored);
     } catch (error) {
       console.error('Error saving flow data:', error);
     }
 
-    // Navigate to vocalist selection screen in HomeStack
-    navigation.navigate('Home', {
-      screen: 'VocalistSelection',
-      params: {
-        fromFlow: true,
-        bookingDate,
-        bookingStartTime,
-        bookingEndTime,
-        allowMultiple: true,
-        maxSelections: 10,
-        selectedVocalists: selectedVocalists.map(v => ({
-          specialistId: v.specialistId,
-          name: v.name,
-        })),
-      },
-    });
+    // Open vocalist selection modal
+    setShowVocalistModal(true);
+  };
+
+  const handleVocalistModalConfirm = async (selected) => {
+    // Save selected vocalists to storage
+    try {
+      const stored = await getItem('recordingFlowData') || {};
+      const existingStep2 = stored.step2 || {};
+      stored.step2 = {
+        ...existingStep2,
+        selectedVocalists: selected,
+        vocalChoice: existingStep2.vocalChoice || vocalChoice,
+      };
+      stored.currentStep = 2;
+      await setItem('recordingFlowData', stored);
+      
+      // Update local state
+      setSelectedVocalists(selected);
+    } catch (error) {
+      console.error('Error saving vocalists to flow data:', error);
+      Alert.alert('Error', 'Failed to save vocalist selection. Please try again.');
+    }
+    
+    setShowVocalistModal(false);
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>Step 2: Vocal Setup</Text>
@@ -412,6 +426,20 @@ const RecordingStep2 = ({ data, onComplete, onBack, navigation }) => {
         </View>
       </View>
     </ScrollView>
+
+      {/* Vocalist Selection Modal */}
+      <VocalistSelectionModal
+        visible={showVocalistModal}
+        onClose={() => setShowVocalistModal(false)}
+        onConfirm={handleVocalistModalConfirm}
+        allowMultiple={true}
+        maxSelections={10}
+        selectedVocalists={selectedVocalists}
+        bookingDate={bookingDate}
+        bookingStartTime={bookingStartTime}
+        bookingEndTime={bookingEndTime}
+      />
+    </>
   );
 };
 

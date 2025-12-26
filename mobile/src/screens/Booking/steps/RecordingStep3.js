@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
@@ -19,6 +20,7 @@ import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { getAvailableArtistsForRequest } from '../../../services/studioBookingService';
 import { getAllEquipment } from '../../../services/equipmentService';
 import { getItem, setItem } from '../../../utils/storage';
+import InstrumentalistSelectionModal from '../../../components/InstrumentalistSelectionModal';
 
 const PERFORMER_SOURCE = {
   CUSTOMER_SELF: 'CUSTOMER_SELF',
@@ -42,6 +44,8 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
   const [showCustomInstrumentInput, setShowCustomInstrumentInput] = useState(false);
   const [customInstrumentName, setCustomInstrumentName] = useState('');
   const [instrumentsViewMode, setInstrumentsViewMode] = useState('horizontal'); // 'horizontal' or 'vertical'
+  const [showInstrumentalistModal, setShowInstrumentalistModal] = useState(false);
+  const [currentInstrumentForSelection, setCurrentInstrumentForSelection] = useState(null);
 
   const { bookingDate, bookingStartTime, bookingEndTime, vocalChoice } = data || {};
 
@@ -336,7 +340,8 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>Step 3: Instrument Setup</Text>
@@ -631,19 +636,9 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
                             updates
                           )
                         }
-                        navigation={navigation}
-                        onSaveState={async () => {
-                          // Save current state including selectedInstruments and hasLiveInstruments
-                          try {
-                            const stored = await getItem('recordingFlowData') || {};
-                            stored.step3 = {
-                              hasLiveInstruments,
-                              instruments: selectedInstruments,
-                            };
-                            await setItem('recordingFlowData', stored);
-                          } catch (error) {
-                            console.error('Error saving flow data:', error);
-                          }
+                        onOpenInstrumentalistModal={(instrument) => {
+                          setCurrentInstrumentForSelection(instrument);
+                          setShowInstrumentalistModal(true);
                         }}
                       />
                     ))}
@@ -675,6 +670,42 @@ const RecordingStep3 = ({ data, onComplete, onBack, navigation }) => {
         </View>
       </View>
     </ScrollView>
+
+      {/* Instrumentalist Selection Modal */}
+      {currentInstrumentForSelection && (
+        <InstrumentalistSelectionModal
+          visible={showInstrumentalistModal}
+          onClose={() => {
+            setShowInstrumentalistModal(false);
+            setCurrentInstrumentForSelection(null);
+          }}
+          onConfirm={async (selectedInstrumentalist) => {
+            // Update the instrument with selected instrumentalist
+            const identifier = currentInstrumentForSelection.isCustomInstrument
+              ? currentInstrumentForSelection.skillName
+              : currentInstrumentForSelection.skillId;
+            
+            updateInstrument(identifier, {
+              specialistId: selectedInstrumentalist.specialistId,
+              specialistName: selectedInstrumentalist.specialistName,
+              hourlyRate: selectedInstrumentalist.hourlyRate,
+              avatarUrl: selectedInstrumentalist.avatarUrl,
+              rating: selectedInstrumentalist.rating,
+              experienceYears: selectedInstrumentalist.experienceYears,
+            });
+
+            setShowInstrumentalistModal(false);
+            setCurrentInstrumentForSelection(null);
+          }}
+          skillId={currentInstrumentForSelection.skillId}
+          skillName={currentInstrumentForSelection.skillName}
+          bookingDate={bookingDate}
+          bookingStartTime={bookingStartTime}
+          bookingEndTime={bookingEndTime}
+          selectedInstrumentalistId={currentInstrumentForSelection.specialistId}
+        />
+      )}
+    </>
   );
 };
 
@@ -685,8 +716,7 @@ function InstrumentConfig({
   bookingStartTime,
   bookingEndTime,
   onUpdate,
-  navigation,
-  onSaveState,
+  onOpenInstrumentalistModal,
 }) {
   const [availableInstrumentalists, setAvailableInstrumentalists] = useState([]);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -868,19 +898,61 @@ function InstrumentConfig({
           !instrument.isCustomInstrument && (
             <View style={configStyles.selectionContainer}>
               {instrument.specialistId ? (
-                <View style={configStyles.selectedItem}>
-                  <Text style={configStyles.selectedItemName}>
-                    {instrument.specialistName}
-                  </Text>
-                  {instrument.hourlyRate && (
-                    <Text style={configStyles.selectedItemDetail}>
-                      {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND',
-                      }).format(instrument.hourlyRate)}
-                      /hour
+                <View style={configStyles.selectedInstrumentalistItem}>
+                  <Image
+                    source={
+                      instrument.avatarUrl
+                        ? { uri: instrument.avatarUrl }
+                        : {
+                            uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              instrument.specialistName || 'Instrumentalist'
+                            )}&size=64&background=random`,
+                          }
+                    }
+                    style={configStyles.selectedInstrumentalistAvatar}
+                  />
+                  <View style={configStyles.selectedInstrumentalistInfo}>
+                    <Text style={configStyles.selectedInstrumentalistName}>
+                      {instrument.specialistName}
                     </Text>
-                  )}
+                    {instrument.rating && typeof instrument.rating === 'number' && (
+                      <View style={configStyles.ratingRow}>
+                        <Ionicons name="star" size={12} color={COLORS.warning} />
+                        <Text style={configStyles.ratingText}>
+                          {instrument.rating.toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
+                    {instrument.experienceYears && typeof instrument.experienceYears === 'number' && (
+                      <Text style={configStyles.selectedInstrumentalistDetail}>
+                        {instrument.experienceYears} years experience
+                      </Text>
+                    )}
+                    {instrument.hourlyRate && typeof instrument.hourlyRate === 'number' && (
+                      <Text style={configStyles.selectedInstrumentalistDetail}>
+                        {new Intl.NumberFormat('vi-VN', {
+                          style: 'currency',
+                          currency: 'VND',
+                        }).format(instrument.hourlyRate)}
+                        /hour
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={configStyles.removeButton}
+                    onPress={() => {
+                      onUpdate({
+                        specialistId: null,
+                        specialistName: null,
+                        hourlyRate: null,
+                        avatarUrl: null,
+                        rating: null,
+                        experienceYears: null,
+                      });
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={COLORS.error} />
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={configStyles.alertContainer}>
@@ -892,36 +964,11 @@ function InstrumentConfig({
               )}
               <TouchableOpacity
                 style={configStyles.browseButton}
-                onPress={async () => {
-                  // Save current state to storage before navigating
-                  if (onSaveState) {
-                    await onSaveState();
-                  } else {
-                    // Fallback: save basic state
-                    try {
-                      const stored = await getItem('recordingFlowData') || {};
-                      if (!stored.step3) {
-                        stored.step3 = { instruments: [] };
-                      }
-                      await setItem('recordingFlowData', stored);
-                    } catch (error) {
-                      console.error('Error saving flow data:', error);
-                    }
+                onPress={() => {
+                  // Open instrumentalist selection modal
+                  if (onOpenInstrumentalistModal) {
+                    onOpenInstrumentalistModal(instrument);
                   }
-
-                  // Navigate to instrumentalist selection screen in HomeStack
-                  navigation.navigate('Home', {
-                    screen: 'InstrumentalistSelection',
-                    params: {
-                      fromFlow: true,
-                      skillId: instrument.skillId,
-                      skillName: instrument.skillName,
-                      bookingDate,
-                      bookingStartTime,
-                      bookingEndTime,
-                      selectedInstrumentalistId: instrument.specialistId,
-                    },
-                  });
                 }}
               >
                 <Ionicons name="search" size={14} color={COLORS.primary} />
@@ -1179,6 +1226,51 @@ const configStyles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs / 2,
+  },
+  selectedInstrumentalistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.background,
+  },
+  selectedInstrumentalistAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: SPACING.sm,
+    backgroundColor: COLORS.gray[200],
+  },
+  selectedInstrumentalistInfo: {
+    flex: 1,
+  },
+  selectedInstrumentalistName: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '400',
+    color: COLORS.text,
+    marginBottom: SPACING.xs / 2,
+  },
+  selectedInstrumentalistDetail: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs / 2,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs / 2,
+  },
+  ratingText: {
+    marginLeft: SPACING.xs / 2,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  removeButton: {
+    padding: SPACING.xs,
   },
   alertContainer: {
     flexDirection: 'row',
