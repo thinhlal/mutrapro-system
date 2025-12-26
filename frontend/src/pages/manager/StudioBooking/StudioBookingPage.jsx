@@ -126,7 +126,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading milestone:', error);
-        message.error('Lỗi khi tải thông tin milestone');
+        message.error('Error when loading milestone info');
         navigate(-1);
       } finally {
         setLoading(false);
@@ -152,7 +152,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading slots:', error);
-        message.error('Lỗi khi tải available slots');
+        message.error('Error when loading available slots');
       } finally {
         setLoadingSlots(false);
       }
@@ -186,7 +186,7 @@ const StudioBookingPage = () => {
         }
       } catch (error) {
         console.error('Error loading artists:', error);
-        message.error('Lỗi khi tải available artists');
+        message.error('Error when loading available artists');
       } finally {
         setLoadingArtists(false);
       }
@@ -210,7 +210,7 @@ const StudioBookingPage = () => {
 
   const handleSlotSelect = slot => {
     if (!slot.available) {
-      message.warning('Slot này đã được book');
+      message.warning('This slot is already booked');
       return;
     }
     setSelectedSlot(slot);
@@ -227,7 +227,7 @@ const StudioBookingPage = () => {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedSlot || !selectedArtist) {
-      message.error('Vui lòng chọn đầy đủ thông tin');
+      message.error('Please select all information');
       return;
     }
 
@@ -256,12 +256,12 @@ const StudioBookingPage = () => {
       const response = await createBookingForRecordingMilestone(bookingData);
 
       if (response?.status === 'success') {
-        message.success('Tạo booking thành công!');
+        message.success('Booking created successfully!');
         navigate(-1); // Quay lại milestone detail
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-      message.error(error?.message || 'Lỗi khi tạo booking');
+      message.error(error?.message || 'Error when creating booking');
     } finally {
       setSubmitting(false);
     }
@@ -278,7 +278,7 @@ const StudioBookingPage = () => {
   if (!milestone) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Empty description="Không tìm thấy milestone" />
+        <Empty description="Milestone not found" />
         <Button onClick={() => navigate(-1)}>Quay lại</Button>
       </div>
     );
@@ -288,11 +288,11 @@ const StudioBookingPage = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-          Quay lại
+          Back
         </Button>
         <div>
           <Title level={2} style={{ margin: 0 }}>
-            Book Studio cho Recording Milestone
+            Book Studio for Recording Milestone
           </Title>
           {milestone && (
             <Space size="small" wrap>
@@ -300,7 +300,7 @@ const StudioBookingPage = () => {
                 <Tag color="blue">Milestone: {milestone.name}</Tag>
               )}
               {typeof milestone.orderIndex === 'number' && (
-                <Tag color="geekblue">Thứ tự: #{milestone.orderIndex}</Tag>
+                <Tag color="geekblue">Order: #{milestone.orderIndex}</Tag>
               )}
               {contract?.contractNumber && (
                 <Tag color="purple">Contract #{contract.contractNumber}</Tag>
@@ -310,10 +310,10 @@ const StudioBookingPage = () => {
                   Deadline:{' '}
                   {milestoneDeadlineInfo.deadline.format('DD/MM/YYYY')} (
                   {milestoneDeadlineInfo.daysDiff === 0
-                    ? 'Hôm nay'
+                    ? 'Today'
                     : milestoneDeadlineInfo.daysDiff > 0
-                      ? `Còn ${milestoneDeadlineInfo.daysDiff} ngày`
-                      : `Trễ ${Math.abs(milestoneDeadlineInfo.daysDiff)} ngày`}
+                      ? `Remaining ${milestoneDeadlineInfo.daysDiff} days`
+                      : `Overdue ${Math.abs(milestoneDeadlineInfo.daysDiff)} days`}
                   )
                 </Tag>
               )}
@@ -324,7 +324,7 @@ const StudioBookingPage = () => {
 
       {/* Thông tin Request + Milestone context */}
       {(request || milestoneDeadlineInfo) && (
-        <Card title="Ngữ cảnh Booking" style={{ marginBottom: 16 }}>
+        <Card title="Booking context" style={{ marginBottom: 16 }}>
           <Row gutter={[16, 16]}>
             {request && (
               <Col xs={24} md={14}>
@@ -335,19 +335,19 @@ const StudioBookingPage = () => {
                 >
                   {request.title && (
                     <div>
-                      <Text strong>Tiêu đề request: </Text>
+                      <Text strong>Request title: </Text>
                       <Text>{request.title}</Text>
                     </div>
                   )}
                   {request.description && (
                     <div>
-                      <Text strong>Mô tả: </Text>
+                      <Text strong>Description: </Text>
                       <Text>{request.description}</Text>
                     </div>
                   )}
                   {request.genres && request.genres.length > 0 && (
                     <div>
-                      <Text strong>Thể loại: </Text>
+                      <Text strong>Genres: </Text>
                       <Space wrap>
                         {request.genres.map((genre, idx) => (
                           <Tag key={idx} color="blue">
@@ -359,7 +359,7 @@ const StudioBookingPage = () => {
                   )}
                   {request.purpose && (
                     <div>
-                      <Text strong>Mục đích: </Text>
+                      <Text strong>Purpose: </Text>
                       <Text>{getPurposeLabel(request.purpose)}</Text>
                     </div>
                   )}
@@ -373,19 +373,19 @@ const StudioBookingPage = () => {
                   size="small"
                   style={{ width: '100%' }}
                 >
-                  <Text strong>Deadline milestone thu âm:</Text>
+                  <Text strong>Deadline milestone recording:</Text>
                   <Text>
                     {milestoneDeadlineInfo.deadline.format('DD/MM/YYYY')} (
                     {milestoneDeadlineInfo.daysDiff === 0
-                      ? 'Hôm nay'
+                      ? 'Today'
                       : milestoneDeadlineInfo.daysDiff > 0
-                        ? `Còn ${milestoneDeadlineInfo.daysDiff} ngày`
-                        : `Trễ ${Math.abs(milestoneDeadlineInfo.daysDiff)} ngày`}
+                        ? `Remaining ${milestoneDeadlineInfo.daysDiff} days`
+                        : `Overdue ${Math.abs(milestoneDeadlineInfo.daysDiff)} days`}
                     )
                   </Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Booking nên được đặt trước hoặc bằng ngày deadline để đảm
-                    bảo SLA của milestone.
+                    Booking should be placed before or on the deadline to ensure
+                    the SLA of the milestone.
                   </Text>
                 </Space>
               </Col>
@@ -399,19 +399,19 @@ const StudioBookingPage = () => {
           current={currentStep}
           items={[
             {
-              title: 'Chọn Studio & Date',
+              title: 'Select Studio & Date',
               icon: <CalendarOutlined />,
             },
             {
-              title: 'Chọn Time Slot',
+              title: 'Select Time Slot',
               icon: <ClockCircleOutlined />,
             },
             {
-              title: 'Chọn Artists',
+              title: 'Select Artists',
               icon: <UserOutlined />,
             },
             {
-              title: 'Xác nhận',
+              title: 'Confirm',
               icon: <CheckCircleOutlined />,
             },
           ]}
@@ -419,14 +419,14 @@ const StudioBookingPage = () => {
       </Card>
 
       {/* Step 1: Chọn Studio + Date */}
-      <Card title="Bước 1: Chọn Studio & Ngày" style={{ marginTop: 16 }}>
+      <Card title="Step 1: Select Studio & Date" style={{ marginTop: 16 }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
             <Text strong>Studio: </Text>
             <Tag>{studio?.studioName || 'MuTraPro Studio'}</Tag>
           </div>
           <div>
-            <Text strong>Chọn ngày: </Text>
+            <Text strong>Select date: </Text>
             <DatePicker
               value={selectedDate}
               onChange={handleDateChange}
@@ -498,7 +498,7 @@ const StudioBookingPage = () => {
                   ))}
                 </Space>
               ) : (
-                <Text type="secondary">Không có slot available</Text>
+                <Text type="secondary">No slot available</Text>
               )}
             </div>
           )}
@@ -507,7 +507,7 @@ const StudioBookingPage = () => {
 
       {/* Step 2: Chọn Artists (hiện khi đã chọn slot) */}
       {selectedSlot && (
-        <Card title="Bước 2: Chọn Artists" style={{ marginTop: 16 }}>
+        <Card title="Step 2: Select Artists" style={{ marginTop: 16 }}>
           {loadingArtists ? (
             <Spin />
           ) : availableArtists.length > 0 ? (
@@ -604,7 +604,7 @@ const StudioBookingPage = () => {
                             )}
                             {artist.experienceYears && (
                               <Tag color="blue">
-                                {artist.experienceYears} năm kinh nghiệm
+                                {artist.experienceYears} years experience
                               </Tag>
                             )}
                             {artist.rating && (
@@ -643,7 +643,7 @@ const StudioBookingPage = () => {
               </Space>
             </Radio.Group>
           ) : (
-            <Empty description="Không có artists available" />
+            <Empty description="No artists available" />
           )}
         </Card>
       )}
@@ -653,14 +653,14 @@ const StudioBookingPage = () => {
         <Card style={{ marginTop: 16 }}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Alert
-              message="Xác nhận thông tin booking"
+              message="Confirm booking information"
               description={
                 <div>
-                  <div>Ngày: {selectedDate?.format('DD/MM/YYYY')}</div>
+                  <div>Date: {selectedDate?.format('DD/MM/YYYY')}</div>
                   <div>
-                    Thời gian: {selectedSlot.startTime} - {selectedSlot.endTime}
+                    Time: {selectedSlot.startTime} - {selectedSlot.endTime}
                   </div>
-                  <div>Artist: {selectedArtist.name}</div>
+                  <div>Specialist: {selectedArtist.name}</div>
                 </div>
               }
               type="info"
@@ -672,7 +672,7 @@ const StudioBookingPage = () => {
               onClick={handleSubmit}
               block
             >
-              Tạo Booking
+              Create booking
             </Button>
           </Space>
         </Card>

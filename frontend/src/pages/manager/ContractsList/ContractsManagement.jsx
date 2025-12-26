@@ -246,8 +246,8 @@ export default function ContractsManagement() {
       }
     } catch (err) {
       console.error('Error fetching contracts:', err);
-      setError(err.message || 'Lỗi khi tải danh sách contracts');
-      message.error(err.message || 'Lỗi khi tải danh sách contracts');
+      setError(err.message || 'Error fetching contracts');
+      message.error(err.message || 'Error fetching contracts');
     } finally {
       setLoading(false);
     }
@@ -466,7 +466,7 @@ export default function ContractsManagement() {
               dayjs(r.expectedStartDate).format('YYYY-MM-DD')
             ) : (
               <span style={{ fontStyle: 'italic', color: '#999' }}>
-                Chưa lên lịch (sau khi Start Work)
+                Not scheduled (after Start Work)
               </span>
             )}
           </div>
@@ -604,10 +604,10 @@ export default function ContractsManagement() {
           } catch (err) {
             console.error('Failed to load task assignments for modal:', err);
             Modal.error({
-              title: 'Không thể tải thông tin task',
+              title: 'Cannot load task information',
               content:
                 err?.message ||
-                'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
+                'There is an error when calling API task-assignments. Please check again or try again later.',
             });
           } finally {
             setActionLoading(prev => ({ ...prev, [r.contractId]: false }));
@@ -839,7 +839,7 @@ export default function ContractsManagement() {
               }}
               style={{ marginTop: '10px' }}
             >
-              Thử lại
+              Try again
             </Button>
           </div>
         ) : (
@@ -905,7 +905,7 @@ export default function ContractsManagement() {
               setHasActiveContract(false);
             }}
           >
-            Đóng
+            Close
           </Button>,
           !hasActiveContract && !checkingActiveContract && (
             <Button
@@ -948,14 +948,14 @@ export default function ContractsManagement() {
         {revisionContract && (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Alert
-              message="Customer đã yêu cầu chỉnh sửa contract này"
-              description="Vui lòng xem lý do bên dưới và tạo contract mới với nội dung đã điều chỉnh."
+              message="Customer has requested to revise this contract"
+              description="Please see the reason below and create a new contract with the adjusted content."
               type="warning"
               showIcon
             />
 
             <div>
-              <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
+              <Typography.Title level={5}>Contract Information:</Typography.Title>
               <div
                 style={{
                   padding: '12px',
@@ -988,7 +988,7 @@ export default function ContractsManagement() {
                     {revisionContract.currency}
                   </div>
                   <div>
-                    <strong>SLA:</strong> {revisionContract.slaDays} ngày
+                    <strong>SLA:</strong> {revisionContract.slaDays} days
                   </div>
                 </Space>
               </div>
@@ -996,7 +996,7 @@ export default function ContractsManagement() {
 
             <div>
               <Typography.Title level={5}>
-                Lý do yêu cầu chỉnh sửa:
+                Reason for request to revise:
               </Typography.Title>
               <div
                 style={{
@@ -1008,20 +1008,19 @@ export default function ContractsManagement() {
                   minHeight: '80px',
                 }}
               >
-                {revisionContract.cancellationReason || 'Không có lý do cụ thể'}
+                {revisionContract.cancellationReason || 'No specific reason'}
               </div>
             </div>
 
             <Alert
-              message="Hướng dẫn"
+              message="Guidance"
               description={
                 <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
-                  <li>Đọc kỹ lý do yêu cầu chỉnh sửa từ customer</li>
+                  <li>Read the reason for request to revise from customer</li>
                   <li>
-                    Click "Tạo Contract Mới" để tạo contract với thông tin đã
-                    điều chỉnh
+                    Click "Create New Contract" to create a new contract with the adjusted information
                   </li>
-                  <li>Sau khi tạo xong, gửi contract mới cho customer</li>
+                  <li>After creating, send the new contract to customer</li>
                 </ul>
               }
               type="info"
@@ -1036,7 +1035,7 @@ export default function ContractsManagement() {
         title={
           <Space>
             <InfoCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Lý do hủy Contract</span>
+            <span>Reason for cancellation of Contract</span>
           </Space>
         }
         open={cancelReasonModalVisible}
@@ -1052,7 +1051,7 @@ export default function ContractsManagement() {
               setCanceledContract(null);
             }}
           >
-            Đóng
+            Close
           </Button>,
         ]}
         width={700}
@@ -1063,16 +1062,16 @@ export default function ContractsManagement() {
               message={
                 canceledContract.status?.toLowerCase() ===
                 'canceled_by_customer'
-                  ? 'Contract đã bị hủy bởi Customer'
-                  : 'Contract đã bị hủy bởi Manager'
+                  ? 'Contract has been cancelled by Customer'
+                  : 'Contract has been cancelled by Manager'
               }
-              description="Xem lý do hủy bên dưới."
+              description="See the reason for cancellation below."
               type="error"
               showIcon
             />
 
             <div>
-              <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
+              <Typography.Title level={5}>Contract Information:</Typography.Title>
               <div
                 style={{
                   padding: '12px',
@@ -1105,7 +1104,7 @@ export default function ContractsManagement() {
                     {canceledContract.currency}
                   </div>
                   <div>
-                    <strong>SLA:</strong> {canceledContract.slaDays} ngày
+                    <strong>SLA:</strong> {canceledContract.slaDays} days
                   </div>
                   <div>
                     <strong>Status:</strong>{' '}
@@ -1123,7 +1122,7 @@ export default function ContractsManagement() {
             </div>
 
             <div>
-              <Typography.Title level={5}>Lý do hủy:</Typography.Title>
+              <Typography.Title level={5}>Reason for cancellation:</Typography.Title>
               <div
                 style={{
                   padding: '16px',
@@ -1134,17 +1133,17 @@ export default function ContractsManagement() {
                   minHeight: '80px',
                 }}
               >
-                {canceledContract.cancellationReason || 'Không có lý do cụ thể'}
+                {canceledContract.cancellationReason || 'No specific reason'}
               </div>
             </div>
 
             <Alert
-              message="Thông tin"
+              message="Information"
               description={
                 canceledContract.status?.toLowerCase() ===
                 'canceled_by_customer'
-                  ? 'Contract này đã bị customer hủy. Bạn có thể liên hệ với customer để biết thêm chi tiết hoặc tạo contract mới nếu cần.'
-                  : 'Contract này đã bị manager hủy. Nếu cần thiết, bạn có thể tạo contract mới cho request này.'
+                  ? 'This contract has been cancelled by Customer. You can contact the customer to get more details or create a new contract if needed.'
+                  : 'This contract has been cancelled by Manager. If needed, you can create a new contract for this request.'
               }
               type="info"
               showIcon
@@ -1158,7 +1157,7 @@ export default function ContractsManagement() {
         title={
           <Space>
             <InfoCircleOutlined style={{ color: '#1890ff' }} />
-            <span>Start Work cho contract này?</span>
+            <span>Start Work for this contract?</span>
           </Space>
         }
         open={startWorkModalVisible}
@@ -1172,7 +1171,7 @@ export default function ContractsManagement() {
         }}
         okText={
           startWorkContext.hasBlockingMissing
-            ? 'Không thể Start Work'
+            ? 'Cannot Start Work'
             : 'Start Work'
         }
         okButtonProps={{
@@ -1181,7 +1180,7 @@ export default function ContractsManagement() {
             ? actionLoading[startWorkContext.contract.contractId]
             : false,
         }}
-        cancelText="Đóng"
+        cancelText="Close"
         onOk={async () => {
           if (
             !startWorkContext.contract ||
@@ -1193,7 +1192,7 @@ export default function ContractsManagement() {
             const contractId = startWorkContext.contract.contractId;
             setActionLoading(prev => ({ ...prev, [contractId]: true }));
             await startContractWork(contractId);
-            message.success('Đã bắt đầu work cho contract');
+            message.success('Successfully started work for contract');
             fetchContracts(pagination.current - 1, pagination.pageSize);
             setStartWorkModalVisible(false);
             setStartWorkContext({
@@ -1204,7 +1203,7 @@ export default function ContractsManagement() {
           } catch (err) {
             console.error('Failed to start contract work from list:', err);
             message.error(
-              err?.message || 'Không thể Start Work từ danh sách contracts'
+              err?.message || 'Cannot Start Work from contracts list'
             );
           } finally {
             const contractId = startWorkContext.contract?.contractId;
@@ -1220,19 +1219,19 @@ export default function ContractsManagement() {
             {startWorkContext.milestoneSummaries.length === 0 ? (
               <>
                 <p>
-                  Contract này hiện chưa có dữ liệu milestones hoặc task
-                  assignments, vì vậy chưa thể Start Work.
+                  This contract currently has no milestone or task
+                  assignments, therefore cannot Start Work.
                 </p>
                 <p style={{ marginTop: 8 }}>
-                  Vui lòng kiểm tra lại trong Contract Detail / Milestones và
-                  đảm bảo đã khởi tạo milestones và gán task trước khi Start
+                  Please check in Contract Detail / Milestones and
+                  ensure that milestones and tasks have been created and assigned
                   Work.
                 </p>
               </>
             ) : (
               <>
                 <p>
-                  Tình trạng task theo từng milestone (accepted =
+                  Status of task by each milestone (accepted =
                   accepted_waiting / ready_to_start / in_progress / completed):
                 </p>
                 <ul style={{ paddingLeft: 20 }}>
@@ -1240,47 +1239,43 @@ export default function ContractsManagement() {
                     <li key={m.id || m.name}>
                       <strong>{m.name}:</strong>{' '}
                       {!m.hasActiveTask
-                        ? 'Chưa có task assignment active'
+                        ? 'No active task assignment'
                         : m.isAccepted
-                          ? 'Task đã được accept ✓'
-                          : 'Task chưa được accept (đang ở trạng thái assigned)'}
+                          ? 'Task has been accepted ✓'
+                          : 'Task has not been accepted (in assigned state)'}
                     </li>
                   ))}
                 </ul>
                 {startWorkContext.hasBlockingMissing ? (
                   <p style={{ marginTop: 8, color: '#ff4d4f' }}>
                     <strong>
-                      Milestone 1 chưa có task assignment active hoặc task chưa
-                      được accept.
+                      Milestone 1 has no active task assignment or task that has not been
+                        accepted.
                     </strong>{' '}
-                    Milestone 1 phải có task đã được accept trước khi Start
-                    Work. Vui lòng vào Milestones / Task Progress để gán và đảm
-                    bảo task đã được accept.
+                    Milestone 1 must have a task that has been accepted before Start
+                    Work. Please check in Milestones / Task Progress to assign and ensure the task has been accepted.
                   </p>
                 ) : (
                   <>
                     <p style={{ marginTop: 8 }}>
                       <strong>
-                        Milestone 1 đã có task assignment và đã được accept ✓
+                        Milestone 1 has a task assignment and has been accepted ✓
                       </strong>
                     </p>
                     {startWorkContext.otherMilestonesMissing?.length > 0 && (
                       <p style={{ marginTop: 8, color: '#faad14' }}>
-                        <strong>Lưu ý:</strong> Có{' '}
+                        <strong>Note:</strong> There are{' '}
                         {startWorkContext.otherMilestonesMissing.length}{' '}
-                        milestone khác chưa có task assignment hoặc task chưa
-                        được accept. Các milestone này có thể được assign sau,
-                        không ảnh hưởng đến việc Start Work.
+                        other milestones that have no task assignment or task that has not been accepted. These milestones can be assigned later, without affecting the Start Work.
                       </p>
                     )}
                     <p style={{ marginTop: 8 }}>
-                      Bạn có chắc chắn muốn Start Work cho contract này không?
+                      Are you sure you want to Start Work for this contract?
                     </p>
                   </>
                 )}
                 <p style={{ marginTop: 8 }}>
-                  Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
-                  đầu work, không phải ngày ký hợp đồng.
+                  After Start Work, SLA and timeline will be calculated from the start date of work, not the contract signing date.
                 </p>
               </>
             )}

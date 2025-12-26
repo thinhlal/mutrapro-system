@@ -112,13 +112,13 @@ const AdminChatRoomsManagement = () => {
 
   const handleCopyRoomId = roomId => {
     navigator.clipboard.writeText(roomId);
-    message.success('Đã copy Room ID');
+    message.success('Successfully copied Room ID');
   };
 
   const handleDeactivate = async roomId => {
     try {
       await deactivateRoom(roomId);
-      message.success('Đã đóng chat room thành công');
+      message.success('Successfully closed chat room');
       loadRooms(); // Reload list
       if (detailModalVisible && selectedRoom?.roomId === roomId) {
         setDetailModalVisible(false);
@@ -126,7 +126,7 @@ const AdminChatRoomsManagement = () => {
       }
     } catch (error) {
       console.error('Error deactivating room:', error);
-      message.error(error?.message || 'Lỗi khi đóng chat room');
+      message.error(error?.message || 'Error closing chat room');
     }
   };
 
@@ -143,7 +143,7 @@ const AdminChatRoomsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading room detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết chat room');
+      message.error(error?.message || 'Error loading chat room detail');
     } finally {
       setDetailLoading(false);
     }
@@ -242,11 +242,11 @@ const AdminChatRoomsManagement = () => {
           </Tooltip>
           {record.isActive && (
             <Popconfirm
-              title="Đóng chat room?"
-              description="Bạn có chắc chắn muốn đóng chat room này?"
+              title="Close chat room?"
+              description="Are you sure you want to close this chat room?"
               onConfirm={() => handleDeactivate(record.roomId)}
-              okText="Đóng"
-              cancelText="Hủy"
+              okText="Close"
+              cancelText="Cancel"
             >
               <Tooltip title="Deactivate Room">
                 <Button
@@ -343,11 +343,11 @@ const AdminChatRoomsManagement = () => {
           selectedRoom?.isActive && (
             <Popconfirm
               key="deactivate"
-              title="Đóng chat room?"
-              description="Bạn có chắc chắn muốn đóng chat room này?"
+              title="Close chat room?"
+              description="Are you sure you want to close this chat room?"
               onConfirm={() => handleDeactivate(selectedRoom.roomId)}
-              okText="Đóng"
-              cancelText="Hủy"
+              okText="Close"    
+              cancelText="Cancel"
             >
               <Button danger icon={<StopOutlined />}>
                 Deactivate

@@ -74,26 +74,26 @@ const STATUS_COLORS = {
 
 // Assignment status labels
 const STATUS_LABELS = {
-  assigned: 'Đã gán',
-  accepted_waiting: 'Đã nhận - Chờ',
-  ready_to_start: 'Sẵn sàng làm',
-  in_progress: 'Đang thực hiện',
-  ready_for_review: 'Chờ duyệt',
-  revision_requested: 'Yêu cầu chỉnh sửa',
-  in_revision: 'Đang chỉnh sửa',
-  delivery_pending: 'Chờ giao hàng',
-  waiting_customer_review: 'Chờ Customer review',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  assigned: 'Assigned',
+  accepted_waiting: 'Accepted - Waiting',
+  ready_to_start: 'Ready to start',
+  in_progress: 'In progress',
+  ready_for_review: 'Ready for review',
+  revision_requested: 'Revision requested',
+  in_revision: 'In revision',
+  delivery_pending: 'Pending delivery',
+  waiting_customer_review: 'Waiting customer review',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 // File status labels
 const FILE_STATUS_LABELS = {
-  uploaded: 'Đã upload',
-  pending_review: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Đã từ chối',
-  delivered: 'Đã giao',
+  uploaded: 'Uploaded',
+  pending_review: 'Pending review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  delivered: 'Delivered',
 };
 
 // File status colors
@@ -127,31 +127,31 @@ const getTaskCompletionDate = task =>
   task?.completedDate || task?.milestone?.finalCompletedAt || null;
 
 const STATUS_OPTIONS = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Đã gán', value: 'assigned' },
-  { label: 'Đã nhận - Chờ', value: 'accepted_waiting' },
+  { label: 'All', value: 'all' },
+  { label: 'Assigned', value: 'assigned' },
+  { label: 'Accepted - Waiting', value: 'accepted_waiting' },
   { label: 'Ready to Start', value: 'ready_to_start' },
-  { label: 'Đang làm', value: 'in_progress' },
-  { label: 'Đang chỉnh sửa', value: 'in_revision' },
-  { label: 'Chờ khách hàng review', value: 'waiting_customer_review' },
-  { label: 'Yêu cầu chỉnh sửa', value: 'revision_requested' },
-  { label: 'Hoàn thành', value: 'completed' },
-  { label: 'Đã hủy', value: 'cancelled' },
+  { label: 'In progress', value: 'in_progress' },
+  { label: 'In revision', value: 'in_revision' },
+  { label: 'Waiting customer review', value: 'waiting_customer_review' },
+  { label: 'Revision requested', value: 'revision_requested' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
 ];
 
 const TASK_TYPE_OPTIONS = [
-  { label: 'Tất cả', value: 'all' },
+  { label: 'All', value: 'all' },
   { label: 'Transcription', value: 'TRANSCRIPTION' },
   { label: 'Arrangement', value: 'ARRANGEMENT' },
   { label: 'Recording Supervision', value: 'RECORDING_SUPERVISION' },
 ];
 
 const PROGRESS_OPTIONS = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Chưa bắt đầu (0%)', value: '0' },
-  { label: 'Đang làm (1-74%)', value: '1-74' },
-  { label: 'Gần hoàn thành (75-99%)', value: '75-99' },
-  { label: 'Hoàn thành (100%)', value: '100' },
+  { label: 'All', value: 'all' },
+  { label: 'Not started (0%)', value: '0' },
+  { label: 'In progress (1-74%)', value: '1-74' },
+  { label: 'Near completion (75-99%)', value: '75-99' },
+  { label: 'Completed (100%)', value: '100' },
 ];
 
 export default function TaskProgressManagement() {
@@ -257,7 +257,7 @@ export default function TaskProgressManagement() {
         }
       } catch (error) {
         console.error('Error fetching task assignments:', error);
-        message.error(error?.message || 'Không thể tải danh sách tasks');
+        message.error(error?.message || 'Error when loading task assignments list');
         setTaskAssignments([]);
         setPagination(prev => ({ ...prev, total: 0 }));
       } finally {
@@ -422,7 +422,7 @@ export default function TaskProgressManagement() {
     if (record.assignmentId && record.contractId) {
       navigate(`/manager/tasks/${record.contractId}/${record.assignmentId}`);
     } else {
-      message.warning('Không tìm thấy assignment ID hoặc contract ID');
+      message.warning('Cannot find assignment ID or contract ID');
     }
   };
 
@@ -673,28 +673,28 @@ export default function TaskProgressManagement() {
                     {record.milestone?.milestoneSlaDays && (
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         {' '}
-                        (+{record.milestone.milestoneSlaDays} ngày SLA)
+                        (+{record.milestone.milestoneSlaDays} days SLA)
                       </Text>
                     )}
                   </Text>
                   {isOverdue && (
                     <Tag color="red" size="small">
-                      Quá hạn
+                      Overdue
                     </Tag>
                   )}
                   {isNearDeadline && (
                     <Tag color="orange" size="small">
-                      Sắp hạn
+                      Near deadline
                     </Tag>
                   )}
                   {isFirstSubmissionLate && (
                     <Tag color="red" size="small">
-                      Nộp trễ (bản đầu)
+                      Late (first submission)
                     </Tag>
                   )}
                   {isFirstSubmissionOnTime && (
                     <Tag color="green" size="small">
-                      Nộp đúng hạn (bản đầu)
+                      On time (first submission)
                     </Tag>
                   )}
                 </Space>
@@ -730,7 +730,7 @@ export default function TaskProgressManagement() {
                   Deadline: {estimatedDeadline.format('HH:mm DD/MM')}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  (Ước tính)
+                  (Estimated)
                 </Text>
               </>
             )}
@@ -767,20 +767,20 @@ export default function TaskProgressManagement() {
                     if (isOnTime) {
                       return (
                         <Tag color="green" size="small">
-                          Đúng hạn
+                          On time
                         </Tag>
                       );
                     }
                     const daysLate = completedDate.diff(actualDeadline, 'day');
                     return (
                       <Tag color="red" size="small">
-                        Trễ {daysLate}d
+                        Late {daysLate} days
                       </Tag>
                     );
                   })()}
               </Space>
             ) : (
-              <Text type="secondary">Chưa hoàn thành</Text>
+              <Text type="secondary">Not completed</Text>
             )}
             <Divider style={{ margin: '4px 0' }} dashed />
             {/* Planned deadline: chỉ hiển thị khi chưa có Target deadline */}
@@ -810,7 +810,7 @@ export default function TaskProgressManagement() {
       render: (_, record) => (
         <Space size="small">
           {record.hasIssue && record.status !== 'cancelled' && (
-            <Tooltip title="Xem và xử lý issue">
+            <Tooltip title="View and resolve issue">
               <Button
                 type="primary"
                 danger
@@ -821,11 +821,11 @@ export default function TaskProgressManagement() {
                   handleViewIssueDetails(record);
                 }}
               >
-                Xử lý issue
+                Resolve issue
               </Button>
             </Tooltip>
           )}
-          <Tooltip title="Xem chi tiết tiến độ">
+          <Tooltip title="View task progress details">
             <Button
               // type="link"
               icon={<EyeOutlined />}
@@ -848,7 +848,7 @@ export default function TaskProgressManagement() {
           </Title>
           <Text type="secondary">
             List of all tasks. Click "View Details" to see detailed task
-            information. tiết task.
+            information.
           </Text>
         </div>
         <Button
@@ -856,7 +856,7 @@ export default function TaskProgressManagement() {
           onClick={() => fetchAllTaskAssignments(filters, pagination)}
           loading={loading}
         >
-          Làm mới
+          Refresh
         </Button>
       </div>
 
@@ -864,7 +864,7 @@ export default function TaskProgressManagement() {
         <Row gutter={[16, 16]}>
           <Col xs={24} md={10}>
             <Input
-              placeholder="Tìm theo: Contract ID, Contract Number, Contract Name, Milestone ID, Specialist ID, Specialist Name"
+              placeholder="Search by: Contract ID, Contract Number, Contract Name, Milestone ID, Specialist ID, Specialist Name"
               value={filters.search}
               onChange={handleSearchChange}
               allowClear
@@ -892,7 +892,7 @@ export default function TaskProgressManagement() {
               options={PROGRESS_OPTIONS}
               onChange={handleProgressChange}
               style={{ width: '100%' }}
-              placeholder="Lọc theo tiến độ"
+              placeholder="Filter by progress"
             />
           </Col>
         </Row>
@@ -916,14 +916,14 @@ export default function TaskProgressManagement() {
               size="small"
             />
           ) : (
-            <Empty description="Chưa có task assignment nào" />
+            <Empty description="No task assignment found" />
           )}
         </Spin>
       </Card>
 
       {/* Task Progress Detail Modal */}
       <Modal
-        title="Chi tiết Tiến độ Task"
+        title="Task Progress Details"
         open={taskDetailModalVisible}
         onCancel={() => {
           setTaskDetailModalVisible(false);
@@ -939,7 +939,7 @@ export default function TaskProgressManagement() {
               setTaskFiles([]);
             }}
           >
-            Đóng
+            Close
           </Button>,
         ]}
         width={900}
@@ -1009,7 +1009,7 @@ export default function TaskProgressManagement() {
                             Start:{' '}
                             {actualStart
                               ? actualStart.format('HH:mm DD/MM/YYYY')
-                              : 'Chưa có'}
+                              : 'Not available'}
                           </Text>
                           <Text>
                             Deadline:{' '}
@@ -1053,7 +1053,7 @@ export default function TaskProgressManagement() {
                               {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
                             </Text>
                             <Text type="secondary" style={{ fontSize: 11 }}>
-                              (Ước tính khi chưa có planned/actual)
+                              (Estimated when no planned/actual)
                             </Text>
                           </div>
                         )}
@@ -1074,7 +1074,7 @@ export default function TaskProgressManagement() {
                         type="secondary"
                         style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                       >
-                        (Lần giao đầu tiên - để check SLA)
+                        (First submission - to check SLA)
                       </Text>
                     )}
                   </Descriptions.Item>
@@ -1089,7 +1089,7 @@ export default function TaskProgressManagement() {
                         type="secondary"
                         style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                       >
-                        (Customer đã chấp nhận)
+                        (Customer accepted)
                       </Text>
                     )}
                   </Descriptions.Item>
@@ -1104,7 +1104,7 @@ export default function TaskProgressManagement() {
                         type="secondary"
                         style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                       >
-                        (Milestone đã được thanh toán)
+                        (Milestone paid)
                       </Text>
                     )}
                   </Descriptions.Item>
@@ -1113,7 +1113,7 @@ export default function TaskProgressManagement() {
             </Descriptions>
 
             {/* Progress Timeline */}
-            <Card title="Timeline Tiến độ" size="small">
+            <Card title="Timeline Progress" size="small">
               <Timeline
                 items={(() => {
                   const timelineItems = [];
@@ -1128,13 +1128,13 @@ export default function TaskProgressManagement() {
                     ),
                     children: (
                       <Space direction="vertical" size={0}>
-                        <Text strong>Task được gán</Text>
+                        <Text strong>Task assigned</Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {selectedTask.assignedDate
                             ? dayjs(selectedTask.assignedDate).format(
                                 'HH:mm DD/MM/YYYY'
                               )
-                            : 'Chưa có'}
+                            : 'No'}
                         </Text>
                       </Space>
                     ),
@@ -1150,13 +1150,13 @@ export default function TaskProgressManagement() {
                       dot: <PlayCircleOutlined />,
                       children: (
                         <Space direction="vertical" size={0}>
-                          <Text strong>Specialist bắt đầu làm</Text>
+                          <Text strong>Specialist started working</Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.specialistRespondedAt
                               ? dayjs(
                                   selectedTask.specialistRespondedAt
                                 ).format('HH:mm DD/MM/YYYY')
-                              : 'Đã bắt đầu'}
+                              : 'Started'}
                           </Text>
                         </Space>
                       ),
@@ -1180,7 +1180,7 @@ export default function TaskProgressManagement() {
                         children: (
                           <Space direction="vertical" size={0}>
                             <Text strong>
-                              File được upload
+                              File uploaded
                               {uploadedFiles.length > 1 &&
                                 ` (${uploadedFiles.length} files)`}
                             </Text>
@@ -1216,7 +1216,7 @@ export default function TaskProgressManagement() {
                       children: (
                         <Space direction="vertical" size={0}>
                           <Text strong>
-                            File được duyệt
+                            File approved
                             {approvedFiles.length > 1 &&
                               ` (${approvedFiles.length} files)`}
                           </Text>
@@ -1257,7 +1257,7 @@ export default function TaskProgressManagement() {
                       children: (
                         <Space direction="vertical" size={0}>
                           <Text strong>
-                            File được giao khách
+                            File delivered to customer
                             {deliveredFiles.length > 1 &&
                               ` (${deliveredFiles.length} files)`}
                           </Text>
@@ -1289,13 +1289,13 @@ export default function TaskProgressManagement() {
                       dot: <CheckCircleOutlined />,
                       children: (
                         <Space direction="vertical" size={0}>
-                          <Text strong>Task hoàn thành</Text>
+                          <Text strong>Task completed</Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
                               ? dayjs(selectedTask.completedDate).format(
                                   'HH:mm DD/MM/YYYY'
                                 )
-                              : 'Đã hoàn thành'}
+                              : 'Completed'}
                           </Text>
                         </Space>
                       ),
@@ -1307,14 +1307,14 @@ export default function TaskProgressManagement() {
                       children: (
                         <Space direction="vertical" size={0}>
                           <Text strong type="danger">
-                            Task đã hủy
+                            Task cancelled
                           </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
                               ? dayjs(selectedTask.completedDate).format(
                                   'HH:mm DD/MM/YYYY'
                                 )
-                              : 'Đã hủy'}
+                              : 'Cancelled'}
                           </Text>
                         </Space>
                       ),
@@ -1327,7 +1327,7 @@ export default function TaskProgressManagement() {
             </Card>
 
             {/* Files Section */}
-            <Card title="Files đã upload" size="small">
+            <Card title="Files uploaded" size="small">
               <Spin spinning={filesLoading}>
                 {taskFiles.length > 0 ? (
                   <List
@@ -1360,7 +1360,7 @@ export default function TaskProgressManagement() {
                                 'N/A'}
                             </Tag>
                             {file.deliveredToCustomer && (
-                              <Tag color="green">Đã giao khách</Tag>
+                              <Tag color="green">Delivered to customer</Tag>
                             )}
                           </Space>
                           <Space>
@@ -1378,7 +1378,7 @@ export default function TaskProgressManagement() {
                   />
                 ) : (
                   <Empty
-                    description="Chưa có file nào được upload"
+                    description="No file uploaded"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
@@ -1388,7 +1388,7 @@ export default function TaskProgressManagement() {
             {/* Issue Section */}
             {selectedTask.hasIssue && (
               <Card
-                title="Issue"
+                title="Issues"
                 size="small"
                 style={{ borderColor: '#ff4d4f' }}
                 extra={
@@ -1400,7 +1400,7 @@ export default function TaskProgressManagement() {
                       handleViewIssueDetails(selectedTask);
                     }}
                   >
-                    Xử lý Issue
+                    Resolve issue
                   </Button>
                 }
               >
@@ -1410,14 +1410,14 @@ export default function TaskProgressManagement() {
                   style={{ width: '100%' }}
                 >
                   <Tag color="orange" icon={<ExclamationCircleOutlined />}>
-                    Có issue
+                    Has issue
                   </Tag>
                   {selectedTask.issueReason && (
                     <Text type="danger">{selectedTask.issueReason}</Text>
                   )}
                   {selectedTask.issueReportedAt && (
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Báo lúc:{' '}
+                      Reported at:{' '}
                       {dayjs(selectedTask.issueReportedAt).format(
                         'HH:mm DD/MM/YYYY'
                       )}
@@ -1432,23 +1432,23 @@ export default function TaskProgressManagement() {
 
       {/* Modal hiển thị và xử lý issue */}
       <Modal
-        title="Chi tiết Issue / Vấn đề"
+        title="Issue details"
         open={issueModalVisible}
         onCancel={handleCloseIssueModal}
         footer={[
           <Button key="close" onClick={handleCloseIssueModal}>
-            Đóng
+            Close
           </Button>,
           <Button key="continue" type="primary" onClick={handleResolveIssue}>
-            Cho tiếp tục
+            Continue
           </Button>,
           <Popconfirm
             key="cancel"
-            title="Xác nhận hủy task và tạo task mới?"
-            description="Task hiện tại sẽ bị hủy và bạn sẽ được chuyển đến trang tạo task mới với thông tin tương tự (milestone, task type). Bạn chỉ cần chọn specialist mới."
+            title="Confirm cancel task and create new?"
+            description="Current task will be cancelled and you will be redirected to the new task creation page with the same information (milestone, task type). You only need to select a new specialist."
             onConfirm={handleCancelAndCreateNew}
-            okText="Xác nhận"
-            cancelText="Hủy"
+            okText="Confirm"
+            cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
             <Button danger loading={cancellingTask}>
@@ -1477,8 +1477,8 @@ export default function TaskProgressManagement() {
             </p>
             <p>
               <strong>Status:</strong>{' '}
-              <Tag color="processing">Đang thực hiện</Tag>{' '}
-              <Tag color="orange">Có issue</Tag>
+              <Tag color="processing">In progress</Tag>{' '}
+              <Tag color="orange">Has issue</Tag>
             </p>
             <p>
               <strong>Assigned Date:</strong>{' '}
@@ -1491,7 +1491,7 @@ export default function TaskProgressManagement() {
 
             {selectedIssueTask.issueReportedAt && (
               <p>
-                <strong>Thời gian báo issue:</strong>{' '}
+                <strong>Issue reported at:</strong>{' '}
                 {dayjs(selectedIssueTask.issueReportedAt).format(
                   'YYYY-MM-DD HH:mm'
                 )}
@@ -1501,7 +1501,7 @@ export default function TaskProgressManagement() {
             {selectedIssueTask.issueReason && (
               <div style={{ marginTop: 12 }}>
                 <p>
-                  <strong>Lý do báo issue:</strong>
+                  <strong>Issue reason:</strong>
                 </p>
                 <p
                   style={{
@@ -1521,7 +1521,7 @@ export default function TaskProgressManagement() {
             {selectedIssueTask.notes && (
               <div style={{ marginTop: 12 }}>
                 <p>
-                  <strong>Ghi chú:</strong>
+                  <strong>Notes:</strong>
                 </p>
                 <p
                   style={{
@@ -1538,8 +1538,8 @@ export default function TaskProgressManagement() {
             )}
 
             <Alert
-              message="Quyết định"
-              description="Bạn có thể cho specialist tiếp tục (clear issue flag) hoặc cancel task nếu thấy không thể tiếp tục."
+              message="Decision"
+              description="You can allow specialist to continue (clear issue flag) or cancel task if you cannot continue."
               type="info"
               showIcon
               style={{ marginTop: 16 }}

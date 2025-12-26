@@ -150,7 +150,7 @@ const StudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading booking detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết booking');
+      message.error(error?.message || 'Error when loading booking detail');
       navigate('/manager/studio-bookings');
     } finally {
       setLoading(false);
@@ -247,7 +247,7 @@ const StudioBookingDetailPage = () => {
 
   const handleCopyBookingId = bookingId => {
     navigator.clipboard.writeText(bookingId);
-    message.success('Đã copy Booking ID');
+    message.success('Booking ID copied');
   };
 
   const handleViewContract = contractId => {
@@ -293,7 +293,7 @@ const StudioBookingDetailPage = () => {
     return (
       <div className={styles.container}>
         <Card>
-          <Empty description="Không tìm thấy thông tin booking" />
+          <Empty description="Booking not found" />
         </Card>
       </div>
     );
@@ -304,7 +304,7 @@ const StudioBookingDetailPage = () => {
       <div className={styles.header}>
         <div className={styles.backRow}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-            Quay lại
+            Back
           </Button>
           <Space size="small" wrap className={styles.headerMeta}>
             <Tag color={bookingStatusColor[bookingDetail.status] || 'default'}>
@@ -324,7 +324,7 @@ const StudioBookingDetailPage = () => {
         </div>
         <div className={styles.headerInfo}>
           <Title level={3} style={{ margin: 0 }}>
-            Chi tiết Studio Booking
+            Studio Booking Detail
           </Title>
         </div>
       </div>
@@ -364,12 +364,12 @@ const StudioBookingDetailPage = () => {
           <Descriptions.Item label="Studio">
             {bookingDetail.studioName || 'N/A'}
           </Descriptions.Item>
-          <Descriptions.Item label="Ngày">
+          <Descriptions.Item label="Date">
             {bookingDetail.bookingDate
               ? dayjs(bookingDetail.bookingDate).format('DD/MM/YYYY')
               : 'N/A'}
           </Descriptions.Item>
-          <Descriptions.Item label="Thời gian">
+          <Descriptions.Item label="Time">
             {bookingDetail.startTime && bookingDetail.endTime
               ? `${bookingDetail.startTime} - ${bookingDetail.endTime}`
               : 'N/A'}
@@ -428,16 +428,16 @@ const StudioBookingDetailPage = () => {
                           }
                         >
                           {contractInfo.status === 'signed'
-                            ? 'Đã ký'
+                            ? 'Signed'
                             : contractInfo.status === 'active'
-                              ? 'Đang thực thi'
+                              ? 'Active'
                               : contractInfo.status ===
                                   'active_pending_assignment'
-                                ? 'Chờ gán task'
+                                ? 'Waiting task assignment'
                                 : contractInfo.status === 'completed'
-                                  ? 'Hoàn thành'
+                                  ? 'Completed'
                                   : contractInfo.status === 'cancelled'
-                                    ? 'Đã hủy'
+                                    ? 'Cancelled'
                                     : contractInfo.status}
                         </Tag>
                       </Space>
@@ -534,25 +534,25 @@ const StudioBookingDetailPage = () => {
                           }
                         >
                           {milestoneInfo.workStatus === 'IN_PROGRESS'
-                            ? 'Đang thực hiện'
+                            ? 'In progress'
                             : milestoneInfo.workStatus === 'READY_TO_START'
-                              ? 'Sẵn sàng bắt đầu'
+                              ? 'Ready to start'
                               : milestoneInfo.workStatus === 'COMPLETED'
-                                ? 'Hoàn thành'
+                                ? 'Completed'
                                 : milestoneInfo.workStatus === 'CANCELLED'
-                                  ? 'Đã hủy'
+                                  ? 'Cancelled'
                                   : milestoneInfo.workStatus ===
                                       'WAITING_ASSIGNMENT'
-                                    ? 'Chờ assign task'
+                                    ? 'Waiting task assignment'
                                     : milestoneInfo.workStatus ===
                                         'WAITING_SPECIALIST_ACCEPT'
-                                      ? 'Chờ specialist accept'
+                                      ? 'Waiting specialist accept'
                                       : milestoneInfo.workStatus ===
                                           'WAITING_CUSTOMER'
-                                        ? 'Chờ khách hàng'
+                                        ? 'Waiting customer'
                                         : milestoneInfo.workStatus ===
                                             'READY_FOR_PAYMENT'
-                                          ? 'Sẵn sàng thanh toán'
+                                          ? 'Ready for payment'
                                           : milestoneInfo.workStatus}
                         </Tag>
                       </Space>
@@ -832,13 +832,13 @@ const StudioBookingDetailPage = () => {
                       task => task.taskType === 'recording_supervision'
                     ).length === 0 && (
                       <Text type="secondary">
-                        Chưa có task recording_supervision được assign
+                        No recording_supervision task assigned
                       </Text>
                     )}
                   </Space>
                 ) : (
                   <Text type="secondary">
-                    Chưa có task được assign cho milestone này
+                    No task assigned for this milestone
                   </Text>
                 )}
               </Descriptions.Item>
