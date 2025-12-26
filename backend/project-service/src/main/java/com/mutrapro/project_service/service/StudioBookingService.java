@@ -458,6 +458,18 @@ public class StudioBookingService {
             // - artistFee trong studio_bookings chỉ để tracking, không ảnh hưởng payment
         }
         
+        // 9.6. Tự động cập nhật sessionType từ participants (nếu có)
+        List<BookingParticipant> savedParticipants = bookingParticipantRepository.findByBooking_BookingId(saved.getBookingId());
+        if (!savedParticipants.isEmpty()) {
+            RecordingSessionType determinedSessionType = determineSessionTypeFromParticipants(savedParticipants);
+            if (saved.getSessionType() != determinedSessionType) {
+                saved.setSessionType(determinedSessionType);
+                saved = studioBookingRepository.save(saved);
+                log.info("Auto-updated sessionType from participants: bookingId={}, oldSessionType={}, newSessionType={}",
+                    saved.getBookingId(), sessionType, determinedSessionType);
+            }
+        }
+        
         // 10. Update studioBookingId vào recording task (nếu đã có task)
         // Tìm task recording_supervision cho milestone này
         List<TaskAssignment> recordingTasks = 
@@ -925,6 +937,18 @@ public class StudioBookingService {
                         request.getEndTime()
                     );
                 }
+            }
+        }
+        
+        // 10.5. Tự động cập nhật sessionType từ participants (nếu có)
+        List<BookingParticipant> savedParticipants = bookingParticipantRepository.findByBooking_BookingId(saved.getBookingId());
+        if (!savedParticipants.isEmpty()) {
+            RecordingSessionType determinedSessionType = determineSessionTypeFromParticipants(savedParticipants);
+            if (saved.getSessionType() != determinedSessionType) {
+                saved.setSessionType(determinedSessionType);
+                saved = studioBookingRepository.save(saved);
+                log.info("Auto-updated sessionType from participants: bookingId={}, oldSessionType={}, newSessionType={}",
+                    saved.getBookingId(), sessionType, determinedSessionType);
             }
         }
         
@@ -2109,9 +2133,41 @@ public class StudioBookingService {
         // Lấy tất cả bookings (đã JOIN FETCH studio trong query)
         List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(bookingIds);
         
-        // Convert sang response (trong cùng transaction)
+        // Convert sang response (không fetch participants và equipment để tối ưu performance cho list view)
         return bookings.stream()
-            .map(this::mapToResponse)
+            .map(booking -> StudioBookingResponse.builder()
+                .bookingId(booking.getBookingId())
+                .userId(booking.getUserId())
+                .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
+                .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+                .requestId(booking.getRequestId())
+                .contractId(booking.getContractId())
+                .milestoneId(booking.getMilestoneId())
+                .context(booking.getContext())
+                .sessionType(booking.getSessionType())
+                .bookingDate(booking.getBookingDate())
+                .startTime(booking.getStartTime())
+                .endTime(booking.getEndTime())
+                .status(booking.getStatus())
+                .freeExternalGuestsLimit(
+                    booking.getStudio() != null
+                        ? booking.getStudio().getFreeExternalGuestsLimit()
+                        : null)
+                .holdExpiresAt(booking.getHoldExpiresAt())
+                .externalGuestCount(booking.getExternalGuestCount())
+                .durationHours(booking.getDurationHours())
+                .artistFee(booking.getArtistFee())
+                .equipmentRentalFee(booking.getEquipmentRentalFee())
+                .externalGuestFee(booking.getExternalGuestFee())
+                .totalCost(booking.getTotalCost())
+                .purpose(booking.getPurpose())
+                .specialInstructions(booking.getSpecialInstructions())
+                .notes(booking.getNotes())
+                .createdAt(booking.getCreatedAt())
+                .updatedAt(booking.getUpdatedAt())
+                .participants(null) // Không cần cho list view - xem ở detail page
+                .requiredEquipment(null) // Không cần cho list view - xem ở detail page
+                .build())
             .toList();
     }
     
@@ -2289,6 +2345,32 @@ public class StudioBookingService {
             log.error("Failed to enqueue slot released event to outbox: specialistId={}, bookingId={}, error={}", 
                 specialistId, bookingId, e.getMessage(), e);
             // Không throw exception để không fail transaction
+        }
+    }
+    
+    /**
+     * Tự động xác định sessionType từ danh sách participants
+     * Logic:
+     * - Nếu có cả INTERNAL_ARTIST và CUSTOMER_SELF → HYBRID
+     * - Nếu chỉ có INTERNAL_ARTIST → ARTIST_ASSISTED
+     * - Nếu chỉ có CUSTOMER_SELF hoặc không có participants → SELF_RECORDING
+     */
+    private RecordingSessionType determineSessionTypeFromParticipants(List<BookingParticipant> participants) {
+        if (participants == null || participants.isEmpty()) {
+            return RecordingSessionType.SELF_RECORDING;
+        }
+        
+        boolean hasInternalArtist = participants.stream()
+            .anyMatch(p -> p.getPerformerSource() == PerformerSource.INTERNAL_ARTIST);
+        boolean hasCustomerSelf = participants.stream()
+            .anyMatch(p -> p.getPerformerSource() == PerformerSource.CUSTOMER_SELF);
+        
+        if (hasInternalArtist && hasCustomerSelf) {
+            return RecordingSessionType.HYBRID;
+        } else if (hasInternalArtist) {
+            return RecordingSessionType.ARTIST_ASSISTED;
+        } else {
+            return RecordingSessionType.SELF_RECORDING;
         }
     }
     

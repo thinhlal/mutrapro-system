@@ -45,6 +45,23 @@ const statusColor = {
   IN_PROGRESS: 'processing',
   COMPLETED: 'success',
   CANCELLED: 'error',
+  NO_SHOW: 'error',
+};
+
+const statusLabels = {
+  TENTATIVE: 'Tentative',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+  NO_SHOW: 'No Show',
+};
+
+const sessionTypeLabels = {
+  SELF_RECORDING: 'Self Recording',
+  ARTIST_ASSISTED: 'Artist Assisted',
+  HYBRID: 'Hybrid',
 };
 
 const MyStudioBookings = () => {
@@ -169,19 +186,25 @@ const MyStudioBookings = () => {
       ),
     },
     {
-      title: 'Studio',
-      dataIndex: 'studioName',
-      key: 'studioName',
-      width: 150,
-      render: studioName => studioName || 'N/A',
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 120,
       render: status => (
-        <Tag color={statusColor[status] || 'default'}>{status || 'N/A'}</Tag>
+        <Tag color={statusColor[status] || 'default'}>
+          {statusLabels[status] || status || 'N/A'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Session Type',
+      dataIndex: 'sessionType',
+      key: 'sessionType',
+      width: 150,
+      render: sessionType => (
+        <Tag color="purple">
+          {sessionTypeLabels[sessionType] || sessionType || 'N/A'}
+        </Tag>
       ),
     },
     {
@@ -203,67 +226,6 @@ const MyStudioBookings = () => {
             {contextLabels[context] || context || 'N/A'}
           </Tag>
         );
-      },
-    },
-    {
-      title: 'Session Type',
-      dataIndex: 'sessionType',
-      key: 'sessionType',
-      width: 150,
-      render: sessionType => <Tag color="purple">{sessionType || 'N/A'}</Tag>,
-    },
-    {
-      title: 'My Role',
-      key: 'role',
-      width: 120,
-      render: (_, record) => {
-        // Get from participants with performerSource = INTERNAL_ARTIST
-        const internalArtists =
-          record?.participants?.filter(
-            p => p.performerSource === 'INTERNAL_ARTIST'
-          ) || [];
-        if (internalArtists.length > 0) {
-          const myParticipant = internalArtists[0];
-          return myParticipant?.roleType ? (
-            <Tag>{myParticipant.roleType}</Tag>
-          ) : (
-            'N/A'
-          );
-        }
-
-        // Fallback: get from participants (for flow 3)
-        if (record.participants && record.participants.length > 0) {
-          // Find participant with isPrimary = true or get first participant
-          const myParticipant =
-            record.participants.find(p => p.isPrimary) ||
-            record.participants[0];
-          return myParticipant?.roleType ? (
-            <Tag>{myParticipant.roleType}</Tag>
-          ) : (
-            'N/A'
-          );
-        }
-
-        return 'N/A';
-      },
-    },
-    {
-      title: 'Participants',
-      key: 'participantsCount',
-      width: 120,
-      render: (_, record) => {
-        // Only count participants (artists have been merged into participants)
-        const count = record.participants?.length || 0;
-        return count > 0 ? `${count} people` : 'N/A';
-      },
-    },
-    {
-      title: 'Equipment',
-      key: 'equipmentCount',
-      width: 120,
-      render: (_, record) => {
-        const count = record.requiredEquipment?.length || 0;
-        return count > 0 ? `${count} equipment` : 'N/A';
       },
     },
     {
