@@ -4,7 +4,8 @@
 prometheus.remote_write "metrics_hosted_prometheus" {
   endpoint {
     name = "hosted-prometheus"
-    url  = "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
+    // Dùng từ env variable để dễ thay đổi account
+    url  = sys.env("GRAFANA_PROMETHEUS_URL")
 
     basic_auth {
       // 2845931 – stack ID, lấy từ env cho an toàn

@@ -346,6 +346,15 @@ services:
       # Service URLs (match với application-prod.yml)
       - PROJECT_SERVICE_BASE_URL=${PROJECT_SERVICE_BASE_URL:-http://project-service:8082}
       - IDENTITY_SERVICE_BASE_URL=${IDENTITY_SERVICE_BASE_URL:-http://identity-service:8081}
+      # Connect đến Kafka (external hoặc local container)
+      # Nếu có managed Kafka, set KAFKA_BOOTSTRAP_SERVERS trong .env
+      # Nếu dùng local container, dùng kafka:9092
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - KAFKA_CONSUMER_GROUP_ID=${KAFKA_CONSUMER_GROUP_ID:-specialist-service}
+    # Nếu dùng external Kafka, comment out depends_on này
+    # Nếu dùng local Kafka container, giữ lại depends_on
+    depends_on:
+      - kafka
     networks:
       - mutrapro-network
     restart: unless-stopped
