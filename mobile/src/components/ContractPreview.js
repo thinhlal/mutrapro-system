@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import * as Print from "expo-print";
 import dayjs from "dayjs";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 import { getGenreLabel, getPurposeLabel } from "../constants/musicOptionsConstants";
@@ -182,11 +183,26 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contract ${contractNumber}</title>
   <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       line-height: 1.6;
       color: #333;
+      margin: 0;
+      width: 100%;
+    }
+    @media print {
+      body {
+        padding: 15px;
+      }
     }
     .header {
       text-align: center;
@@ -281,9 +297,11 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       transform: translateX(-50%) rotate(-25deg);
       font-size: 80px;
       font-weight: 900;
-      color: rgba(239, 68, 68, 0.1);
-      z-index: 0;
+      color: rgba(239, 68, 68, 0.15);
+      z-index: 1;
       pointer-events: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .seal {
       position: fixed;
@@ -292,6 +310,8 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       width: 120px;
       height: 120px;
       z-index: 10;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .seal-circle {
       position: absolute;
@@ -326,6 +346,16 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       max-height: 60px;
       max-width: 200px;
       margin: 10px 0;
+      display: block;
+    }
+    .section {
+      page-break-inside: avoid;
+    }
+    .table {
+      page-break-inside: avoid;
+    }
+    .signature-section {
+      page-break-inside: avoid;
     }
   </style>
 </head>
@@ -645,35 +675,44 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
       
       // Generate filename
       const contractNumber = contract?.contractNumber || contract?.contractId || "contract";
-      const filename = `contract-${contractNumber}-${dayjs().format("YYYYMMDD")}.html`;
+      const filename = `contract-${contractNumber}-${dayjs().format("YYYYMMDD")}.pdf`;
       
-      // Save HTML to file system (as HTML file, user can convert to PDF using browser/share)
-      const fileUri = FileSystem.documentDirectory + filename;
-      await FileSystem.writeAsStringAsync(fileUri, htmlContent, {
-        encoding: FileSystem.EncodingType.UTF8,
+      // Create PDF from HTML using expo-print
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+        width: 595, // A4 width in points (210mm)
+        height: 842, // A4 height in points (297mm)
       });
 
-      // Share the HTML file (user can open in browser and print/save as PDF)
+      // Move PDF to a better location with proper filename
+      const newUri = FileSystem.documentDirectory + filename;
+      await FileSystem.moveAsync({
+        from: uri,
+        to: newUri,
+      });
+
+      // Share the PDF file
       const isAvailable = await Sharing.isAvailableAsync();
       if (isAvailable) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: "text/html",
-          dialogTitle: "Save Contract",
-          UTI: "public.html", // iOS
+        await Sharing.shareAsync(newUri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Save Contract PDF",
+          UTI: "com.adobe.pdf", // iOS
         });
         Alert.alert(
           "Success", 
-          "Contract file saved! You can open it in a browser and save as PDF.",
+          "Contract PDF exported successfully!",
           [{ text: "OK" }]
         );
       } else {
-        Alert.alert("Success", `Contract saved to: ${fileUri}`);
+        Alert.alert("Success", `Contract PDF saved to: ${newUri}`);
       }
     } catch (error) {
       console.error("Error exporting contract:", error);
       Alert.alert(
         "Error",
-        error?.message || "Failed to export contract. Please try again."
+        error?.message || "Failed to export contract PDF. Please try again."
       );
     } finally {
       setExporting(false);
@@ -697,39 +736,38 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown, bookingDa
           ) : (
             <>
               <Ionicons name="download-outline" size={20} color={COLORS.white} />
-              <Text style={styles.exportButtonText}>Export PDF</Text>
+              <Text style={styles.exportButtonText}>Download</Text>
             </>
           )}
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Watermark for non-signed contracts */}
-      {!shouldShowSeal && (
-        <View style={styles.watermarkContainer}>
-          <Text style={styles.watermark}>{statusConfig.text}</Text>
-        </View>
-      )}
+      <View style={styles.document}>
+        {/* Watermark for non-signed contracts - inside document to ensure proper layering */}
+        {!shouldShowSeal && (
+          <View style={styles.watermarkContainer}>
+            <Text style={styles.watermark}>{statusConfig.text}</Text>
+          </View>
+        )}
 
-      {/* Official Seal for signed contracts */}
-      {shouldShowSeal && (
-        <View style={styles.sealContainer}>
-          <View style={styles.seal}>
-            <View style={styles.sealCircle} />
-            <View style={styles.sealInner}>
-              <Text style={styles.sealText}>MuTraPro</Text>
-              <Text style={styles.sealText}>Official</Text>
-              <Text style={styles.sealDate}>
-                {contract?.signedAt
-                  ? dayjs(contract.signedAt).format("YYYY-MM-DD")
-                  : dayjs().format("YYYY-MM-DD")}
-              </Text>
+        {/* Official Seal for signed contracts */}
+        {shouldShowSeal && (
+          <View style={styles.sealContainer}>
+            <View style={styles.seal}>
+              <View style={styles.sealCircle} />
+              <View style={styles.sealInner}>
+                <Text style={styles.sealText}>MuTraPro</Text>
+                <Text style={styles.sealText}>Official</Text>
+                <Text style={styles.sealDate}>
+                  {contract?.signedAt
+                    ? dayjs(contract.signedAt).format("YYYY-MM-DD")
+                    : dayjs().format("YYYY-MM-DD")}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      )}
-
-      <View style={styles.document}>
+        )}
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logo}>MuTraPro</Text>
@@ -1346,123 +1384,132 @@ const styles = StyleSheet.create({
   },
   watermarkContainer: {
     position: "absolute",
-    top: 200,
+    top: "30%",
     left: 0,
     right: 0,
     alignItems: "center",
-    zIndex: 0,
-    opacity: 0.1,
+    justifyContent: "center",
+    zIndex: 1,
+    opacity: 0.15,
+    pointerEvents: "none",
   },
   watermark: {
-    fontSize: 60,
+    fontSize: 48,
     fontWeight: "900",
     color: COLORS.error,
     transform: [{ rotate: "-25deg" }],
   },
   sealContainer: {
     position: "absolute",
-    top: 20,
-    right: 20,
+    top: 10,
+    right: 10,
     zIndex: 10,
+    pointerEvents: "none",
   },
   seal: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
   },
   sealCircle: {
     position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
     borderColor: COLORS.error,
     borderStyle: "dashed",
   },
   sealInner: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 40,
-    padding: SPACING.sm,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 35,
+    padding: SPACING.xs,
   },
   sealText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.xs - 2,
     fontWeight: "700",
     color: COLORS.error,
     textTransform: "uppercase",
   },
   sealDate: {
-    fontSize: FONT_SIZES.xs - 2,
+    fontSize: FONT_SIZES.xs - 4,
     color: COLORS.error,
-    marginTop: 2,
+    marginTop: 1,
   },
   document: {
     backgroundColor: COLORS.white,
-    margin: SPACING.lg,
-    padding: SPACING.xl,
+    margin: SPACING.md,
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
+    position: "relative",
+    overflow: "visible",
   },
   header: {
     alignItems: "center",
-    marginBottom: SPACING.xl,
-    paddingBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 2,
     borderBottomColor: COLORS.text,
   },
   logo: {
-    fontSize: FONT_SIZES.xxxl,
+    fontSize: FONT_SIZES.xxl,
     fontWeight: "700",
     color: COLORS.primary,
   },
   tagline: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.xs / 2,
   },
   title: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     textAlign: "center",
+    lineHeight: 24,
   },
   metaRow: {
     flexDirection: "row",
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.xs / 2,
+    flexWrap: "wrap",
   },
   metaLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: "600",
     color: COLORS.textSecondary,
-    marginRight: SPACING.xs,
+    marginRight: SPACING.xs / 2,
   },
   metaValue: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.text,
+    flex: 1,
   },
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginVertical: SPACING.lg,
+    marginVertical: SPACING.md,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.xs,
   },
   paragraph: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.text,
-    lineHeight: 22,
-    marginBottom: SPACING.sm,
+    lineHeight: 18,
+    marginBottom: SPACING.xs,
   },
   bold: {
     fontWeight: "700",
@@ -1474,12 +1521,13 @@ const styles = StyleSheet.create({
   table: {
     borderWidth: 1,
     borderColor: COLORS.text,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.text,
+    minHeight: 40,
   },
   tableHeader: {
     backgroundColor: COLORS.gray[200],
@@ -1488,7 +1536,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray[100],
   },
   tableCell: {
-    padding: SPACING.sm,
+    padding: SPACING.xs,
     justifyContent: "center",
     borderRightWidth: 1,
     borderRightColor: COLORS.text,
@@ -1501,40 +1549,43 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   tableHeaderText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: "700",
     color: COLORS.text,
   },
   tableCellText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.text,
+    lineHeight: 16,
   },
   tableCellTextBold: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: "700",
     color: COLORS.text,
   },
   tableCellDescription: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.xs - 2,
     color: COLORS.textSecondary,
     fontStyle: "italic",
     marginTop: 2,
+    lineHeight: 14,
   },
   signaturesRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: SPACING.xl,
-    marginBottom: SPACING.xl,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
+    gap: SPACING.xs,
   },
   signatureBox: {
     flex: 1,
-    marginHorizontal: SPACING.sm,
+    marginHorizontal: SPACING.xs / 2,
   },
   signatureLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   signatureLine: {
     borderBottomWidth: 1,
@@ -1551,24 +1602,24 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   signatureImage: {
-    height: 50,
+    height: 40,
     width: "100%",
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.xs,
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.xs / 2,
   },
   signaturePlaceholderText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.xs - 2,
     fontStyle: "italic",
     color: COLORS.textSecondary,
   },
   signatureName: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: "600",
     color: COLORS.text,
     marginBottom: SPACING.xs / 2,
   },
   signatureDate: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.xs - 2,
     color: COLORS.textSecondary,
   },
   footer: {
@@ -1587,9 +1638,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderLeftWidth: 3,
     borderLeftColor: COLORS.primary,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   milestoneCardHeader: {
     flexDirection: "row",
@@ -1599,7 +1650,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   milestoneCardTitle: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "700",
     color: COLORS.text,
   },
@@ -1615,10 +1666,10 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   milestoneCardDescription: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: SPACING.sm,
+    lineHeight: 16,
+    marginBottom: SPACING.xs,
   },
   milestoneCardMetaRow: {
     flexDirection: "row",
