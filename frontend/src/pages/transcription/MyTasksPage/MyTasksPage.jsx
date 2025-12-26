@@ -629,7 +629,7 @@ const MyTasksPage = ({ onOpenTask }) => {
             isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
 
           return (
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
               <Space size="small">
                 {status === 'assigned' && (
                   <>
@@ -726,14 +726,13 @@ const MyTasksPage = ({ onOpenTask }) => {
                 )}
               </Space>
               <Button
-                // type="outline"
                 size="small"
                 onClick={() => handleOpenTask(record)}
-                width="150px"
+                style={{ width: '150px' }}
               >
                 View / Work
               </Button>
-            </Space>
+            </div>
           );
         },
       },
