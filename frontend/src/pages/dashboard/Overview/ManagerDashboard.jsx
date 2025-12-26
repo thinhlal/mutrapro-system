@@ -3,32 +3,18 @@ import {
   Typography,
   Button,
   Segmented,
-  Table,
   Tag,
-  Badge,
-  Alert,
   message,
-  Progress,
   Spin,
 } from 'antd';
 import {
   FileTextOutlined,
-  DollarOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  TeamOutlined,
-  CalendarOutlined,
-  MessageOutlined,
-  CustomerServiceOutlined,
-  TrophyOutlined,
-  WarningOutlined,
   ExclamationCircleOutlined,
   ExportOutlined,
-  BellOutlined,
   RiseOutlined,
   FallOutlined,
-  BarChartOutlined,
-  EditOutlined,
 } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
@@ -37,23 +23,11 @@ import styles from './Dashboard.module.css';
 import {
   chartsData,
   pipelineData,
-  milestonesDue,
-  milestonesAwaitingPayment,
-  revisionPending,
-  upcomingBookings,
-  studioAvailability,
-  bookingConflicts,
-  unreadChats,
-  ticketsDisputes,
-  ratingsFeedback,
-  teamPerformance,
-  alerts,
   formatCurrency,
   formatPercent,
   mapStatusToTag,
-  mapPriorityToBadge,
 } from './managerDashboardMock';
-import { getRequestStatistics, getRequestStatisticsOverTime, getWorkloadDistribution, getCompletionRateOverTime } from '../../../services/dashboardService';
+import { getRequestStatistics, getWorkloadDistribution, getCompletionRateOverTime, getProjectStatistics } from '../../../services/dashboardService';
 
 
 const ManagerDashboard = () => {
@@ -66,9 +40,12 @@ const ManagerDashboard = () => {
     completed: { value: 0, trend: 0 },
     unassignedRequests: { value: 0, trend: 0 },
   });
-  const [pipelineFlowData, setPipelineFlowData] = useState(null);
   const [workloadDistributionData, setWorkloadDistributionData] = useState(null);
   const [completionRateData, setCompletionRateData] = useState(null);
+  const [taskTypeData, setTaskTypeData] = useState(null);
+  const [contractTypeData, setContractTypeData] = useState(null);
+  const [requestTypeData, setRequestTypeData] = useState(null);
+  const [radarData, setRadarData] = useState(null);
 
   const currentKpis = kpis;
 
@@ -116,23 +93,6 @@ const ManagerDashboard = () => {
         // Determine days based on timeRange
         const days = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
         
-        // Fetch Pipeline Flow chart data
-        const overTimeResponse = await getRequestStatisticsOverTime(days);
-        
-        if (overTimeResponse?.status === 'success' && overTimeResponse?.data?.dailyStats) {
-          const dailyStats = overTimeResponse.data.dailyStats;
-          
-          // Map to chart format
-          const pipelineFlow = dailyStats.map(stat => ({
-            date: stat.date, // Will format in chart option
-            new: stat.pending || 0,
-            inProgress: stat.inProgress || 0,
-            completed: stat.completed || 0,
-          }));
-          
-          setPipelineFlowData({ pipelineFlow });
-        }
-
         // Fetch Workload Distribution chart data
         const workloadResponse = await getWorkloadDistribution();
         
@@ -151,10 +111,83 @@ const ManagerDashboard = () => {
         if (completionRateResponse?.status === 'success' && completionRateResponse?.data?.dailyRates) {
           const completionRate = completionRateResponse.data.dailyRates.map(stat => ({
             date: stat.date,
-            rate: stat.rate || 0, // Use 0 if null (no completed tasks)
+            rate: stat.rate || 0,
+            totalCompleted: stat.totalCompleted || 0,
+            onTimeCompleted: stat.onTimeCompleted || 0,
           }));
           
           setCompletionRateData({ completionRate });
+        }
+
+        // Fetch Request Statistics for Request Type and Status charts
+        const requestStatsResponse = await getRequestStatistics();
+        
+        if (requestStatsResponse?.status === 'success' && requestStatsResponse?.data?.requests) {
+          const requestsData = requestStatsResponse.data.requests;
+          
+          // Extract request type distribution
+          if (requestsData.byType) {
+            const requestTypeDistribution = Object.entries(requestsData.byType || {})
+              .map(([type, count]) => ({
+                name: formatRequestTypeName(type),
+                value: count || 0,
+              }))
+              .filter(item => item.value > 0)
+              .sort((a, b) => b.value - a.value);
+            
+            setRequestTypeData({ distribution: requestTypeDistribution });
+          }
+          
+        }
+
+        // Fetch Project Statistics for Task and Contract Type charts
+        const projectStatsResponse = await getProjectStatistics();
+        
+        if (projectStatsResponse?.status === 'success' && projectStatsResponse?.data?.statistics) {
+          const stats = projectStatsResponse.data.statistics;
+          
+          // Extract task type distribution
+          if (stats.tasks?.byType) {
+            const taskTypeDistribution = Object.entries(stats.tasks.byType || {})
+              .map(([type, count]) => ({
+                name: formatTaskTypeName(type),
+                value: count || 0,
+              }))
+              .filter(item => item.value > 0)
+              .sort((a, b) => b.value - a.value);
+            
+            setTaskTypeData({ distribution: taskTypeDistribution });
+          }
+          
+          // Extract contract type distribution
+          if (stats.contracts?.byType) {
+            const contractTypeDistribution = Object.entries(stats.contracts.byType || {})
+              .map(([type, count]) => ({
+                name: formatContractTypeName(type),
+                value: count || 0,
+              }))
+              .filter(item => item.value > 0)
+              .sort((a, b) => b.value - a.value);
+            
+            setContractTypeData({ distribution: contractTypeDistribution });
+          }
+          
+          // Prepare Radar Chart data: Normalize metrics for comparison
+          const totalRequests = requestStatsResponse?.data?.requests?.totalRequests || 0;
+          const totalContracts = stats.contracts?.totalContracts || 0;
+          const totalTasks = stats.tasks?.totalTasks || 0;
+          const completedTasks = stats.tasks?.byStatus?.completed || 0;
+          
+          // Find max value for normalization (scale 0-100)
+          const maxValue = Math.max(totalRequests, totalContracts, totalTasks, completedTasks, 1);
+          
+          setRadarData({
+            requests: totalRequests,
+            contracts: totalContracts,
+            tasks: totalTasks,
+            completed: completedTasks,
+            maxValue: maxValue,
+          });
         }
       } catch (error) {
         console.error('Error fetching chart data:', error);
@@ -166,91 +199,42 @@ const ManagerDashboard = () => {
     fetchChartData();
   }, [timeRange]);
 
-  // Prepare ECharts options
-  const getPipelineFlowChartOption = () => {
-    if (!pipelineFlowData?.pipelineFlow || pipelineFlowData.pipelineFlow.length === 0) {
-      return null;
-    }
-
-    // Format dates from YYYY-MM-DD to MM/DD
-    const dates = pipelineFlowData.pipelineFlow.map(item => {
-      if (typeof item.date === 'string') {
-        // Parse YYYY-MM-DD format
-        const [year, month, day] = item.date.split('-');
-        return `${month}/${day}`;
-      }
-      return item.date;
-    });
-    const newData = pipelineFlowData.pipelineFlow.map(item => item.new);
-    const inProgressData = pipelineFlowData.pipelineFlow.map(item => item.inProgress);
-    const completedData = pipelineFlowData.pipelineFlow.map(item => item.completed);
-
-    return {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
-        },
-        formatter: (params) => {
-          let result = `${params[0].axisValue}<br/>`;
-          params.forEach(param => {
-            result += `${param.marker}${param.seriesName}: ${param.value.toLocaleString()}<br/>`;
-          });
-          return result;
-        },
-      },
-      legend: {
-        data: ['New', 'In Progress', 'Completed'],
-        bottom: 0,
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '15%',
-        containLabel: true,
-      },
-      xAxis: {
-        type: 'category',
-        data: dates,
-        axisTick: {
-          alignWithLabel: true,
-        },
-      },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          formatter: (value) => value.toLocaleString(),
-        },
-      },
-      series: [
-        {
-          name: 'New',
-          type: 'line',
-          smooth: true,
-          data: newData,
-          lineStyle: { width: 2 },
-          itemStyle: { color: '#3b82f6' },
-        },
-        {
-          name: 'In Progress',
-          type: 'line',
-          smooth: true,
-          data: inProgressData,
-          lineStyle: { width: 2 },
-          itemStyle: { color: '#f59e0b' },
-        },
-        {
-          name: 'Completed',
-          type: 'line',
-          smooth: true,
-          data: completedData,
-          lineStyle: { width: 2 },
-          itemStyle: { color: '#10b981' },
-        },
-      ],
+  // Helper function to format request type name for display
+  const formatRequestTypeName = (type) => {
+    const typeMap = {
+      'transcription': 'Transcription',
+      'arrangement': 'Arrangement',
+      'arrangement_with_recording': 'Arrangement + Recording',
+      'recording': 'Recording',
+      'full_production': 'Full Production',
     };
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  // Helper function to format task type name for display
+  const formatTaskTypeName = (type) => {
+    const typeMap = {
+      'transcription': 'Transcription',
+      'arrangement': 'Arrangement',
+      'recording_supervision': 'Recording Supervision',
+    };
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Helper function to format contract type name for display
+  const formatContractTypeName = (type) => {
+    const typeMap = {
+      'transcription': 'Transcription',
+      'arrangement': 'Arrangement',
+      'arrangement_with_recording': 'Arrangement + Recording',
+      'recording': 'Recording',
+      'bundle': 'Bundle',
+    };
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+
+  // Prepare ECharts options
   const getWorkloadDistributionChartOption = () => {
     if (!workloadDistributionData?.workloadDistribution || workloadDistributionData.workloadDistribution.length === 0) {
       return null;
@@ -405,9 +389,381 @@ const ManagerDashboard = () => {
     };
   };
 
-  const pipelineFlowChartOption = getPipelineFlowChartOption();
+  // Tasks Completed vs On-Time Completed Over Time (Dual-Axis Line Chart)
+  const getTasksCompletedChartOption = () => {
+    if (!completionRateData?.completionRate || completionRateData.completionRate.length === 0) {
+      return null;
+    }
+
+    const dates = completionRateData.completionRate.map(item => {
+      if (typeof item.date === 'string') {
+        const [year, month, day] = item.date.split('-');
+        return `${month}/${day}`;
+      }
+      return item.date;
+    });
+    const totalCompleted = completionRateData.completionRate.map(item => item.totalCompleted || 0);
+    const onTimeCompleted = completionRateData.completionRate.map(item => item.onTimeCompleted || 0);
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+        },
+        formatter: (params) => {
+          let result = `${params[0].axisValue}<br/>`;
+          params.forEach(param => {
+            result += `${param.marker}${param.seriesName}: ${param.value.toLocaleString()}<br/>`;
+          });
+          return result;
+        },
+      },
+      legend: {
+        data: ['Total Completed', 'On-Time Completed'],
+        bottom: 0,
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisTick: {
+          alignWithLabel: true,
+        },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => value.toLocaleString(),
+        },
+      },
+      series: [
+        {
+          name: 'Total Completed',
+          type: 'line',
+          smooth: true,
+          data: totalCompleted,
+          lineStyle: { width: 2, color: '#3b82f6' },
+          itemStyle: { color: '#3b82f6' },
+          areaStyle: {
+            opacity: 0.1,
+            color: '#3b82f6',
+          },
+        },
+        {
+          name: 'On-Time Completed',
+          type: 'line',
+          smooth: true,
+          data: onTimeCompleted,
+          lineStyle: { width: 2, color: '#10b981' },
+          itemStyle: { color: '#10b981' },
+          areaStyle: {
+            opacity: 0.1,
+            color: '#10b981',
+          },
+        },
+      ],
+    };
+  };
+
+  // Generic function to create horizontal bar chart option
+  const createHorizontalBarChartOption = (data, seriesName, unitName, colors) => {
+    if (!data?.distribution || data.distribution.length === 0) {
+      return null;
+    }
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow',
+        },
+        formatter: (params) => {
+          const param = params[0];
+          return `${param.name}<br/>${param.marker}${param.seriesName}: ${param.value.toLocaleString()} ${unitName}`;
+        },
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        top: '10%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => value.toLocaleString(),
+        },
+      },
+      yAxis: {
+        type: 'category',
+        data: data.distribution.map(item => item.name),
+        axisLabel: {
+          interval: 0,
+        },
+      },
+      series: [
+        {
+          name: seriesName,
+          type: 'bar',
+          data: data.distribution.map((item, index) => ({
+            value: item.value,
+            itemStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 1,
+                y2: 0,
+                colorStops: [
+                  { offset: 0, color: colors[index % colors.length] },
+                  { offset: 1, color: colors[index % colors.length] + '80' },
+                ],
+              },
+              borderRadius: [0, 8, 8, 0],
+            },
+          })),
+          label: {
+            show: true,
+            position: 'right',
+            formatter: (params) => params.value.toLocaleString(),
+          },
+        },
+      ],
+    };
+  };
+
+  const getRequestTypeChartOption = () => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    return createHorizontalBarChartOption(requestTypeData, 'Requests', 'requests', colors);
+  };
+
+  const getTaskTypeChartOption = () => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    return createHorizontalBarChartOption(taskTypeData, 'Tasks', 'tasks', colors);
+  };
+
+  const getContractTypeChartOption = () => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    return createHorizontalBarChartOption(contractTypeData, 'Contracts', 'contracts', colors);
+  };
+
+  // Gauge Chart - Completion Rate
+  const getCompletionRateGaugeOption = () => {
+    if (!completionRateData?.completionRate || completionRateData.completionRate.length === 0) {
+      return null;
+    }
+
+    // Calculate average completion rate
+    const rates = completionRateData.completionRate
+      .map(item => item.rate || 0)
+      .filter(rate => rate > 0);
+    
+    if (rates.length === 0) return null;
+    
+    const avgRate = rates.reduce((sum, rate) => sum + rate, 0) / rates.length;
+
+    return {
+      tooltip: {
+        formatter: '{a} <br/>{b} : {c}%',
+      },
+      series: [
+        {
+          name: 'Completion Rate',
+          type: 'gauge',
+          progress: {
+            show: true,
+            width: 18,
+          },
+          axisLine: {
+            lineStyle: {
+              width: 18,
+            },
+          },
+          axisTick: {
+            show: false,
+          },
+          splitLine: {
+            length: 15,
+            lineStyle: {
+              width: 2,
+              color: '#999',
+            },
+          },
+          axisLabel: {
+            distance: 25,
+            color: '#999',
+            fontSize: 12,
+          },
+          anchor: {
+            show: true,
+            showAbove: true,
+            size: 25,
+            itemStyle: {
+              borderWidth: 10,
+            },
+          },
+          title: {
+            show: false,
+          },
+          detail: {
+            valueAnimation: true,
+            fontSize: 30,
+            offsetCenter: [0, '70%'],
+            formatter: '{value}%',
+            color: '#10b981',
+            fontWeight: 'bold',
+          },
+          data: [
+            {
+              value: Math.round(avgRate),
+              name: 'On-Time Rate',
+              itemStyle: {
+                color: avgRate >= 80 ? '#10b981' : avgRate >= 60 ? '#f59e0b' : '#ef4444',
+              },
+            },
+          ],
+        },
+      ],
+    };
+  };
+
+  // Radar Chart - Metrics Comparison
+  const getRadarChartOption = () => {
+    if (!radarData) return null;
+
+    const { requests, contracts, tasks, completed, maxValue } = radarData;
+    
+    if (maxValue === 0) return null;
+
+    // Normalize values to 0-100 scale for better comparison
+    // The max value should be 100%, others are relative to it
+    const normalize = (value) => {
+      if (maxValue === 0) return 0;
+      const normalized = (value / maxValue) * 100;
+      return Math.round(normalized);
+    };
+
+    return {
+      tooltip: {
+        trigger: 'item',
+        show: true,
+        backgroundColor: 'rgba(50, 50, 50, 0.9)',
+        borderColor: '#333',
+        borderWidth: 1,
+        textStyle: {
+          color: '#fff',
+        },
+        formatter: (params) => {
+          // For radar chart, params contains dataIndex and value
+          if (params && typeof params.dataIndex !== 'undefined') {
+            const index = params.dataIndex;
+            const actualValues = [requests, contracts, tasks, completed];
+            const metricNames = ['Requests', 'Contracts', 'Tasks', 'Completed'];
+            const normalizedValue = params.value || params.data[index];
+            
+            return `<div style="padding: 4px;">
+              <strong>${metricNames[index]}</strong><br/>
+              Actual Value: <strong>${actualValues[index].toLocaleString()}</strong><br/>
+              Normalized: <strong>${normalizedValue}%</strong>
+            </div>`;
+          }
+          return '';
+        },
+      },
+      legend: {
+        data: ['Metrics Overview'],
+        bottom: 0,
+      },
+      radar: {
+        indicator: [
+          { name: 'Requests', max: 100 },
+          { name: 'Contracts', max: 100 },
+          { name: 'Tasks', max: 100 },
+          { name: 'Completed', max: 100 },
+        ],
+        center: ['50%', '50%'],
+        radius: '65%',
+        axisName: {
+          fontSize: 14,
+          fontWeight: 'bold',
+        },
+        splitArea: {
+          areaStyle: {
+            color: ['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)'],
+          },
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#e5e7eb',
+          },
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#9ca3af',
+          },
+        },
+      },
+      series: [
+        {
+          name: 'Metrics Overview',
+          type: 'radar',
+          data: [
+            {
+              value: [
+                normalize(requests),
+                normalize(contracts),
+                normalize(tasks),
+                normalize(completed),
+              ],
+              name: 'Metrics Overview',
+              areaStyle: {
+                color: 'rgba(59, 130, 246, 0.3)',
+              },
+              lineStyle: {
+                width: 2,
+                color: '#3b82f6',
+              },
+              itemStyle: {
+                color: '#3b82f6',
+              },
+              label: {
+                show: true,
+                formatter: (params) => {
+                  // params.value is the normalized value (0-100)
+                  // params.dataIndex is the index (0=Requests, 1=Contracts, 2=Tasks, 3=Completed)
+                  const normalizedValue = params.value;
+                  const actualValues = [requests, contracts, tasks, completed];
+                  const actualValue = actualValues[params.dataIndex];
+                  
+                  // Show normalized percentage (the one used for chart position)
+                  return `${normalizedValue}%`;
+                },
+                fontSize: 12,
+                fontWeight: 'bold',
+                color: '#1f2937',
+              },
+            },
+          ],
+        },
+      ],
+    };
+  };
+
   const workloadDistributionChartOption = getWorkloadDistributionChartOption();
   const completionRateChartOption = getCompletionRateChartOption();
+  const tasksCompletedChartOption = getTasksCompletedChartOption();
+  const requestTypeChartOption = getRequestTypeChartOption();
+  const taskTypeChartOption = getTaskTypeChartOption();
+  const contractTypeChartOption = getContractTypeChartOption();
+  const completionRateGaugeOption = getCompletionRateGaugeOption();
+  const radarChartOption = getRadarChartOption();
 
   const handleExport = () => {
     message.success('Report exported successfully!');
@@ -536,24 +892,6 @@ const ManagerDashboard = () => {
           </div>
         ) : (
           <>
-            {pipelineFlowChartOption && (
-              <motion.div
-                className={styles.chartCard}
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                <div className={styles.chartTitle}>Requests Created by Status Over Time</div>
-                <div className={styles.chartWrapper}>
-                  <ReactECharts
-                    option={pipelineFlowChartOption}
-                    style={{ height: '100%', width: '100%' }}
-                    opts={{ renderer: 'svg' }}
-                  />
-                </div>
-              </motion.div>
-            )}
-
             {workloadDistributionChartOption && (
               <motion.div
                 className={styles.chartCard}
@@ -589,646 +927,118 @@ const ManagerDashboard = () => {
                 </div>
               </motion.div>
             )}
+
+            {tasksCompletedChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Tasks Completed Over Time</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={tasksCompletedChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {requestTypeChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Request Type Distribution</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={requestTypeChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {taskTypeChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Task Type Distribution</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={taskTypeChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {contractTypeChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Contract Type Distribution</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={contractTypeChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {completionRateGaugeOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Average On-Time Completion Rate</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={completionRateGaugeOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {radarChartOption && (
+              <motion.div
+                className={styles.chartCard}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className={styles.chartTitle}>Metrics Overview (Radar Chart)</div>
+                <div className={styles.chartWrapper}>
+                  <ReactECharts
+                    option={radarChartOption}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
           </>
         )}
       </div>
-
-
-      {/* Milestones/Contracts Section */}
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <ClockCircleOutlined style={{ marginRight: 8 }} />
-            Milestones Due Soon
-          </div>
-          <Table
-            dataSource={milestonesDue}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
-              {
-                title: 'Milestone',
-                dataIndex: 'milestone',
-                key: 'milestone',
-                ellipsis: true,
-              },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              {
-                title: 'Due Date',
-                dataIndex: 'dueDate',
-                key: 'dueDate',
-                width: 120,
-              },
-              {
-                title: 'Days Left',
-                dataIndex: 'daysRemaining',
-                key: 'daysRemaining',
-                width: 100,
-                render: days => (
-                  <Tag color={days <= 1 ? 'red' : days <= 3 ? 'orange' : 'green'}>
-                    {days} days
-                  </Tag>
-                ),
-              },
-              {
-                title: 'Value',
-                dataIndex: 'value',
-                key: 'value',
-                width: 120,
-                render: val => formatCurrency(val),
-              },
-              {
-                title: 'Status',
-                dataIndex: 'status',
-                key: 'status',
-                width: 100,
-                render: status => {
-                  const { color, text } = mapStatusToTag(status);
-                  return <Tag color={color}>{text}</Tag>;
-                },
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 800 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <DollarOutlined style={{ marginRight: 8 }} />
-            Milestones Awaiting Payment
-          </div>
-          <Table
-            dataSource={milestonesAwaitingPayment}
-            columns={[
-              { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
-              {
-                title: 'Milestone',
-                dataIndex: 'milestone',
-                key: 'milestone',
-                ellipsis: true,
-              },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              {
-                title: 'Completed',
-                dataIndex: 'completedAt',
-                key: 'completedAt',
-                width: 120,
-              },
-              {
-                title: 'Days Overdue',
-                dataIndex: 'daysOverdue',
-                key: 'daysOverdue',
-                width: 120,
-                render: days => (
-                  <Tag color={days > 3 ? 'red' : 'orange'}>{days} days</Tag>
-                ),
-              },
-              {
-                title: 'Amount',
-                dataIndex: 'amount',
-                key: 'amount',
-                width: 120,
-                render: val => formatCurrency(val),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 700 }}
-          />
-        </motion.div>
-      </div>
-
-      <motion.div
-        className={styles.tableCard}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ marginBottom: 32 }}
-      >
-        <div className={styles.tableTitle}>
-          <EditOutlined style={{ marginRight: 8 }} />
-          Revision Requests Pending
-        </div>
-        <Table
-          dataSource={revisionPending}
-          columns={[
-            { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
-            {
-              title: 'Request',
-              dataIndex: 'request',
-              key: 'request',
-              ellipsis: true,
-            },
-            {
-              title: 'Customer',
-              dataIndex: 'customer',
-              key: 'customer',
-              ellipsis: true,
-            },
-            {
-              title: 'Assigned To',
-              dataIndex: 'assignedTo',
-              key: 'assignedTo',
-              width: 130,
-            },
-            {
-              title: 'Requested',
-              dataIndex: 'requestedAt',
-              key: 'requestedAt',
-              width: 120,
-            },
-            {
-              title: 'Days Waiting',
-              dataIndex: 'daysWaiting',
-              key: 'daysWaiting',
-              width: 110,
-              render: days => (
-                <Tag color={days > 3 ? 'red' : 'orange'}>{days} days</Tag>
-              ),
-            },
-            {
-              title: 'Priority',
-              dataIndex: 'priority',
-              key: 'priority',
-              width: 100,
-              render: priority => {
-                const { status, text } = mapPriorityToBadge(priority);
-                return <Badge status={status} text={text} />;
-              },
-            },
-          ]}
-          size="small"
-          pagination={false}
-          scroll={{ x: 800 }}
-        />
-      </motion.div>
-
-      {/* Booking/Studio Section */}
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <CalendarOutlined style={{ marginRight: 8 }} />
-            Upcoming Studio Bookings
-          </div>
-          <Table
-            dataSource={upcomingBookings}
-            columns={[
-              {
-                title: 'Studio',
-                dataIndex: 'studio',
-                key: 'studio',
-                width: 100,
-              },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              {
-                title: 'Project',
-                dataIndex: 'project',
-                key: 'project',
-                width: 130,
-              },
-              { title: 'Date', dataIndex: 'date', key: 'date', width: 120 },
-              { title: 'Time', dataIndex: 'time', key: 'time', width: 150 },
-              {
-                title: 'Duration',
-                dataIndex: 'duration',
-                key: 'duration',
-                width: 100,
-                render: dur => `${dur}h`,
-              },
-              {
-                title: 'Status',
-                dataIndex: 'status',
-                key: 'status',
-                width: 100,
-                render: status => {
-                  const { color, text } = mapStatusToTag(status);
-                  return <Tag color={color}>{text}</Tag>;
-                },
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 700 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <BarChartOutlined style={{ marginRight: 8 }} />
-            Studio Availability
-          </div>
-          <Table
-            dataSource={studioAvailability}
-            columns={[
-              {
-                title: 'Studio',
-                dataIndex: 'studio',
-                key: 'studio',
-                width: 100,
-              },
-              {
-                title: 'Today',
-                key: 'today',
-                width: 150,
-                render: (_, record) => (
-                  <span>
-                    {record.today.available}/{record.today.total} slots
-                  </span>
-                ),
-              },
-              {
-                title: 'This Week',
-                key: 'thisWeek',
-                width: 150,
-                render: (_, record) => (
-                  <span>
-                    {record.thisWeek.available}/{record.thisWeek.total} slots
-                  </span>
-                ),
-              },
-              {
-                title: 'Conflicts',
-                dataIndex: 'conflicts',
-                key: 'conflicts',
-                width: 100,
-                render: conflicts => (
-                  <Tag color={conflicts > 0 ? 'red' : 'green'}>
-                    {conflicts}
-                  </Tag>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 500 }}
-          />
-        </motion.div>
-      </div>
-
-      {bookingConflicts.length > 0 && (
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-          style={{ marginBottom: 32 }}
-        >
-          <div className={styles.tableTitle}>
-            <ExclamationCircleOutlined style={{ marginRight: 8, color: '#ef4444' }} />
-            Booking Conflicts
-          </div>
-          <Table
-            dataSource={bookingConflicts}
-            columns={[
-              {
-                title: 'Studio',
-                dataIndex: 'studio',
-                key: 'studio',
-                width: 100,
-              },
-              { title: 'Date', dataIndex: 'date', key: 'date', width: 120 },
-              { title: 'Time', dataIndex: 'time', key: 'time', width: 150 },
-              {
-                title: 'Conflict',
-                dataIndex: 'conflict',
-                key: 'conflict',
-                ellipsis: true,
-              },
-              {
-                title: 'Booking 1',
-                dataIndex: 'booking1',
-                key: 'booking1',
-                width: 130,
-              },
-              {
-                title: 'Booking 2',
-                dataIndex: 'booking2',
-                key: 'booking2',
-                width: 130,
-              },
-              {
-                title: 'Severity',
-                dataIndex: 'severity',
-                key: 'severity',
-                width: 100,
-                render: severity => (
-                  <Tag color={severity === 'high' ? 'red' : 'orange'}>
-                    {severity}
-                  </Tag>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 700 }}
-          />
-        </motion.div>
-      )}
-
-      {/* Customer Experience Section */}
-      <div className={styles.tablesGrid}>
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <MessageOutlined style={{ marginRight: 8 }} />
-            Unread Customer Messages
-          </div>
-          <Table
-            dataSource={unreadChats}
-            columns={[
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              {
-                title: 'Project',
-                dataIndex: 'project',
-                key: 'project',
-                width: 130,
-              },
-              {
-                title: 'Last Message',
-                dataIndex: 'lastMessage',
-                key: 'lastMessage',
-                ellipsis: true,
-              },
-              {
-                title: 'Time Ago',
-                dataIndex: 'timeAgo',
-                key: 'timeAgo',
-                width: 120,
-              },
-              {
-                title: 'Priority',
-                dataIndex: 'priority',
-                key: 'priority',
-                width: 100,
-                render: priority => {
-                  const { status, text } = mapPriorityToBadge(priority);
-                  return <Badge status={status} text={text} />;
-                },
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 600 }}
-          />
-        </motion.div>
-
-        <motion.div
-          className={styles.tableCard}
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className={styles.tableTitle}>
-            <CustomerServiceOutlined style={{ marginRight: 8 }} />
-            Tickets & Disputes
-          </div>
-          <Table
-            dataSource={ticketsDisputes}
-            columns={[
-              {
-                title: 'Ticket ID',
-                dataIndex: 'ticketId',
-                key: 'ticketId',
-                width: 130,
-              },
-              {
-                title: 'Customer',
-                dataIndex: 'customer',
-                key: 'customer',
-                ellipsis: true,
-              },
-              {
-                title: 'Subject',
-                dataIndex: 'subject',
-                key: 'subject',
-                ellipsis: true,
-              },
-              {
-                title: 'Project',
-                dataIndex: 'project',
-                key: 'project',
-                width: 130,
-              },
-              {
-                title: 'Status',
-                dataIndex: 'status',
-                key: 'status',
-                width: 100,
-                render: status => {
-                  const { color, text } = mapStatusToTag(status);
-                  return <Tag color={color}>{text}</Tag>;
-                },
-              },
-              {
-                title: 'Priority',
-                dataIndex: 'priority',
-                key: 'priority',
-                width: 100,
-                render: priority => {
-                  const { status, text } = mapPriorityToBadge(priority);
-                  return <Badge status={status} text={text} />;
-                },
-              },
-            ]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 700 }}
-          />
-        </motion.div>
-      </div>
-
-      <motion.div
-        className={styles.tableCard}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ marginBottom: 32 }}
-      >
-        <div className={styles.tableTitle}>
-          <TrophyOutlined style={{ marginRight: 8 }} />
-          Recent Ratings & Feedback
-        </div>
-        <Table
-          dataSource={ratingsFeedback}
-          columns={[
-            {
-              title: 'Customer',
-              dataIndex: 'customer',
-              key: 'customer',
-              ellipsis: true,
-            },
-            {
-              title: 'Project',
-              dataIndex: 'project',
-              key: 'project',
-              width: 130,
-            },
-            {
-              title: 'Rating',
-              dataIndex: 'rating',
-              key: 'rating',
-              width: 100,
-              render: rating => (
-                <span>
-                  {'★'.repeat(rating)}
-                  {'☆'.repeat(5 - rating)} ({rating}/5)
-                </span>
-              ),
-            },
-            {
-              title: 'Comment',
-              dataIndex: 'comment',
-              key: 'comment',
-              ellipsis: true,
-            },
-            {
-              title: 'Date',
-              dataIndex: 'date',
-              key: 'date',
-              width: 120,
-            },
-          ]}
-          size="small"
-          pagination={false}
-          scroll={{ x: 800 }}
-        />
-      </motion.div>
-
-      {/* Team Performance Section */}
-      <motion.div
-        className={styles.tableCard}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ marginBottom: 32 }}
-      >
-        <div className={styles.tableTitle}>
-          <TeamOutlined style={{ marginRight: 8 }} />
-          Team Performance Metrics
-        </div>
-        <Table
-          dataSource={teamPerformance}
-          columns={[
-            {
-              title: 'Specialist',
-              dataIndex: 'specialist',
-              key: 'specialist',
-              width: 150,
-            },
-            {
-              title: 'Tasks Completed',
-              dataIndex: 'tasksCompleted',
-              key: 'tasksCompleted',
-              width: 130,
-            },
-            {
-              title: 'On-Time Rate',
-              dataIndex: 'onTimeRate',
-              key: 'onTimeRate',
-              width: 120,
-              render: rate => (
-                <Tag color={rate >= 95 ? 'green' : rate >= 90 ? 'orange' : 'red'}>
-                  {rate}%
-                </Tag>
-              ),
-            },
-            {
-              title: 'Revision Rate',
-              dataIndex: 'revisionRate',
-              key: 'revisionRate',
-              width: 120,
-              render: rate => (
-                <Tag color={rate <= 8 ? 'green' : rate <= 12 ? 'orange' : 'red'}>
-                  {rate}%
-                </Tag>
-              ),
-            },
-            {
-              title: 'Avg Processing Time',
-              dataIndex: 'avgProcessingTime',
-              key: 'avgProcessingTime',
-              width: 150,
-            },
-            {
-              title: 'Skills',
-              dataIndex: 'skills',
-              key: 'skills',
-              ellipsis: true,
-              render: skills => skills.join(', '),
-            },
-          ]}
-          size="small"
-          pagination={false}
-          scroll={{ x: 800 }}
-        />
-      </motion.div>
-
-      {/* Alerts Panel */}
-      <motion.div
-        className={styles.alertsPanel}
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className={styles.alertsTitle}>
-          <BellOutlined /> System Alerts
-        </div>
-        <div className={styles.alertsList}>
-          {alerts.map((alert, idx) => (
-            <Alert
-              key={idx}
-              message={alert.message}
-              type={alert.type}
-              showIcon
-            />
-          ))}
-        </div>
-      </motion.div>
     </motion.div>
   );
 };
