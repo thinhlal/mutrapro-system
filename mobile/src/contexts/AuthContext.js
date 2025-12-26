@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize user from AsyncStorage on mount
+  // Initialize user from AsyncStorage 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -129,6 +129,7 @@ export const AuthProvider = ({ children }) => {
 /**
  * Custom hook to use AuthContext
  */
+// Used when the user edits profile
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

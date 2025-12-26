@@ -19,6 +19,7 @@ const RootNavigator = () => {
     <NavigationContainer>
       <NotificationProvider>
         <RecordingFlowProvider>
+          {/* isAuthenticated = true -> MainStack, false -> AuthStack */}
           {isAuthenticated ? <MainStack /> : <AuthStack />}
         </RecordingFlowProvider>
       </NotificationProvider>

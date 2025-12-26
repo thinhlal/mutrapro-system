@@ -36,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
   // Google OAuth
   const { request, response, promptAsync } = useGoogleAuth();
   
-  // Log redirect URI for debugging (chỉ trong development)
+  // Log redirect URI for debugging (only in development)
   useEffect(() => {
     if (__DEV__) {
       logRedirectUri();
@@ -51,8 +51,8 @@ const LoginScreen = ({ navigation }) => {
     } else if (response?.type === 'error') {
       Toast.show({
         type: 'error',
-        text1: 'Lỗi đăng nhập',
-        text2: 'Không thể đăng nhập với Google',
+        text1: 'Login Error',
+        text2: 'Unable to sign in with Google',
       });
       setGoogleLoading(false);
     } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
@@ -74,15 +74,15 @@ const LoginScreen = ({ navigation }) => {
       
       Toast.show({
         type: 'success',
-        text1: 'Đăng nhập thành công',
-        text2: `Chào mừng ${user.fullName}!`,
+        text1: 'Login Successful',
+        text2: `Welcome ${user.fullName}!`,
       });
     } catch (error) {
       console.error('Google authentication error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi xác thực',
-        text2: error.message || 'Không thể đăng nhập với Google',
+        text1: 'Authentication Error',
+        text2: error.message || 'Unable to sign in with Google',
       });
     } finally {
       setGoogleLoading(false);
@@ -97,8 +97,8 @@ const LoginScreen = ({ navigation }) => {
       console.error('Google login error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể mở Google đăng nhập',
+        text1: 'Error',
+        text2: 'Unable to open Google sign in',
       });
       setGoogleLoading(false);
     }
@@ -126,29 +126,29 @@ const LoginScreen = ({ navigation }) => {
       setSuccessMessage(SUCCESS_MESSAGES.LOGIN_SUCCESS);
       Toast.show({
         type: 'success',
-        text1: 'Đăng nhập thành công',
-        text2: 'Chào mừng bạn trở lại!',
+        text1: 'Login Successful',
+        text2: 'Welcome back!',
       });
     } catch (error) {
       console.error('Login error:', error);
       
       // Handle specific error codes
       if (error.errorCode === 'USER_4013') {
-        setErrors({ general: 'Vui lòng xác thực email trước khi đăng nhập' });
+        setErrors({ general: 'Please verify your email before signing in' });
         Toast.show({
           type: 'info',
-          text1: 'Email chưa được xác thực',
-          text2: 'Chuyển đến trang xác thực...',
+          text1: 'Email Not Verified',
+          text2: 'Redirecting to verification page...',
         });
         setTimeout(() => {
           navigation.navigate(SCREEN_NAMES.VERIFY_EMAIL, { email });
         }, 2000);
       } else if (error.errorCode === 'AUTH_5016') {
         setErrors({
-          general: 'Tài khoản không có mật khẩu. Vui lòng đăng nhập bằng Google.',
+          general: 'Account has no password. Please sign in with Google.',
         });
       } else {
-        setErrors({ general: error.message || 'Email hoặc mật khẩu không đúng' });
+        setErrors({ general: error.message || 'Invalid email or password' });
       }
     }
   };

@@ -42,11 +42,11 @@ const ForgotPasswordScreen = ({ navigation }) => {
     try {
       await forgotPassword(email);
       
-      setSuccessMessage('Đã gửi email hướng dẫn đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.');
+      setSuccessMessage('Password reset email has been sent. Please check your inbox.');
       Toast.show({
         type: 'success',
-        text1: 'Email đã được gửi',
-        text2: 'Vui lòng kiểm tra hộp thư của bạn',
+        text1: 'Email sent',
+        text2: 'Please check your inbox',
       });
 
       // Navigate to reset password screen after 2 seconds
@@ -55,11 +55,11 @@ const ForgotPasswordScreen = ({ navigation }) => {
       }, 2000);
     } catch (err) {
       console.error('Forgot password error:', err);
-      const errorMessage = err.message || 'Không thể gửi email. Vui lòng thử lại.';
+      const errorMessage = err.message || 'Unable to send email. Please try again.';
       setError(errorMessage);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi',
+        text1: 'Error',
         text2: errorMessage,
       });
     } finally {

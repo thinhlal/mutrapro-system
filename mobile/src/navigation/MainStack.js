@@ -29,7 +29,7 @@ import RecordingFlowStack from './RecordingFlowStack';
 const Drawer = createDrawerNavigator();
 
 // Main Drawer Navigator integrated with Bottom Tabs
-
+// Logged In Zone: Show all screens
 const MainStack = () => {
   return (
     <Drawer.Navigator
