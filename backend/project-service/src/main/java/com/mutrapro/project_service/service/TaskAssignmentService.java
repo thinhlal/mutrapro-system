@@ -1300,6 +1300,19 @@ public class TaskAssignmentService {
     private TaskAssignmentResponse enrichTaskAssignment(TaskAssignment assignment) {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
         enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
+        
+        // Enrich contract info với contract status
+        if (assignment.getContractId() != null && response.getContract() != null) {
+            try {
+                Contract contract = contractRepository.findById(assignment.getContractId()).orElse(null);
+                if (contract != null) {
+                    response.getContract().setContractStatus(contract.getStatus() != null ? contract.getStatus().name() : null);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch contract status for contractId={}: {}", assignment.getContractId(), e.getMessage());
+            }
+        }
+        
         return response;
     }
 
@@ -2036,10 +2049,24 @@ public class TaskAssignmentService {
         }
 
         // Tối ưu: Sử dụng contract snapshots từ TaskAssignment thay vì fetch Contract
-        // Chỉ fetch contracts nếu cần revisionDeadlineDays (có thể null trong snapshot)
+        // Chỉ fetch contracts nếu cần revisionDeadlineDays hoặc contract status (có thể null trong snapshot)
+        // Batch fetch contracts để lấy contract status
+        Map<String, Contract> contractsCache = new HashMap<>();
+        List<String> contractIds = assignments.stream()
+            .map(TaskAssignment::getContractId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (!contractIds.isEmpty()) {
+            List<Contract> contracts = contractRepository.findAllById(contractIds);
+            contractsCache = contracts.stream()
+                .collect(Collectors.toMap(Contract::getContractId, contract -> contract));
+        }
+        
         Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
         for (TaskAssignment assignment : assignments) {
             if (assignment.getContractId() != null && !contractsMap.containsKey(assignment.getContractId())) {
+                Contract contract = contractsCache.get(assignment.getContractId());
                 // Sử dụng snapshot từ TaskAssignment (không cần query DB)
                 contractsMap.put(assignment.getContractId(),
                     TaskAssignmentResponse.ContractInfo.builder()
@@ -2048,6 +2075,7 @@ public class TaskAssignmentService {
                         .nameSnapshot(assignment.getContractNameSnapshot())
                         .revisionDeadlineDays(null) // Không có trong snapshot, có thể fetch sau nếu cần
                         .contractCreatedAt(assignment.getContractCreatedAtSnapshot())
+                        .contractStatus(contract != null && contract.getStatus() != null ? contract.getStatus().name() : null)
                         .build());
             }
         }
@@ -3129,11 +3157,35 @@ public class TaskAssignmentService {
             log.info("Task assignment accepted (milestone already has accepted task): assignmentId={}, milestoneId={}", 
                 assignmentId, milestone.getMilestoneId());
         } else if (milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
-            assignment.setStatus(AssignmentStatus.ready_to_start);
-            log.info("Task assignment accepted and READY_TO_START: assignmentId={}", assignmentId);
+            // Check contract status - chỉ cho phép READY_TO_START nếu contract đã active
+            Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElse(null);
+            if (contract != null && contract.getStatus() == ContractStatus.active) {
+                assignment.setStatus(AssignmentStatus.ready_to_start);
+                log.info("Task assignment accepted and READY_TO_START: assignmentId={}", assignmentId);
+            } else {
+                // Contract chưa active → chỉ cho phép accepted_waiting, chờ manager start work
+                assignment.setStatus(AssignmentStatus.accepted_waiting);
+                milestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+                contractMilestoneRepository.save(milestone);
+                log.info("Task assignment accepted but contract not active yet, set to accepted_waiting: assignmentId={}, contractStatus={}", 
+                    assignmentId, contract != null ? contract.getStatus() : "NOT_FOUND");
+            }
         } else if (milestone.getWorkStatus() == MilestoneWorkStatus.IN_PROGRESS) {
-            assignment.setStatus(AssignmentStatus.in_progress);
-            log.info("Task assignment accepted and immediately IN_PROGRESS: assignmentId={}", assignmentId);
+            // Check contract status - chỉ cho phép IN_PROGRESS nếu contract đã active
+            Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElse(null);
+            if (contract != null && contract.getStatus() == ContractStatus.active) {
+                assignment.setStatus(AssignmentStatus.in_progress);
+                log.info("Task assignment accepted and immediately IN_PROGRESS: assignmentId={}", assignmentId);
+            } else {
+                // Contract chưa active → chỉ cho phép accepted_waiting, chờ manager start work
+                assignment.setStatus(AssignmentStatus.accepted_waiting);
+                milestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+                contractMilestoneRepository.save(milestone);
+                log.info("Task assignment accepted but contract not active yet, set to accepted_waiting: assignmentId={}, contractStatus={}", 
+                    assignmentId, contract != null ? contract.getStatus() : "NOT_FOUND");
+            }
         } else {
             throw InvalidMilestoneWorkStatusException.cannotCreateTask(
                 milestone.getMilestoneId(), milestone.getWorkStatus());
@@ -3187,6 +3239,19 @@ public class TaskAssignmentService {
 
         if (assignment.getStatus() != AssignmentStatus.ready_to_start) {
             throw InvalidTaskAssignmentStatusException.cannotStart(assignment.getAssignmentId(), assignment.getStatus());
+        }
+
+        // Validate contract status - chỉ cho phép start task nếu contract đã active
+        Contract contract = contractRepository.findById(assignment.getContractId())
+            .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+        
+        if (contract.getStatus() != ContractStatus.active) {
+            throw InvalidContractStatusException.cannotUpdate(
+                assignment.getContractId(),
+                contract.getStatus(),
+                String.format("Cannot start task. Contract must be in 'active' status, but current status is: %s. Please wait for manager to start contract work.", 
+                    contract.getStatus())
+            );
         }
 
         // Fetch milestone để validate và update

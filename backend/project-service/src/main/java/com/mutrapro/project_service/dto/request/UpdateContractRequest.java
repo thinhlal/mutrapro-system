@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -49,5 +50,8 @@ public class UpdateContractRequest {
     
     // Expiration
     LocalDateTime expiresAt;  // Optional
+    
+    // Milestones (optional - có thể update milestones khi contract ở status DRAFT)
+    List<CreateMilestoneRequest> milestones;
 }
 

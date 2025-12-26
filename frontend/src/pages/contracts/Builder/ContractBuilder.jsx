@@ -1310,8 +1310,8 @@ const ContractBuilder = () => {
         }
       }
 
-      // Validate milestone data is complete
-      if (!isEditMode && milestones.length > 0) {
+      // Validate milestone data is complete (for both create and update)
+      if (milestones.length > 0) {
         for (let i = 0; i < milestones.length; i++) {
           const m = milestones[i];
           if (!m.name || !m.name.trim()) {
@@ -1477,28 +1477,26 @@ const ContractBuilder = () => {
           : getDefaultAdditionalRevisionFeeVnd(),
       };
 
-      // Only include milestones when creating new contract (not in edit mode)
-      if (!isEditMode) {
-        const milestonesData = (milestones || [])
-          .filter(m => m && m.name && m.name.trim()) // Filter out empty milestones
-          .map((m, index) => ({
-            name: m.name.trim(),
-            description: (m.description || '').trim(),
-            orderIndex: m.orderIndex || index + 1,
-            milestoneType: m.milestoneType || null, // Optional: chỉ cần cho arrangement_with_recording
-            hasPayment: m.hasPayment || false,
-            paymentPercent:
-              m.hasPayment && m.paymentPercent
-                ? Number(m.paymentPercent)
-                : null,
-            milestoneSlaDays: m.milestoneSlaDays
-              ? Number(m.milestoneSlaDays)
+      // Include milestones for both create and update
+      const milestonesData = (milestones || [])
+        .filter(m => m && m.name && m.name.trim()) // Filter out empty milestones
+        .map((m, index) => ({
+          name: m.name.trim(),
+          description: (m.description || '').trim(),
+          orderIndex: m.orderIndex || index + 1,
+          milestoneType: m.milestoneType || null, // Optional: chỉ cần cho arrangement_with_recording
+          hasPayment: m.hasPayment || false,
+          paymentPercent:
+            m.hasPayment && m.paymentPercent
+              ? Number(m.paymentPercent)
               : null,
-          }));
+          milestoneSlaDays: m.milestoneSlaDays
+            ? Number(m.milestoneSlaDays)
+            : null,
+        }));
 
-        if (milestonesData.length > 0) {
-          contractData.milestones = milestonesData;
-        }
+      if (milestonesData.length > 0) {
+        contractData.milestones = milestonesData;
       }
 
       let response;

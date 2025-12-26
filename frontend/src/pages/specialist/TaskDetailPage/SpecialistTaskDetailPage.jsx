@@ -1969,11 +1969,22 @@ const SpecialistTaskDetailPage = () => {
                     }
                   }
                 }
+                // Check contract status - chỉ cho phép start/submit nếu contract đã active
+                const contractStatus = task.contract?.contractStatus?.toLowerCase();
+                const isContractActive = contractStatus === 'active';
+                const contractNotActiveMessage = contractStatus === 'active_pending_assignment' 
+                  ? 'The contract has not yet been started by the Manager. Please wait for the Manager to start the contract before beginning the task.'
+                  : contractStatus 
+                    ? `The contract is not active. Current status: ${contractStatus}. Please wait for the Manager to start the contract before beginning the task.`
+                    : 'The contract is not active. Please wait for the Manager to start the contract before beginning the task.';
+
                 const cannotStart =
                   needsStudioBooking ||
-                  (hasStudioBooking && hasStartButton && !canStartWithBooking);
+                  (hasStudioBooking && hasStartButton && !canStartWithBooking) ||
+                  (hasStartButton && !isContractActive);
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
                 // VÀ không có submission nào đang active (pending_review, approved, delivered, customer_accepted)
+                // VÀ contract phải active
                 const hasActiveSubmission = submissions.some(sub => {
                   const subStatus = sub.status?.toLowerCase();
                   return (
@@ -1989,7 +2000,8 @@ const SpecialistTaskDetailPage = () => {
                     status === 'revision_requested' ||
                     status === 'in_revision') &&
                   status !== 'ready_for_review' &&
-                  status !== 'completed';
+                  status !== 'completed' &&
+                  isContractActive; // Thêm check contract active
                 // Chỉ cho phép báo issue khi task đang in_progress (đang làm việc)
                 // Không cho phép khi đã submit (ready_for_review), đã hoàn thành (completed),
                 // đang chờ deliver (delivery_pending), hoặc các trạng thái khác
@@ -2201,23 +2213,27 @@ const SpecialistTaskDetailPage = () => {
                               </Button>
                             )}
                             {hasSubmitButton && (
-                              <Button
-                                onClick={handleSubmitForReview}
-                                disabled={!hasFilesToSubmit}
-                                loading={submittingForReview}
-                              >
-                                Submit for Review
-                              </Button>
+                              <Tooltip title={!isContractActive ? contractNotActiveMessage : (!hasFilesToSubmit ? 'Please select at least 1 file to submit' : null)}>
+                                <Button
+                                  onClick={handleSubmitForReview}
+                                  disabled={!hasFilesToSubmit || !isContractActive}
+                                  loading={submittingForReview}
+                                >
+                                  Submit for Review
+                                </Button>
+                              </Tooltip>
                             )}
                             {hasStartButton && !needsStudioBooking && (
-                              <Button
-                                type="primary"
-                                onClick={handleStartTask}
-                                disabled={!canStartWithBooking}
-                                loading={startingTask}
-                              >
-                                Start Task
-                              </Button>
+                              <Tooltip title={!isContractActive ? contractNotActiveMessage : (!canStartWithBooking ? bookingStatusMessage : null)}>
+                                <Button
+                                  type="primary"
+                                  onClick={handleStartTask}
+                                  disabled={cannotStart}
+                                  loading={startingTask}
+                                >
+                                  Start Task
+                                </Button>
+                              </Tooltip>
                             )}
                             {hasIssueButton && (
                               <Button

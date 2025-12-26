@@ -13,6 +13,7 @@ import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.BookingStatus;
+import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
@@ -24,6 +25,7 @@ import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
+import com.mutrapro.project_service.exception.InvalidContractStatusException;
 import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.FileSubmissionNotFoundException;
 import com.mutrapro.project_service.exception.InvalidBookingStatusException;
@@ -133,6 +135,19 @@ public class FileSubmissionService {
                     assignment.getStatus());
         }
 
+        // Validate contract status - chỉ cho phép submit file nếu contract đã active
+        Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+        
+        if (contract.getStatus() != ContractStatus.active) {
+            throw InvalidContractStatusException.cannotUpdate(
+                assignment.getContractId(),
+                contract.getStatus(),
+                String.format("Cannot submit files. Contract must be in 'active' status, but current status is: %s. Please wait for manager to start contract work.", 
+                    contract.getStatus())
+            );
+        }
+
         // Get files và validate
         List<File> filesToSubmit = fileRepository.findByFileIdIn(fileIds);
 
@@ -237,8 +252,6 @@ public class FileSubmissionService {
         // Gửi event thông báo manager khi specialist submit file lần đầu (không phải revision)
         if (isFirstSubmission) {
             try {
-                Contract contract = contractRepository.findById(assignment.getContractId())
-                        .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
                 
                 ContractMilestone milestone = null;
                 String milestoneName = "milestone";

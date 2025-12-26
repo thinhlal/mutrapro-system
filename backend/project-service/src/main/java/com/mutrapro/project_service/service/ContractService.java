@@ -424,6 +424,69 @@ public class ContractService {
         }
         
         Contract saved = contractRepository.save(contract);
+        
+        // Update milestones nếu có trong request
+        if (updateRequest.getMilestones() != null && !updateRequest.getMilestones().isEmpty()) {
+            // Validate: recording contract phải có đúng 1 milestone
+            if (saved.getContractType() == ContractType.recording && updateRequest.getMilestones().size() != 1) {
+                throw new IllegalArgumentException(
+                    String.format("Recording contract must have exactly 1 milestone. Got: %d milestones", 
+                        updateRequest.getMilestones().size()));
+            }
+            
+            // Validate: recording milestone phải có milestoneType = recording
+            if (saved.getContractType() == ContractType.recording) {
+                CreateMilestoneRequest milestone = updateRequest.getMilestones().get(0);
+                if (milestone.getMilestoneType() != MilestoneType.recording) {
+                    throw new IllegalArgumentException(
+                        String.format("Recording contract milestone must have type 'recording'. Got: %s", 
+                            milestone.getMilestoneType()));
+                }
+            }
+            
+            // Validate: depositPercent + sum(paymentPercent của milestones có hasPayment=true) = 100%
+            BigDecimal depositPercent = saved.getDepositPercent() != null 
+                ? saved.getDepositPercent() 
+                : BigDecimal.valueOf(40.0);
+            validatePaymentPercentages(depositPercent, updateRequest.getMilestones());
+            
+            // Validate: sum(milestoneSlaDays) = contract slaDays
+            Integer slaDays = saved.getSlaDays() != null 
+                ? saved.getSlaDays() 
+                : getDefaultSlaDays(saved.getContractType());
+            validateMilestoneSlaDays(slaDays, updateRequest.getMilestones());
+            
+            // Xóa milestones cũ và installments liên quan
+            List<ContractMilestone> existingMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+            for (ContractMilestone milestone : existingMilestones) {
+                // Xóa installment của milestone này (nếu có)
+                contractInstallmentRepository
+                    .findByContractIdAndMilestoneId(contractId, milestone.getMilestoneId())
+                    .ifPresent(installment -> {
+                        // Chỉ xóa installment không phải DEPOSIT
+                        if (installment.getType() != InstallmentType.DEPOSIT) {
+                            contractInstallmentRepository.delete(installment);
+                            log.info("Deleted milestone installment: installmentId={}, milestoneId={}", 
+                                installment.getInstallmentId(), milestone.getMilestoneId());
+                        }
+                    });
+                // Xóa milestone
+                contractMilestoneRepository.delete(milestone);
+                log.info("Deleted milestone: milestoneId={}, contractId={}", 
+                    milestone.getMilestoneId(), contractId);
+            }
+            
+            // Tạo milestones mới
+            List<ContractMilestone> createdMilestones = createMilestonesFromRequest(saved, updateRequest.getMilestones());
+            
+            // Tạo installments mới cho milestones
+            createInstallmentsForContract(saved, depositPercent, updateRequest.getMilestones(), createdMilestones);
+            
+            log.info("Updated milestones for contract: contractId={}, milestonesCount={}", 
+                contractId, createdMilestones.size());
+        }
+        
         log.info("Updated contract: contractId={}, requestId={}", saved.getContractId(), saved.getRequestId());
         
         ContractResponse response = contractMapper.toResponse(saved);

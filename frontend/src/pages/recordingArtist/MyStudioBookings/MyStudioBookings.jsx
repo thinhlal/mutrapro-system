@@ -149,6 +149,13 @@ const MyStudioBookings = () => {
       dataIndex: 'bookingDate',
       key: 'bookingDate',
       width: 120,
+      sorter: (a, b) => {
+        if (!a.bookingDate && !b.bookingDate) return 0;
+        if (!a.bookingDate) return 1;
+        if (!b.bookingDate) return -1;
+        return dayjs(a.bookingDate).valueOf() - dayjs(b.bookingDate).valueOf();
+      },
+      defaultSortOrder: 'descend',
       render: date => (date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'),
     },
     {

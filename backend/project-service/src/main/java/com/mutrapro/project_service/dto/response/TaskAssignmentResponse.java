@@ -100,6 +100,7 @@ public class TaskAssignmentResponse {
         String nameSnapshot;  // Customer name
         Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
         LocalDateTime contractCreatedAt;  // Thời điểm tạo contract để sort mới nhất lên trước
+        String contractStatus;  // Contract status (active, active_pending_assignment, signed, etc.)
     }
 
     @Data

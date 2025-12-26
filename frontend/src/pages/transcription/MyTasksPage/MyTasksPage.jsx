@@ -662,17 +662,29 @@ const MyTasksPage = ({ onOpenTask }) => {
                         studioBooking
                       );
 
+                      // Check contract status - chỉ cho phép start nếu contract đã active
+                      const contractStatus = record.contract?.contractStatus?.toLowerCase();
+                      const isContractActive = contractStatus === 'active';
+                      const contractNotActiveMessage = contractStatus === 'active_pending_assignment' 
+                        ? 'The contract has not yet been started by the Manager. Please wait for the Manager to start the contract before beginning the task.'
+                        : contractStatus 
+                          ? `The contract is not active. Current status: ${contractStatus}. Please wait for the Manager to start the contract before beginning the task.`
+                          : 'The contract is not active. Please wait for the Manager to start the contract before beginning the task.';
+
+                      const cannotStart = !validation.canStart || !isContractActive;
+                      const tooltipMessage = !isContractActive 
+                        ? contractNotActiveMessage 
+                        : (!validation.canStart ? validation.reason : null);
+
                       return (
                         <Tooltip
-                          title={
-                            !validation.canStart ? validation.reason : null
-                          }
+                          title={tooltipMessage}
                         >
                           <Button
                             type="primary"
                             size="small"
                             loading={isTakingAction}
-                            disabled={!validation.canStart}
+                            disabled={cannotStart}
                             onClick={() => handleStartTask(record)}
                           >
                             Start Task

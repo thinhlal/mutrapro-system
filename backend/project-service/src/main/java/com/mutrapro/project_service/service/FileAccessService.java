@@ -151,8 +151,17 @@ public class FileAccessService {
      * Kiểm tra quyền truy cập của SPECIALIST
      */
     private void checkSpecialistAccess(File file, String userId, FileSourceType fileSource) {
-        // Specialist chỉ được xem file của assignment mà họ được assign
+        // Nếu file không có assignmentId, check xem có phải file từ request không
         if (file.getAssignmentId() == null) {
+            // File từ request (customer_upload) - check xem specialist có assignment cho contract của request không
+            if (file.getRequestId() != null && fileSource == FileSourceType.customer_upload) {
+                if (checkSpecialistAccessToRequestFile(file, userId)) {
+                    log.debug("Specialist {} granted access to request file {} (customer_upload) via contract assignment", 
+                        userId, file.getFileId());
+                    return; // Cho phép truy cập
+                }
+            }
+            
             log.warn("Specialist {} tried to access file {} with no assignment", 
                 userId, file.getFileId());
             throw FileAccessDeniedException.withMessage(
@@ -387,6 +396,50 @@ public class FileAccessService {
             return false;
         } catch (Exception e) {
             log.warn("Error checking arrangement submission access for recording: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Kiểm tra xem specialist có quyền truy cập file từ request không
+     * (file customer_upload không có assignmentId nhưng có requestId)
+     * Specialist được phép truy cập nếu họ có assignment cho contract của request đó
+     */
+    private boolean checkSpecialistAccessToRequestFile(File file, String userId) {
+        if (file.getRequestId() == null) {
+            return false;
+        }
+        
+        try {
+            // Tìm contract từ requestId
+            List<Contract> contracts = contractRepository.findByRequestId(file.getRequestId());
+            if (contracts.isEmpty()) {
+                log.debug("No contract found for requestId={}, cannot grant specialist access", file.getRequestId());
+                return false;
+            }
+            
+            // Check tất cả contracts (có thể có nhiều contracts cho một request)
+            for (Contract contract : contracts) {
+                // Tìm assignments của specialist trong contract này
+                List<TaskAssignment> assignments = taskAssignmentRepository.findByContractId(contract.getContractId());
+                boolean hasAssignment = assignments.stream().anyMatch(assignment -> {
+                    String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+                    return userId.equals(specialistUserId);
+                });
+                
+                if (hasAssignment) {
+                    log.debug("Specialist {} has assignment in contract {} for request {}, granted access to file {}", 
+                        userId, contract.getContractId(), file.getRequestId(), file.getFileId());
+                    return true;
+                }
+            }
+            
+            log.debug("Specialist {} has no assignment in any contract for request {}, denied access to file {}", 
+                userId, file.getRequestId(), file.getFileId());
+            return false;
+        } catch (Exception e) {
+            log.warn("Error checking specialist access to request file: fileId={}, requestId={}, userId={}, error={}", 
+                file.getFileId(), file.getRequestId(), userId, e.getMessage());
             return false;
         }
     }
