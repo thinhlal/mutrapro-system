@@ -177,7 +177,14 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
           className={styles.radioGroup}
         >
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Radio value={VOCAL_CHOICES.NONE} className={styles.radioOption}>
+            <Radio
+              value={VOCAL_CHOICES.NONE}
+              className={`${styles.radioOption} ${
+                vocalChoice === VOCAL_CHOICES.NONE
+                  ? styles.radioOptionChecked
+                  : ''
+              }`}
+            >
               <Space>
                 <span className={styles.radioLabel}>
                   No vocal needed (instrumental / playback only)
@@ -188,7 +195,11 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
 
             <Radio
               value={VOCAL_CHOICES.CUSTOMER_SELF}
-              className={styles.radioOption}
+              className={`${styles.radioOption} ${
+                vocalChoice === VOCAL_CHOICES.CUSTOMER_SELF
+                  ? styles.radioOptionChecked
+                  : ''
+              }`}
             >
               <Space>
                 <UserOutlined />
@@ -199,7 +210,11 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
 
             <Radio
               value={VOCAL_CHOICES.INTERNAL_ARTIST}
-              className={styles.radioOption}
+              className={`${styles.radioOption} ${
+                vocalChoice === VOCAL_CHOICES.INTERNAL_ARTIST
+                  ? styles.radioOptionChecked
+                  : ''
+              }`}
             >
               <Space>
                 <TeamOutlined />
@@ -210,7 +225,14 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
               </Space>
             </Radio>
 
-            <Radio value={VOCAL_CHOICES.BOTH} className={styles.radioOption}>
+            <Radio
+              value={VOCAL_CHOICES.BOTH}
+              className={`${styles.radioOption} ${
+                vocalChoice === VOCAL_CHOICES.BOTH
+                  ? styles.radioOptionChecked
+                  : ''
+              }`}
+            >
               <Space>
                 <TeamOutlined />
                 <span className={styles.radioLabel}>
