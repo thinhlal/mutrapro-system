@@ -9,7 +9,9 @@ import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
   return (
+    // GestureHandlerRootView: class support swipe/drag 
     <GestureHandlerRootView style={styles.container}>
+      {/* SafeAreaProvider: The app is not obstructed by the navigation bar */}
       <SafeAreaProvider>
         <AuthProvider>
           <View style={styles.container}>

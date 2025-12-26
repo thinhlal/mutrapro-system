@@ -11,6 +11,8 @@ import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 
 const Stack = createStackNavigator();
 
+
+// Guest Zone: Only show auth screens
 const AuthStack = () => {
   return (
     <Stack.Navigator

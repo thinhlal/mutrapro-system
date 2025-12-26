@@ -289,6 +289,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <TextInput
             style={[styles.input, errors.title && styles.inputError]}
             placeholder="e.g., Transcribe Song ABC"
+            placeholderTextColor={COLORS.gray[500]}
             value={title}
             onChangeText={(text) => {
               setTitle(text);
@@ -308,6 +309,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <TextInput
             style={[styles.textArea, errors.description && styles.inputError]}
             placeholder="Describe your request in detail..."
+            placeholderTextColor={COLORS.gray[500]}
             value={description}
             onChangeText={(text) => {
               setDescription(text);
@@ -330,6 +332,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <TextInput
             style={[styles.input, errors.contactName && styles.inputError]}
             placeholder="Your full name"
+            placeholderTextColor={COLORS.gray[500]}
             value={contactName}
             onChangeText={(text) => {
               setContactName(text);
@@ -349,6 +352,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <TextInput
             style={[styles.input, styles.inputDisabled]}
             placeholder="you@example.com"
+            placeholderTextColor={COLORS.gray[500]}
             value={contactEmail}
             editable={false}
           />
@@ -363,6 +367,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           <TextInput
             style={[styles.input, errors.contactPhone && styles.inputError]}
             placeholder="+84 ..."
+            placeholderTextColor={COLORS.gray[500]}
             value={contactPhone}
             onChangeText={(text) => {
               setContactPhone(text);
@@ -393,6 +398,8 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               </TouchableOpacity>
               <TextInput
                 style={[styles.tempoInput, errors.tempo && styles.inputError]}
+                placeholder="100%"
+                placeholderTextColor={COLORS.gray[500]}
                 value={`${tempoPercentage}%`}
                 onChangeText={(text) => {
                   const value = text.replace(/[^0-9]/g, "");
@@ -495,6 +502,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
             <TextInput
               style={[styles.input, errors.slot && styles.inputError]}
               placeholder="YYYY-MM-DD"
+              placeholderTextColor={COLORS.gray[500]}
               value={bookingDate || ""}
               onChangeText={(text) => {
                 setBookingDate(text);
@@ -505,6 +513,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               <TextInput
                 style={[styles.input, { flex: 1 }, errors.slot && styles.inputError]}
                 placeholder="Start (HH:mm)"
+                placeholderTextColor={COLORS.gray[500]}
                 value={bookingStartTime || ""}
                 onChangeText={(text) => {
                   setBookingStartTime(text);
@@ -514,6 +523,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               <TextInput
                 style={[styles.input, { flex: 1 }, errors.slot && styles.inputError]}
                 placeholder="End (HH:mm)"
+                placeholderTextColor={COLORS.gray[500]}
                 value={bookingEndTime || ""}
                 onChangeText={(text) => {
                   setBookingEndTime(text);
