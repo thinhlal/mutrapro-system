@@ -47,7 +47,7 @@ function getStatusDisplay(status) {
   const lower = status.toLowerCase();
   const statusMap = {
     assigned: { text: 'Assigned', color: 'blue' },
-    accepted_waiting: { text: 'Đã nhận - Chờ tới lượt', color: 'gold' },
+    accepted_waiting: { text: 'Accepted - Waiting', color: 'gold' },
     ready_to_start: { text: 'Ready to Start', color: 'purple' },
     in_progress: { text: 'In Progress', color: 'geekblue' },
     ready_for_review: { text: 'Ready for Review', color: 'orange' },
@@ -147,7 +147,7 @@ function validateBookingForStart(task, studioBooking) {
     return {
       canStart: false,
       reason:
-        'Task recording supervision này cần có studio booking trước khi bắt đầu. Vui lòng liên hệ Manager.',
+        'This recording supervision task needs a studio booking before starting. Please contact Manager.',
     };
   }
 
@@ -161,7 +161,7 @@ function validateBookingForStart(task, studioBooking) {
   ) {
     return {
       canStart: false,
-      reason: `Studio booking chưa được xác nhận. Trạng thái: ${bookingStatus === 'TENTATIVE' ? 'Tạm thời' : bookingStatus}. Vui lòng đợi Manager xác nhận.`,
+      reason: `Studio booking is not confirmed. Status: ${bookingStatus === 'TENTATIVE' ? 'Tạm thời' : bookingStatus}. Please wait for Manager to confirm.`,
     };
   }
 
@@ -175,7 +175,7 @@ function validateBookingForStart(task, studioBooking) {
     if (daysUntilBooking > 7) {
       return {
         canStart: false,
-        reason: `Chưa thể bắt đầu task. Recording session vào ${studioBooking.bookingDate}. Bạn có thể bắt đầu trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`,
+        reason: `Cannot start task. Recording session on ${studioBooking.bookingDate}. You can start within 7 days before the recording date (remaining ${daysUntilBooking} days).`,
       };
     }
 
@@ -183,7 +183,7 @@ function validateBookingForStart(task, studioBooking) {
     if (daysUntilBooking < -1) {
       return {
         canStart: false,
-        reason: `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày. Vui lòng liên hệ Manager.`,
+        reason: `Recording session has passed ${Math.abs(daysUntilBooking)} days. Please contact Manager.`,
       };
     }
   }
@@ -302,12 +302,12 @@ const MyTasksPage = ({ onOpenTask }) => {
       try {
         const response = await acceptTaskAssignment(task.assignmentId);
         if (response?.status === 'success') {
-          message.success('Task đã được accept thành công');
+          message.success('Task accepted successfully');
           await loadTasks();
         }
       } catch (error) {
         console.error('Error accepting task:', error);
-        message.error(error?.message || 'Lỗi khi accept task');
+        message.error(error?.message || 'Error accepting task');
       }
     },
     [loadTasks]
@@ -330,7 +330,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         values.reason
       );
       if (response?.status === 'success') {
-        message.success('Task đã được cancel thành công');
+        message.success('Task cancelled successfully');
         setCancelModalVisible(false);
         setCancelTask(null);
         cancelForm.resetFields();
@@ -338,7 +338,7 @@ const MyTasksPage = ({ onOpenTask }) => {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Lỗi khi cancel task');
+      message.error(error?.message || 'Error cancelling task');
     }
   }, [cancelTask, cancelForm, loadTasks]);
 
@@ -348,12 +348,12 @@ const MyTasksPage = ({ onOpenTask }) => {
         setStartingAssignmentId(task.assignmentId);
         const response = await startTaskAssignment(task.assignmentId);
         if (response?.status === 'success') {
-          message.success('Đã bắt đầu task');
+          message.success('Task started successfully');
           await loadTasks();
         }
       } catch (error) {
         console.error('Error starting task:', error);
-        message.error(error?.message || 'Lỗi khi bắt đầu task');
+        message.error(error?.message || 'Failed to start task');
       } finally {
         setStartingAssignmentId(null);
       }
@@ -448,7 +448,7 @@ const MyTasksPage = ({ onOpenTask }) => {
             !actualDeadline && !plannedDeadline && estimatedDeadline;
 
           if (!displayDeadline) {
-            return <Text type="secondary">Chưa có</Text>;
+            return <Text type="secondary">No deadline</Text>;
           }
 
           const status = record.status?.toLowerCase();
@@ -503,13 +503,13 @@ const MyTasksPage = ({ onOpenTask }) => {
                       </Text>
                     )}
                   </Text>
-                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
-                  {isNearDeadline && <Tag color="orange">Sắp hạn</Tag>}
+                  {isOverdue && <Tag color="red">Overdue</Tag>}
+                  {isNearDeadline && <Tag color="orange">Near deadline</Tag>}
                   {isFirstSubmissionLate && (
-                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                    <Tag color="red">Late submission (first version)</Tag>
                   )}
                   {isFirstSubmissionOnTime && (
-                    <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                    <Tag color="green">On time submission (first version)</Tag>
                   )}
                   <Divider dashed style={{ margin: '4px 0' }} />
                 </>
@@ -535,7 +535,7 @@ const MyTasksPage = ({ onOpenTask }) => {
               )}
               {isEstimated && (
                 <Tag color="default" size="small">
-                  Dựa trên SLA {record?.milestone?.milestoneSlaDays || 0} ngày
+                  Based on SLA {record?.milestone?.milestoneSlaDays || 0} days
                 </Tag>
               )}
             </Space>
@@ -568,19 +568,19 @@ const MyTasksPage = ({ onOpenTask }) => {
             let countdownColor = 'default';
 
             if (daysUntil > 7) {
-              countdownText = `${daysUntil} ngày`;
+              countdownText = `${daysUntil} days`;
               countdownColor = 'blue';
             } else if (daysUntil > 0) {
-              countdownText = `${daysUntil} ngày`;
+              countdownText = `${daysUntil} days`;
               countdownColor = 'green';
             } else if (daysUntil === 0) {
-              countdownText = 'Hôm nay!';
+              countdownText = 'Today!';
               countdownColor = 'orange';
             } else if (daysUntil >= -1) {
-              countdownText = `Qua ${Math.abs(daysUntil)} ngày`;
+              countdownText = `Over ${Math.abs(daysUntil)} days`;
               countdownColor = 'red';
             } else {
-              countdownText = `Qua ${Math.abs(daysUntil)} ngày`;
+              countdownText = `Over ${Math.abs(daysUntil)} days`;
               countdownColor = 'red';
             }
 
@@ -624,10 +624,10 @@ const MyTasksPage = ({ onOpenTask }) => {
                 {status === 'assigned' && (
                   <>
                     <Popconfirm
-                      title="Bạn có chắc muốn accept task này?"
+                      title="Are you sure you want to accept this task?"
                       onConfirm={() => handleAccept(record)}
                       okText="Accept"
-                      cancelText="Hủy"
+                      cancelText="Cancel"
                     >
                       <Button
                         type="primary"
@@ -649,7 +649,7 @@ const MyTasksPage = ({ onOpenTask }) => {
                 )}
                 {status === 'accepted_waiting' && (
                   <Tag color="gold" style={{ marginRight: 0 }}>
-                    Đã nhận – Chờ tới lượt
+                    Accepted - Waiting
                   </Tag>
                 )}
                 {status === 'ready_to_start' && (
@@ -827,21 +827,21 @@ const MyTasksPage = ({ onOpenTask }) => {
         onOk={handleCancelConfirm}
         onCancel={handleCancelModalCancel}
         okText="Cancel Task"
-        cancelText="Hủy"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
       >
         <Form form={cancelForm} layout="vertical">
           <Form.Item
-            label="Lý do cancel (bắt buộc)"
+            label="Reason for cancellation (required)"
             name="reason"
             rules={[
-              { required: true, message: 'Vui lòng nhập lý do cancel' },
-              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+              { required: true, message: 'Please enter the reason for cancellation' },
+              { min: 10, message: 'Reason must be at least 10 characters' },
             ]}
           >
             <Input.TextArea
               rows={4}
-              placeholder="Nhập lý do bạn muốn cancel task này..."
+              placeholder="Enter the reason you want to cancel this task..."
               maxLength={500}
               showCount
             />

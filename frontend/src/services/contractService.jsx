@@ -89,7 +89,7 @@ export const updateContract = async (contractId, contractData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật contract' };
+    throw error.response?.data || { message: 'Error when updating contract' };
   }
 };
 
@@ -108,7 +108,7 @@ export const getContractsByRequestId = async requestId => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+      error.response?.data || { message: 'Error when loading contracts list' }
     );
   }
 };
@@ -127,7 +127,7 @@ export const getMyContracts = async () => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+      error.response?.data || { message: 'Error when loading contracts list' }
     );
   }
 };
@@ -146,7 +146,7 @@ export const getMyManagedContracts = async () => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+      error.response?.data || { message: 'Error when loading contracts list' }
     );
   }
 };
@@ -181,7 +181,7 @@ export const getAllContracts = async (filters = {}) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+      error.response?.data || { message: 'Error when loading contracts list' }
     );
   }
 };
@@ -204,7 +204,7 @@ export const sendContractToCustomer = async (contractId, expiresInDays = 7) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi gửi contract cho customer' }
+      error.response?.data || { message: 'Error when sending contract to customer' }
     );
   }
 };
@@ -223,7 +223,7 @@ export const approveContract = async contractId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi approve contract' };
+    throw error.response?.data || { message: 'Error when approving contract' };
   }
 };
 
@@ -243,7 +243,7 @@ export const startContractWork = async (contractId, payload) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi bắt đầu thực thi contract' }
+      error.response?.data || { message: 'Error when starting contract work' }
     );
   }
 };
@@ -265,7 +265,7 @@ export const initESign = async (contractId, signatureBase64) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi khởi tạo chữ ký điện tử' }
+      error.response?.data || { message: 'Error when initializing e-signature' }
     );
   }
 };
@@ -287,7 +287,7 @@ export const verifyOTPAndSign = async (contractId, sessionId, otpCode) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi xác thực OTP' };
+    throw error.response?.data || { message: 'Error when verifying OTP' };
   }
 };
 
@@ -308,7 +308,7 @@ export const requestChangeContract = async (contractId, reason) => {
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi yêu cầu chỉnh sửa contract' }
+      error.response?.data || { message: 'Error when requesting contract change' }
     );
   }
 };
@@ -329,7 +329,7 @@ export const cancelContract = async (contractId, reason) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi hủy contract' };
+    throw error.response?.data || { message: 'Error when canceling contract' };
   }
 };
 
@@ -349,7 +349,7 @@ export const cancelContractByManager = async (contractId, reason) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi hủy contract' };
+    throw error.response?.data || { message: 'Error when canceling contract by manager' };
   }
 };
 
@@ -367,7 +367,7 @@ export const getSignatureImage = async contractId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy ảnh chữ ký' };
+    throw error.response?.data || { message: 'Error when getting signature image' };
   }
 };
 
@@ -392,7 +392,7 @@ export const uploadContractPdf = async (contractId, pdfBlob, fileName) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi upload PDF contract' };
+    throw error.response?.data || { message: 'Error when uploading PDF contract' };
   }
 };
 
@@ -411,6 +411,6 @@ export const getMilestoneById = async (contractId, milestoneId) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy chi tiết milestone' };
+    throw error.response?.data || { message: 'Error when getting milestone details' };
   }
 };

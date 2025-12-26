@@ -16,7 +16,7 @@ export const getContractsByRequestId = async (requestId) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw error.response?.data || { message: 'Error when loading contracts list' };
   }
 };
 
@@ -36,7 +36,7 @@ export const getContractById = async (contractId) => {
   } catch (error) {
     console.error('❌ [Get Contract Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi lấy chi tiết contract',
+      message: error.message || 'Error when getting contract details',
       error: error.response?.statusText || 'Unknown error',
       status: error.response?.status
     };
@@ -60,7 +60,7 @@ export const getMilestoneById = async (contractId, milestoneId) => {
   } catch (error) {
     console.error('❌ [Get Milestone Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi lấy chi tiết milestone',
+      message: error.message || 'Error when getting milestone details',
       error: error.response?.statusText || 'Unknown error',
       status: error.response?.status
     };
@@ -83,7 +83,7 @@ export const approveContract = async (contractId) => {
   } catch (error) {
     console.error('❌ [Approve Contract Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi approve contract',
+      message: error.message || 'Error when approving contract',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -105,7 +105,7 @@ export const requestChangeContract = async (contractId, reason) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi yêu cầu chỉnh sửa contract' };
+    throw error.response?.data || { message: 'Error when requesting contract change' };
   }
 };
 
@@ -125,7 +125,7 @@ export const cancelContract = async (contractId, reason) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi hủy contract' };
+    throw error.response?.data || { message: 'Error when canceling contract' };
   }
 };
 
@@ -145,7 +145,7 @@ export const initESign = async (contractId, signatureBase64) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi khởi tạo chữ ký điện tử' };
+    throw error.response?.data || { message: 'Error when initializing e-signature' };
   }
 };
 
@@ -166,7 +166,7 @@ export const verifyOTPAndSign = async (contractId, sessionId, otpCode) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi xác thực OTP' };
+    throw error.response?.data || { message: 'Error when verifying OTP' };
   }
 };
 
@@ -181,7 +181,7 @@ export const getMyContracts = async () => {
     const response = await axiosInstance.get(API_ENDPOINTS.CONTRACTS.MY_CONTRACTS);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw error.response?.data || { message: 'Error when loading contracts list' };
   }
 };
 
@@ -200,7 +200,7 @@ export const getAllContracts = async () => {
   } catch (error) {
     console.error('❌ [Get All Contracts Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi lấy danh sách contracts',
+      message: error.message || 'Error when loading contracts list',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -225,7 +225,7 @@ export const exportContractPdf = async (contractId) => {
   } catch (error) {
     console.error('❌ [Export Contract PDF Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi export PDF contract',
+      message: error.message || 'Error when exporting PDF contract',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -246,7 +246,7 @@ export const getSignatureImage = async (contractId) => {
     return response.data;
   } catch (error) {
     console.error('❌ [Get Signature Image Error]', error.response?.data || error.message);
-    throw error.response?.data || { message: 'Lỗi khi lấy ảnh chữ ký' };
+    throw error.response?.data || { message: 'Error when getting signature image' };
   }
 };
 

@@ -36,7 +36,7 @@ export const useNotifications = () => {
       setNotifications(response.data || []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      toast.error('Không thể tải thông báo');
+      toast.error('Cannot load notifications');
     } finally {
       setLoading(false);
     }
@@ -74,10 +74,10 @@ export const useNotifications = () => {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
 
-      toast.success('Đã đánh dấu tất cả thông báo');
+      toast.success('Marked all as read');
     } catch (error) {
       console.error('Failed to mark all as read:', error);
-      toast.error('Không thể đánh dấu tất cả');
+      toast.error('Cannot mark all as read');
     }
   }, []);
 
@@ -119,7 +119,7 @@ export const useNotifications = () => {
         }
 
         if (!notificationWebSocketService.isConnected()) {
-          throw new Error('Notification WebSocket chưa sẵn sàng');
+          throw new Error('Notification WebSocket is not ready');
         }
 
         const subscription =
