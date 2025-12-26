@@ -888,7 +888,7 @@ const SpecialistTaskDetailPage = () => {
         render: () => <Tag color="blue">Draft</Tag>,
       },
       {
-        title: 'Chọn submit',
+        title: 'Select for submission',
         key: 'selectForSubmission',
         width: 120,
         render: (_, record) => (
@@ -1951,7 +1951,7 @@ const SpecialistTaskDetailPage = () => {
                       bookingStatus !== 'COMPLETED'
                     ) {
                       canStartWithBooking = false;
-                      bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
+                      bookingStatusMessage = `Studio booking has not been confirmed. Current status: ${studioBooking.status === 'PENDING' ? 'Pending' : studioBooking.status === 'TENTATIVE' ? 'Tentative' : studioBooking.status}. Please wait for Manager to confirm the booking.`;
                     }
 
                     // Check 2: Thời gian
@@ -1959,12 +1959,12 @@ const SpecialistTaskDetailPage = () => {
                       // Quá sớm: > 7 ngày trước booking date
                       if (daysUntilBooking > 7) {
                         canStartWithBooking = false;
-                        bookingStatusMessage = `Chưa thể bắt đầu task. Recording session sẽ diễn ra vào ${bookingDateFormatted}. Bạn có thể bắt đầu task trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`;
+                        bookingStatusMessage = `Cannot start task. Recording session will take place on ${bookingDateFormatted}. You can start the task within 7 days before the recording session (remaining ${daysUntilBooking} days).`;
                       }
                       // Quá muộn: > 1 ngày sau booking date
                       else if (daysUntilBooking < -1) {
                         canStartWithBooking = false;
-                        bookingStatusMessage = `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày (${bookingDateFormatted}). Vui lòng liên hệ Manager nếu cần hỗ trợ.`;
+                        bookingStatusMessage = `Recording session has passed ${Math.abs(daysUntilBooking)} days (${bookingDateFormatted}). Please contact Manager if you need support.`;
                       }
                     }
                   }
@@ -2138,37 +2138,37 @@ const SpecialistTaskDetailPage = () => {
                                   {daysUntilBooking > 0 && (
                                     <span>
                                       Remaining{' '}
-                                      <strong>{daysUntilBooking} ngày</strong>{' '}
+                                      <strong>{daysUntilBooking} days</strong>{' '}
                                       days until recording session.
                                       {daysUntilBooking <= 7 &&
-                                        ' Bạn đã có thể bắt đầu task!'}
+                                        ' You can start the task!'}
                                     </span>
                                   )}
                                   {daysUntilBooking === 0 && (
                                     <span>
-                                      <strong>Hôm nay là ngày thu âm!</strong>{' '}
-                                      Sẵn sàng bắt đầu task.
+                                      <strong>Today is the recording day!</strong>{' '}
+                                      Ready to start task.
                                     </span>
                                   )}
                                   {daysUntilBooking < 0 &&
                                     daysUntilBooking >= -1 && (
                                       <span>
-                                        Ngày thu âm đã qua{' '}
-                                        {Math.abs(daysUntilBooking)} ngày. Vẫn
-                                        có thể bắt đầu task.
+                                        Recording day has passed{' '}
+                                        {Math.abs(daysUntilBooking)} days. Still
+                                        can start the task.
                                       </span>
                                     )}
                                   {studioBooking.durationHours && (
                                     <span>
                                       {' '}
-                                      • Thời lượng:{' '}
+                                      • Duration:{' '}
                                       {studioBooking.durationHours}h
                                     </span>
                                   )}
                                   {studioBooking.status && (
                                     <span>
                                       {' '}
-                                      • Trạng thái: {studioBooking.status}
+                                      • Status: {studioBooking.status}
                                     </span>
                                   )}
                                 </span>
@@ -2190,7 +2190,7 @@ const SpecialistTaskDetailPage = () => {
                         !canStartWithBooking &&
                         bookingStatusMessage && (
                           <Alert
-                            message="Chưa thể bắt đầu task"
+                            message="Cannot start task"
                             description={bookingStatusMessage}
                             type="warning"
                             showIcon
@@ -2241,7 +2241,7 @@ const SpecialistTaskDetailPage = () => {
                                 icon={<ExclamationCircleOutlined />}
                                 onClick={handleOpenIssueModal}
                               >
-                                Báo không kịp deadline
+                                Report not on time
                               </Button>
                             )}
                           </Space>
@@ -2336,7 +2336,7 @@ const SpecialistTaskDetailPage = () => {
         return (
           <Card
             className={styles.section}
-            title="Draft Files (chưa submit)"
+            title="Draft Files (not submitted)"
             extra={
               canUpload ? (
                 <Button
@@ -2363,7 +2363,7 @@ const SpecialistTaskDetailPage = () => {
             ) : (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="Chưa có draft files. Upload file để bắt đầu."
+                description="No draft files. Upload file to start."
               />
             )}
           </Card>
@@ -2383,7 +2383,7 @@ const SpecialistTaskDetailPage = () => {
                 <Space>
                   <Text strong>
                     {currentSubmission.status?.toLowerCase() === 'rejected'
-                      ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
+                      ? `Submission #${currentSubmission.version} – Revision Requested (Manager requested revision)`
                       : revisedRevision
                         ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
                         : `Current review – Submission #${currentSubmission.version}`}
@@ -2432,7 +2432,7 @@ const SpecialistTaskDetailPage = () => {
                   pagination={false}
                 />
               ) : (
-                <Empty description="Không có files trong submission này" />
+                <Empty description="No files in this submission" />
               )}
             </Card>
           );
@@ -2455,7 +2455,7 @@ const SpecialistTaskDetailPage = () => {
               loading={loadingRevisionRequests}
               size="small"
             >
-              Làm mới
+              Reload
             </Button>
           }
         >
@@ -2474,14 +2474,14 @@ const SpecialistTaskDetailPage = () => {
                   canceled: 'default',
                 };
                 const statusLabels = {
-                  pending_manager_review: 'Chờ Manager duyệt',
-                  in_revision: 'Đang chỉnh sửa',
-                  waiting_manager_review: 'Chờ Manager review',
-                  approved_pending_delivery: 'Đã duyệt, chờ deliver',
-                  waiting_customer_confirm: 'Chờ Customer xác nhận',
-                  completed: 'Hoàn thành',
-                  rejected: 'Từ chối',
-                  canceled: 'Đã hủy',
+                  pending_manager_review: 'Waiting for Manager approval',
+                  in_revision: 'In revision',
+                  waiting_manager_review: 'Waiting for Manager review',
+                  approved_pending_delivery: 'Approved, waiting for delivery',
+                  waiting_customer_confirm: 'Waiting for Customer confirmation',
+                  completed: 'Completed',
+                  rejected: 'Rejected',
+                  canceled: 'Canceled',
                 };
 
                 return (
@@ -2518,7 +2518,7 @@ const SpecialistTaskDetailPage = () => {
                                 type="secondary"
                                 style={{ fontSize: 11, marginLeft: 4 }}
                               >
-                                (+{revision.revisionDeadlineDays} ngày SLA)
+                                (+{revision.revisionDeadlineDays} days SLA)
                               </Text>
                             )}
                           </Tag>

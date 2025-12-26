@@ -68,7 +68,7 @@ const NotificationsPage = () => {
         setPage(pageNum);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
-        message.error('Không thể tải thông báo');
+        message.error('Cannot load notifications');
       } finally {
         setLoading(false);
       }
@@ -100,10 +100,10 @@ const NotificationsPage = () => {
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
-      message.success('Đã đánh dấu đã đọc');
+      message.success('Marked as read');
     } catch (error) {
       console.error('Failed to mark as read:', error);
-      message.error('Không thể đánh dấu đã đọc');
+      message.error('Cannot mark as read');
     }
   }, []);
 
@@ -116,10 +116,10 @@ const NotificationsPage = () => {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      message.success('Đã đánh dấu tất cả thông báo');
+      message.success('Marked all as read');
     } catch (error) {
       console.error('Failed to mark all as read:', error);
-      message.error('Không thể đánh dấu tất cả');
+      message.error('Cannot mark all as read');
     } finally {
       setMarkAllLoading(false);
     }

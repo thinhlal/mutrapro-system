@@ -150,7 +150,7 @@ const SpecialistProfile = () => {
         }
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải profile');
+      message.error(error.message || 'Cannot load profile');
     } finally {
       setLoading(false);
     }
@@ -205,7 +205,7 @@ const SpecialistProfile = () => {
         setDemos(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải demos');
+      message.error(error.message || 'Cannot load demos');
     } finally {
       setDemosLoading(false);
     }
@@ -221,7 +221,7 @@ const SpecialistProfile = () => {
         setSkills([]);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải skills');
+      message.error(error.message || 'Cannot load skills');
       setSkills([]);
     } finally {
       setSkillsLoading(false);
@@ -238,7 +238,7 @@ const SpecialistProfile = () => {
         setAvailableSkills([]);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách skills');
+      message.error(error.message || 'Cannot load skills list');
       setAvailableSkills([]);
     } finally {
       setAvailableSkillsLoading(false);
@@ -249,10 +249,10 @@ const SpecialistProfile = () => {
     setLoading(true);
     try {
       await updateMyProfile(values);
-      message.success('Cập nhật profile thành công');
+      message.success('Update profile successfully');
       fetchProfile();
     } catch (error) {
-      message.error(error.message || 'Không thể cập nhật profile');
+      message.error(error.message || 'Cannot update profile');
     } finally {
       setLoading(false);
     }
@@ -267,7 +267,7 @@ const SpecialistProfile = () => {
       // Validate file type
       const isImage = file.type?.startsWith('image/');
       if (!isImage) {
-        message.error('Chỉ chấp nhận file ảnh');
+        message.error('Only image files are accepted');
         setAvatarUploading(false);
         return;
       }
@@ -275,7 +275,7 @@ const SpecialistProfile = () => {
       // Validate file size (5MB)
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        message.error('Kích thước file phải nhỏ hơn 5MB');
+        message.error('File size must be less than 5MB');
         setAvatarUploading(false);
         return;
       }
@@ -295,7 +295,7 @@ const SpecialistProfile = () => {
         },
       }));
 
-      message.success('Upload avatar thành công');
+      message.success('Upload avatar successfully');
 
       // Refresh profile to get latest data from backend
       await fetchProfile();
@@ -308,7 +308,7 @@ const SpecialistProfile = () => {
       const errorMessage =
         error.message ||
         error.response?.data?.message ||
-        'Không thể upload avatar';
+        'Cannot upload avatar';
       message.error(errorMessage);
     } finally {
       setAvatarUploading(false);
@@ -389,7 +389,7 @@ const SpecialistProfile = () => {
           certificationDetails: values.certificationDetails,
         };
         await updateMySkill(editingSkill.specialistSkillId, skillData);
-        message.success('Cập nhật skill thành công');
+        message.success('Update skill successfully');
       } else {
         // Khi add, gửi cả skillId
         const skillData = {
@@ -399,13 +399,13 @@ const SpecialistProfile = () => {
             : null,
         };
         await addSkill(skillData);
-        message.success('Thêm skill thành công');
+        message.success('Add skill successfully');
       }
       setSkillModalVisible(false);
       skillForm.resetFields();
       fetchSkills();
     } catch (error) {
-      message.error(error.message || 'Không thể lưu skill');
+      message.error(error.message || 'Cannot save skill');
     } finally {
       setSkillLoading(false);
     }
@@ -414,10 +414,10 @@ const SpecialistProfile = () => {
   const handleDeleteSkill = async skillId => {
     try {
       await deleteMySkill(skillId);
-      message.success('Xóa skill thành công');
+      message.success('Delete skill successfully');
       fetchSkills();
     } catch (error) {
-      message.error(error.message || 'Không thể xóa skill');
+      message.error(error.message || 'Cannot delete skill');
     }
   };
 
@@ -466,13 +466,13 @@ const SpecialistProfile = () => {
           if (uploadResponse?.data) {
             previewUrl = uploadResponse.data;
           } else {
-            message.error('Upload file thất bại');
+            message.error('Failed to upload file');
             setUploadingDemoFile(false);
             setDemoLoading(false);
             return;
           }
         } catch (error) {
-          message.error(error?.message || 'Lỗi khi upload file');
+          message.error(error?.message || 'Error uploading file');
           setUploadingDemoFile(false);
           setDemoLoading(false);
           return;
@@ -493,10 +493,10 @@ const SpecialistProfile = () => {
 
       if (editingDemo) {
         await updateMyDemo(editingDemo.demoId, demoData);
-        message.success('Cập nhật demo thành công');
+        message.success('Update demo successfully');
       } else {
         await createMyDemo(demoData);
-        message.success('Tạo demo thành công');
+        message.success('Create demo successfully');
       }
 
       // Cleanup preview URL nếu có
@@ -509,7 +509,7 @@ const SpecialistProfile = () => {
       setSelectedDemoFile(null); // Reset file tạm
       fetchDemos();
     } catch (error) {
-      message.error(error.message || 'Không thể lưu demo');
+      message.error(error.message || 'Cannot save demo');
     } finally {
       setDemoLoading(false);
     }
@@ -518,10 +518,10 @@ const SpecialistProfile = () => {
   const handleDeleteDemo = async demoId => {
     try {
       await deleteMyDemo(demoId);
-      message.success('Xóa demo thành công');
+      message.success('Delete demo successfully');
       fetchDemos();
     } catch (error) {
-      message.error(error.message || 'Không thể xóa demo');
+      message.error(error.message || 'Cannot delete demo');
     }
   };
 
@@ -572,10 +572,10 @@ const SpecialistProfile = () => {
             Edit
           </Button>
           <Popconfirm
-            title="Bạn có chắc muốn xóa skill này?"
+            title="Are you sure you want to delete this skill?"
             onConfirm={() => handleDeleteSkill(record.specialistSkillId)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText="Delete"
+            cancelText="Cancel"
           >
             <Button type="link" danger icon={<DeleteOutlined />}>
               Remove
@@ -660,12 +660,12 @@ const SpecialistProfile = () => {
       ),
     },
     {
-      title: 'Demo chính',
+      title: 'Main Demo',
       dataIndex: 'isMainDemo',
       key: 'isMainDemo',
       render: isMainDemo => (
         <Tag color={isMainDemo ? 'orange' : 'default'}>
-          {isMainDemo ? 'Có' : 'Không'}
+          {isMainDemo ? 'Yes' : 'No'}
         </Tag>
       ),
     },
@@ -683,10 +683,10 @@ const SpecialistProfile = () => {
             Edit
           </Button>
           <Popconfirm
-            title="Bạn có chắc muốn xóa demo này?"
+            title="Are you sure you want to delete this demo?"
             onConfirm={() => handleDeleteDemo(record.demoId)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText="Delete"
+            cancelText="Cancel"
           >
             <Button type="link" danger icon={<DeleteOutlined />}>
               Remove
@@ -861,13 +861,13 @@ const SpecialistProfile = () => {
                     <Form.Item
                       name="portfolioUrl"
                       label="Portfolio URL"
-                      tooltip="Link đến trang portfolio/website của bạn để showcase công việc (ví dụ: Behance, SoundCloud, website cá nhân)"
+                      tooltip="Link to your portfolio/website to showcase your work (e.g. Behance, SoundCloud, personal website)"
                       rules={[
-                        { type: 'url', message: 'Vui lòng nhập URL hợp lệ' },
+                        { type: 'url', message: 'Please enter a valid URL' },
                       ]}
                     >
                       <Input
-                        placeholder="https://your-portfolio.com hoặc https://soundcloud.com/yourname"
+                        placeholder="https://your-portfolio.com or https://soundcloud.com/yourname"
                         addonAfter={
                           profileForm.getFieldValue('portfolioUrl') ? (
                             <a
@@ -876,7 +876,7 @@ const SpecialistProfile = () => {
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
                             >
-                              Mở
+                              Open
                             </a>
                           ) : null
                         }
@@ -886,7 +886,7 @@ const SpecialistProfile = () => {
                     <Form.Item name="bio" label="Short Bio">
                       <TextArea
                         rows={4}
-                        placeholder="Giới thiệu về bản thân..."
+                        placeholder="Introduce yourself..."
                         maxLength={500}
                         showCount
                       />
@@ -1113,7 +1113,7 @@ const SpecialistProfile = () => {
                       <div style={{ textAlign: 'center', padding: '40px 0' }}>
                         <StarOutlined style={{ fontSize: 48, color: '#ccc' }} />
                         <p style={{ marginTop: 16, color: '#999' }}>
-                          Chưa có skill nào. Hãy thêm skill đầu tiên của bạn!
+                          No skills yet. Please add your first skill!
                         </p>
                       </div>
                     </Card>
@@ -1211,8 +1211,7 @@ const SpecialistProfile = () => {
                                 style={{ fontSize: 48, color: '#ccc' }}
                               />
                               <p style={{ marginTop: 16, color: '#999' }}>
-                                Chưa có demo nào. Hãy thêm demo đầu tiên của
-                                bạn!
+                                No demos yet. Please add your first demo!
                               </p>
                             </div>
                           </Card>
@@ -1248,8 +1247,8 @@ const SpecialistProfile = () => {
                             style={{ fontSize: 48, color: '#ccc' }}
                           />
                           <p style={{ marginTop: 16, color: '#999' }}>
-                            Chưa có review nào. Bạn sẽ nhận được reviews từ
-                            khách hàng sau khi hoàn thành các task assignments.
+                            No reviews yet. You will receive reviews from
+                            customers after completing the task assignments.
                           </p>
                         </div>
                       </Card>
@@ -1441,12 +1440,12 @@ const SpecialistProfile = () => {
                       rules={[
                         {
                           required: true,
-                          message: 'Vui lòng chọn category trước',
+                          message: 'Please select category before',
                         },
                       ]}
                     >
                       <Select
-                        placeholder="Chọn category (Vocal hoặc Instrument)"
+                        placeholder="Select category (Vocal or Instrument)"
                         value={selectedSkillCategory}
                         onChange={value => {
                           setSelectedSkillCategory(value);
@@ -1466,14 +1465,14 @@ const SpecialistProfile = () => {
                   <Form.Item
                     name="skillId"
                     label="Skill"
-                    rules={[{ required: true, message: 'Vui lòng chọn skill' }]}
+                    rules={[{ required: true, message: 'Please select skill' }]}
                   >
                     <Select
                       placeholder={
                         needsCategorySelection
                           ? selectedSkillCategory
                             ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill`
-                            : 'Vui lòng chọn category trước'
+                            : 'Please select category before'
                           : isRecordingArtist && selectedSkillCategory
                             ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill`
                             : 'Select skill'
@@ -1488,7 +1487,7 @@ const SpecialistProfile = () => {
                             Loading...
                           </div>
                         ) : needsCategorySelection && !selectedSkillCategory ? (
-                          'Vui lòng chọn category trước'
+                          'Please select category before'
                         ) : (
                           'No skills available'
                         )
@@ -1614,7 +1613,7 @@ const SpecialistProfile = () => {
           <Form.Item
             name="title"
             label="Title"
-            rules={[{ required: true, message: 'Vui lòng nhập title' }]}
+            rules={[{ required: true, message: 'Please enter title' }]}
           >
             <Input placeholder="Enter demo title" />
           </Form.Item>
@@ -1627,9 +1626,9 @@ const SpecialistProfile = () => {
             name="recordingRole"
             label="Recording Role"
             rules={[
-              { required: true, message: 'Vui lòng chọn recording role' },
+              { required: true, message: 'Please select recording role' },
             ]}
-            tooltip="Chọn role của demo này: Vocal (hát) hoặc Instrument (chơi nhạc cụ)"
+            tooltip="Select role of this demo: Vocal (sing) or Instrument (play instrument)"
           >
             <Select
               placeholder="Select recording role"
@@ -1654,13 +1653,13 @@ const SpecialistProfile = () => {
           <Form.Item
             label="Demo File"
             required={!editingDemo}
-            tooltip="Chọn file audio demo (mp3, wav, m4a, flac, aac). Tối đa 50MB. File sẽ được upload khi nhấn OK. File sẽ được lưu public để customer có thể xem/nghe trực tiếp."
+            tooltip="Select demo audio file (mp3, wav, m4a, flac, aac). Maximum 50MB. File will be uploaded when OK is pressed. File will be saved public to allow customers to view/listen directly."
             rules={[
               {
                 validator: () => {
                   // Validate: nếu không phải edit mode, phải có file được chọn
                   if (!editingDemo && !selectedDemoFile) {
-                    return Promise.reject(new Error('Vui lòng chọn file demo'));
+                    return Promise.reject(new Error('Please select demo file'));
                   }
                   return Promise.resolve();
                 },
@@ -1674,7 +1673,7 @@ const SpecialistProfile = () => {
                 // Validate file size (50MB)
                 const maxSize = 50 * 1024 * 1024; // 50MB
                 if (file.size > maxSize) {
-                  message.error('File không được vượt quá 50MB');
+                  message.error('File size must be less than 50MB');
                   return Upload.LIST_IGNORE;
                 }
 
@@ -1690,7 +1689,7 @@ const SpecialistProfile = () => {
 
                 if (!isAudio) {
                   message.error(
-                    'Chỉ chấp nhận file audio (mp3, wav, m4a, flac, aac)'
+                    'Only audio files (mp3, wav, m4a, flac, aac) are accepted'
                   );
                   return Upload.LIST_IGNORE;
                 }
@@ -1703,7 +1702,7 @@ const SpecialistProfile = () => {
                 setPreviewAudioUrl(objectUrl);
 
                 message.info(
-                  'File đã được chọn. Nhấn OK để upload và tạo demo.'
+                  'File has been selected. Press OK to upload and create demo.'
                 );
 
                 // Prevent default upload - sẽ upload khi submit form
@@ -1731,7 +1730,7 @@ const SpecialistProfile = () => {
               }
             >
               <Button icon={<UploadOutlined />} disabled={!!editingDemo}>
-                Chọn file audio
+                Select audio file
               </Button>
             </Upload>
             {selectedDemoFile && (
@@ -1743,7 +1742,7 @@ const SpecialistProfile = () => {
                     marginBottom: 8,
                   }}
                 >
-                  File đã chọn: {selectedDemoFile.name} (
+                  Selected file: {selectedDemoFile.name} (
                   {(selectedDemoFile.size / 1024 / 1024).toFixed(2)} MB)
                 </div>
                 {previewAudioUrl && (
@@ -1764,7 +1763,7 @@ const SpecialistProfile = () => {
                 <div
                   style={{ color: '#999', fontSize: '12px', marginBottom: 8 }}
                 >
-                  File hiện tại: {editingDemo.previewUrl || 'N/A'}
+                  Current file: {editingDemo.previewUrl || 'N/A'}
                 </div>
                 {editingDemo.previewUrl && (
                   <audio controls style={{ width: '100%', maxWidth: '400px' }}>
@@ -1782,9 +1781,9 @@ const SpecialistProfile = () => {
             name="genres"
             label="Genres"
             rules={[
-              { required: true, message: 'Vui lòng chọn ít nhất 1 genre' },
+              { required: true, message: 'Please select at least 1 genre' },
             ]}
-            tooltip="Chọn thể loại nhạc của demo này. Chỉ có thể chọn từ các genres mà bạn đã đăng ký trong profile."
+            tooltip="Select music genre of this demo. Only genres you have registered in your profile can be selected."
           >
             <Select
               mode="multiple"
@@ -1799,8 +1798,8 @@ const SpecialistProfile = () => {
               notFoundContent={
                 !profileDetail?.specialist?.genres ||
                 profileDetail.specialist.genres.length === 0
-                  ? 'Vui lòng cập nhật genres trong profile trước'
-                  : 'Không có genre nào khả dụng'
+                  ? 'Please update genres in profile before'
+                  : 'No genres available'
               }
             />
           </Form.Item>
@@ -1815,7 +1814,7 @@ const SpecialistProfile = () => {
                   const recordingRole = getFieldValue('recordingRole');
                   if (recordingRole === 'INSTRUMENT_PLAYER' && !value) {
                     return Promise.reject(
-                      new Error('Skill là bắt buộc cho demo Instrument')
+                      new Error('Skill is required for Instrument demo (e.g. Piano Performance, Guitar Performance)')
                     );
                   }
                   return Promise.resolve();
@@ -1824,8 +1823,8 @@ const SpecialistProfile = () => {
             ]}
             tooltip={
               demoForm.getFieldValue('recordingRole') === 'INSTRUMENT_PLAYER'
-                ? 'Bắt buộc: Chọn skill nhạc cụ (ví dụ: Piano Performance, Guitar Performance)'
-                : 'Tùy chọn: Chọn skill giọng hát (ví dụ: Soprano, Alto, Tenor)'
+                ? 'Required: Select Instrument skill (e.g. Piano Performance, Guitar Performance)'
+                : 'Optional: Select Vocal skill (e.g. Soprano, Alto, Tenor)'
             }
           >
             <Form.Item
@@ -1846,10 +1845,10 @@ const SpecialistProfile = () => {
                     }}
                     placeholder={
                       !recordingRole
-                        ? 'Vui lòng chọn Recording Role trước'
+                        ? 'Please select Recording Role before'
                         : recordingRole === 'INSTRUMENT_PLAYER'
-                          ? 'Chọn skill nhạc cụ (bắt buộc)'
-                          : 'Chọn skill giọng hát (tùy chọn)'
+                          ? 'Select Instrument skill (required)'
+                          : 'Select Vocal skill (optional)'
                     }
                     allowClear={recordingRole === 'VOCALIST'}
                     disabled={!recordingRole}
@@ -1868,7 +1867,7 @@ const SpecialistProfile = () => {
                       if (!recordingRole) {
                         return (
                           <Option disabled value="">
-                            Vui lòng chọn Recording Role trước
+                            Please select Recording Role before
                           </Option>
                         );
                       }
@@ -1878,7 +1877,7 @@ const SpecialistProfile = () => {
                       if (!skills || skills.length === 0) {
                         return (
                           <Option disabled value="">
-                            Chưa có skill nào. Vui lòng thêm skill vào profile
+                            No skills yet. Please add your first skill to your profile
                             trước.
                           </Option>
                         );
@@ -1930,7 +1929,7 @@ const SpecialistProfile = () => {
                               : recordingRole;
                         return (
                           <Option disabled value="">
-                            Không có skill nào phù hợp với {roleLabel}
+                            No skills matching {roleLabel}
                           </Option>
                         );
                       }
@@ -1958,16 +1957,16 @@ const SpecialistProfile = () => {
             name="isPublic"
             label="Public"
             valuePropName="checked"
-            tooltip="Bật để customer có thể xem demo này, tắt để chỉ bạn xem được"
+            tooltip="Enable to allow customers to view this demo, disable to only allow you to view it"
           >
             <Switch />
           </Form.Item>
 
           <Form.Item
             name="isMainDemo"
-            label="Demo chính"
+            label="Main Demo"
             valuePropName="checked"
-            tooltip="Đánh dấu demo này là demo chính. Demo chính sẽ được hiển thị ở avatar trong trang list specialists. Chỉ nên có 1 demo chính."
+            tooltip="Mark this demo as main. Main demo will be displayed in the avatar on the list specialists page. Only one main demo should be present."
           >
             <Switch />
           </Form.Item>
