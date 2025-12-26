@@ -11,32 +11,42 @@ import styles from './Dashboard.module.css';
 import { formatCurrency, formatPercent } from './adminDashboardMock';
 
 const RevenueSummaryCard = ({ data, timeRange }) => {
-  // Return null if no data
-  if (!data || !data.total || !data.fromTopups || !data.fromServices) {
+  // Debug: Log data to see what we're receiving
+  if (process.env.NODE_ENV === 'development') {
+    console.log('RevenueSummaryCard - data:', data);
+  }
+
+  // Return null only if data is completely missing
+  if (!data) {
     return null;
   }
+
+  // Handle missing or null nested objects - use default values
+  const totalMetrics = data.total || { value: 0, trend: 0, sparkline: [] };
+  const topupMetrics = data.fromTopups || { value: 0, trend: 0, sparkline: [] };
+  const serviceMetrics = data.fromServices || { value: 0, trend: 0, sparkline: [] };
 
   const metrics = [
     { 
       key: 'total', 
       label: 'Total Revenue', 
-      value: data.total.value, 
-      trend: data.total.trend, 
-      sparkline: data.total.sparkline || [] 
+      value: totalMetrics.value || 0, 
+      trend: totalMetrics.trend || 0, 
+      sparkline: totalMetrics.sparkline || [] 
     },
     { 
       key: 'topups', 
       label: 'From Top-ups', 
-      value: data.fromTopups.value, 
-      trend: data.fromTopups.trend, 
-      sparkline: data.fromTopups.sparkline || [] 
+      value: topupMetrics.value || 0, 
+      trend: topupMetrics.trend || 0, 
+      sparkline: topupMetrics.sparkline || [] 
     },
     { 
       key: 'services', 
       label: 'From Services', 
-      value: data.fromServices.value, 
-      trend: data.fromServices.trend, 
-      sparkline: data.fromServices.sparkline || [] 
+      value: serviceMetrics.value || 0, 
+      trend: serviceMetrics.trend || 0, 
+      sparkline: serviceMetrics.sparkline || [] 
     },
   ];
 
