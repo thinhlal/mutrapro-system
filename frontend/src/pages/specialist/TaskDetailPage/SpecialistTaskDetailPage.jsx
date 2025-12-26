@@ -798,6 +798,65 @@ const SpecialistTaskDetailPage = () => {
       }
 
       const file = selectedFile;
+      
+      // Validate file type before upload
+      const fileName = file.name?.toLowerCase() || '';
+      const taskType = task?.taskType?.toLowerCase();
+      
+      const notationExts = [
+        '.musicxml',
+        '.xml',
+        '.mid',
+        '.midi',
+        '.pdf',
+      ];
+      const audioExts = [
+        '.mp3',
+        '.wav',
+        '.flac',
+        '.aac',
+        '.ogg',
+        '.m4a',
+        '.wma',
+      ];
+      
+      let allowedExts = [];
+      let allowedTypes = '';
+      
+      if (taskType === 'transcription') {
+        allowedExts = notationExts;
+        allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
+      } else if (
+        taskType === 'arrangement' ||
+        taskType === 'arrangement_with_recording'
+      ) {
+        allowedExts = [...notationExts, ...audioExts];
+        allowedTypes = 'notation or audio files';
+      } else if (
+        taskType === 'recording_session' ||
+        taskType === 'recording_supervision'
+      ) {
+        allowedExts = audioExts;
+        allowedTypes = 'audio files (MP3, WAV, FLAC, etc.)';
+      }
+      
+      if (allowedExts.length > 0) {
+        const hasValidExt = allowedExts.some(ext =>
+          fileName.endsWith(ext)
+        );
+        
+        if (!hasValidExt) {
+          toast.error(
+            `File type not allowed for ${taskType} task. Only ${allowedTypes} are allowed.`,
+            {
+              duration: 5000,
+              position: 'top-center',
+            }
+          );
+          setUploading(false);
+          return;
+        }
+      }
 
       const response = await uploadTaskFile(
         task.assignmentId,

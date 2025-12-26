@@ -72,14 +72,20 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       file.type === 'application/xml';
 
     if (!isAudio) {
-      toast.error('Only audio, PDF or XML files are accepted!');
+      toast.error('Only audio, PDF or XML files are accepted!', {
+        duration: 5000,
+        position: 'top-center',
+      });
       return Upload.LIST_IGNORE;
     }
 
     // Validate file size (100MB)
     const isLt100M = file.size / 1024 / 1024 < 100;
     if (!isLt100M) {
-      toast.error('File must be smaller than 100MB!');
+      toast.error('File must be smaller than 100MB!', {
+        duration: 5000,
+        position: 'top-center',
+      });
       return Upload.LIST_IGNORE;
     }
 

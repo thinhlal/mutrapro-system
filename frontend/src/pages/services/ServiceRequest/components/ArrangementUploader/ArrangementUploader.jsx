@@ -27,6 +27,7 @@ import {
   MUSIC_GENRES,
   MUSIC_PURPOSES,
 } from '../../../../../constants/musicOptionsConstants';
+import toast from 'react-hot-toast';
 
 const { Dragger } = Upload;
 
@@ -345,7 +346,31 @@ export default function ArrangementUploader({
     }
   };
 
-  const beforeUpload = useCallback(() => false, []);
+  const beforeUpload = useCallback((file) => {
+    // Validate file type - Arrangement only accepts notation files (MusicXML/MIDI/PDF), not audio
+    const fileName = file.name?.toLowerCase() || '';
+    const isNotation = 
+      fileName.endsWith('.musicxml') ||
+      fileName.endsWith('.xml') ||
+      fileName.endsWith('.mid') ||
+      fileName.endsWith('.midi') ||
+      fileName.endsWith('.pdf') ||
+      file.type === 'application/vnd.recordare.musicxml+xml' ||
+      file.type === 'application/xml' ||
+      file.type === 'audio/midi' ||
+      file.type === 'audio/mid' ||
+      file.type === 'application/pdf';
+    
+    if (!isNotation) {
+      toast.error('Only notation files (MusicXML, XML, MIDI, PDF) are accepted for arrangement. Audio files are not allowed.', {
+        duration: 5000,
+        position: 'top-center',
+      });
+      return false;
+    }
+    
+    return false; // Prevent auto upload
+  }, []);
 
   const onChange = async ({ fileList }) => {
     const f = fileList?.[0]?.originFileObj || null;
@@ -354,9 +379,30 @@ export default function ArrangementUploader({
       return;
     }
 
+    // Validate file type again
+    const fileName = f.name?.toLowerCase() || '';
+    const isNotation = 
+      fileName.endsWith('.musicxml') ||
+      fileName.endsWith('.xml') ||
+      fileName.endsWith('.mid') ||
+      fileName.endsWith('.midi') ||
+      fileName.endsWith('.pdf') ||
+      f.type === 'application/vnd.recordare.musicxml+xml' ||
+      f.type === 'application/xml' ||
+      f.type === 'audio/midi' ||
+      f.type === 'audio/mid' ||
+      f.type === 'application/pdf';
+    
+    if (!isNotation) {
+      toast.error('Only notation files (MusicXML, XML, MIDI, PDF) are accepted for arrangement. Audio files are not allowed.', {
+        duration: 5000,
+        position: 'top-center',
+      });
+      return;
+    }
+
     setFile(f);
     setFileError(''); // Clear error when file is selected
-    // Arrangement only accepts notation files (MusicXML/MIDI/PDF), not audio
   };
 
   const clearFile = () => {
@@ -378,6 +424,29 @@ export default function ArrangementUploader({
     if (!file) {
       setFileError('Please upload your original notation file.');
       hasError = true;
+    } else {
+      // Validate file type
+      const fileName = file.name?.toLowerCase() || '';
+      const isNotation = 
+        fileName.endsWith('.musicxml') ||
+        fileName.endsWith('.xml') ||
+        fileName.endsWith('.mid') ||
+        fileName.endsWith('.midi') ||
+        fileName.endsWith('.pdf') ||
+        file.type === 'application/vnd.recordare.musicxml+xml' ||
+        file.type === 'application/xml' ||
+        file.type === 'audio/midi' ||
+        file.type === 'audio/mid' ||
+        file.type === 'application/pdf';
+      
+      if (!isNotation) {
+        toast.error('Only notation files (MusicXML, XML, MIDI, PDF) are accepted for arrangement. Audio files are not allowed.', {
+          duration: 5000,
+          position: 'top-center',
+        });
+        setFileError('Invalid file type. Please upload a notation file (MusicXML, XML, MIDI, or PDF).');
+        hasError = true;
+      }
     }
 
     // Validate form data - check each required field

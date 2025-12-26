@@ -27,6 +27,7 @@ import { createServiceRequest } from '../../../../../services/serviceRequestServ
 import { formatDurationMMSS } from '../../../../../utils/timeUtils';
 import { useInstrumentStore } from '../../../../../stores/useInstrumentStore';
 import InstrumentSelectionModal from '../../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
+import toast from 'react-hot-toast';
 
 const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
@@ -248,12 +249,48 @@ export default function TranscriptionUploader({
     setInstrumentModalVisible(false);
   };
 
-  const beforeUpload = useCallback(() => false, []);
+  const beforeUpload = useCallback((file) => {
+    // Validate file type - transcription only accepts audio files
+    const isAudio = file.type?.startsWith('audio/') || 
+                    file.name?.toLowerCase().endsWith('.mp3') ||
+                    file.name?.toLowerCase().endsWith('.wav') ||
+                    file.name?.toLowerCase().endsWith('.m4a') ||
+                    file.name?.toLowerCase().endsWith('.flac') ||
+                    file.name?.toLowerCase().endsWith('.aac') ||
+                    file.name?.toLowerCase().endsWith('.ogg');
+    
+    if (!isAudio) {
+      toast.error('Only audio files (MP3, WAV, M4A, FLAC, AAC, OGG) are accepted for transcription.', {
+        duration: 5000,
+        position: 'top-center',
+      });
+      return false;
+    }
+    
+    return false; // Prevent auto upload
+  }, []);
 
   const onDraggerChange = async ({ fileList }) => {
     const f = fileList?.[0]?.originFileObj || null;
     if (!f) {
       clearFile();
+      return;
+    }
+
+    // Validate file type again
+    const isAudio = f.type?.startsWith('audio/') || 
+                    f.name?.toLowerCase().endsWith('.mp3') ||
+                    f.name?.toLowerCase().endsWith('.wav') ||
+                    f.name?.toLowerCase().endsWith('.m4a') ||
+                    f.name?.toLowerCase().endsWith('.flac') ||
+                    f.name?.toLowerCase().endsWith('.aac') ||
+                    f.name?.toLowerCase().endsWith('.ogg');
+    
+    if (!isAudio) {
+      toast.error('Only audio files (MP3, WAV, M4A, FLAC, AAC, OGG) are accepted for transcription.', {
+        duration: 5000,
+        position: 'top-center',
+      });
       return;
     }
 
@@ -298,13 +335,31 @@ export default function TranscriptionUploader({
     setErrorMessage(null);
 
     if (!file) {
-      setErrorMessage('Vui lòng tải lên file audio.');
+      setErrorMessage('Please upload an audio file.');
+      return;
+    }
+
+    // Validate file type
+    const isAudio = file.type?.startsWith('audio/') || 
+                    file.name?.toLowerCase().endsWith('.mp3') ||
+                    file.name?.toLowerCase().endsWith('.wav') ||
+                    file.name?.toLowerCase().endsWith('.m4a') ||
+                    file.name?.toLowerCase().endsWith('.flac') ||
+                    file.name?.toLowerCase().endsWith('.aac') ||
+                    file.name?.toLowerCase().endsWith('.ogg');
+    
+    if (!isAudio) {
+      toast.error('Only audio files (MP3, WAV, M4A, FLAC, AAC, OGG) are accepted for transcription.', {
+        duration: 5000,
+        position: 'top-center',
+      });
+      setErrorMessage('Invalid file type. Please upload an audio file.');
       return;
     }
 
     // Validate form data
     if (!formData || !formData.title || !formData.contactName) {
-      setErrorMessage('Vui lòng điền đầy đủ thông tin form phía trên.');
+      setErrorMessage('Please fill in all required information in the form above.');
       return;
     }
 
