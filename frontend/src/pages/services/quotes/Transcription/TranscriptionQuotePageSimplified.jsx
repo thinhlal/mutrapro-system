@@ -101,7 +101,10 @@ export default function TranscriptionQuotePageSimplified() {
         }
       } catch (error) {
         console.error('Error fetching pricing data:', error);
-        toast.error('Không thể tải thông tin giá. Vui lòng thử lại.');
+        toast.error('Cannot load pricing information. Please try again.', {
+          duration: 5000,
+          position: 'top-center',
+        });
       } finally {
         setLoading(false);
       }
@@ -147,12 +150,18 @@ export default function TranscriptionQuotePageSimplified() {
     // 1. Validate trước
     if (serviceType === 'transcription') {
       if (!formData.durationMinutes || formData.durationMinutes <= 0) {
-        toast.error('Thời lượng phải là số dương (phút) cho transcription.');
+        toast.error('Duration must be a positive number (minutes) for transcription.', {
+          duration: 5000,
+          position: 'top-center',
+        });
         return;
       }
 
       if (!uploadedFile) {
-        toast.error('File audio là bắt buộc cho transcription.');
+        toast.error('Audio file is required for transcription.', {
+          duration: 5000,
+          position: 'top-center',
+        });
         return;
       }
     }
@@ -190,7 +199,10 @@ export default function TranscriptionQuotePageSimplified() {
       console.error('Error creating request:', error);
       const errorMessage =
         error?.message || error?.data?.message || 'Failed to create request';
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setSubmitting(false);
     }
