@@ -114,7 +114,7 @@ function InstrumentFormModal({
         </Form.Item>
 
         <Form.Item
-          label="Base Price (USD)"
+          label="Base Price (VND)"
           name="basePrice"
           rules={[
             { required: true, message: 'Please input base price!' },
@@ -138,7 +138,7 @@ function InstrumentFormModal({
             placeholder="e.g., 50.00"
             formatter={value =>
               value !== undefined && value !== null && value !== ''
-                ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                ? `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
                 : ''
             }
             parser={value => value?.replace(/\$\s?|(,*)/g, '')}

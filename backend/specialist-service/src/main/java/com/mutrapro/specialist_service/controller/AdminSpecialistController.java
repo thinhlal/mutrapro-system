@@ -122,13 +122,7 @@ public class AdminSpecialistController {
             @RequestParam(required = false) SpecialistStatus status) {
         log.info("GET /admin/specialists/filter - Filtering by specialization: {}, status: {}", specialization, status);
         
-        List<SpecialistResponse> specialists;
-        if (specialization != null && status != null) {
-            specialists = adminSpecialistService.getSpecialistsBySpecializationAndStatus(specialization, status);
-        } else {
-            // If no filter, return all
-            specialists = adminSpecialistService.getAllSpecialists();
-        }
+        List<SpecialistResponse> specialists = adminSpecialistService.getSpecialistsByFilter(specialization, status);
         
         return ApiResponse.<List<SpecialistResponse>>builder()
             .message("Specialists retrieved successfully")

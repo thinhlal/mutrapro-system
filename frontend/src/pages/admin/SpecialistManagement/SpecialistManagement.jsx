@@ -328,8 +328,9 @@ const SpecialistManagement = () => {
               placeholder="Filter by Specialization"
               allowClear
               style={{ width: 200 }}
+              value={filters.specialization || undefined}
               onChange={value =>
-                setFilters({ ...filters, specialization: value })
+                setFilters({ ...filters, specialization: value || null })
               }
             >
               <Option value="TRANSCRIPTION">Transcription</Option>
@@ -340,7 +341,8 @@ const SpecialistManagement = () => {
               placeholder="Filter by Status"
               allowClear
               style={{ width: 150 }}
-              onChange={value => setFilters({ ...filters, status: value })}
+              value={filters.status || undefined}
+              onChange={value => setFilters({ ...filters, status: value || null })}
             >
               <Option value="ACTIVE">Active</Option>
               <Option value="SUSPENDED">Suspended</Option>

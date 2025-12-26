@@ -310,22 +310,54 @@ public class EquipmentService {
         
         // Update skill mappings if provided
         if (request.getSkillIds() != null) {
-            // Delete existing mappings
-            skillEquipmentMappingRepository.deleteByEquipment_EquipmentId(equipmentId);
+            // Get existing mappings
+            List<SkillEquipmentMapping> existingMappings = skillEquipmentMappingRepository.findByEquipment_EquipmentId(equipmentId);
+            List<String> existingSkillIds = existingMappings.stream()
+                    .map(SkillEquipmentMapping::getSkillId)
+                    .collect(Collectors.toList());
             
-            // Create new mappings
-            if (!request.getSkillIds().isEmpty()) {
-                List<SkillEquipmentMapping> mappings = new ArrayList<>();
-                for (String skillId : request.getSkillIds()) {
-                    SkillEquipmentMapping mapping = SkillEquipmentMapping.builder()
-                            .skillId(skillId)
-                            .equipment(equipment)
-                            .build();
-                    mappings.add(mapping);
+            // Determine which mappings to delete (existing but not in new list)
+            List<String> skillIdsToDelete = existingSkillIds.stream()
+                    .filter(skillId -> !request.getSkillIds().contains(skillId))
+                    .collect(Collectors.toList());
+            
+            // Determine which mappings to create (new but not in existing list)
+            List<String> skillIdsToCreate = request.getSkillIds().stream()
+                    .filter(skillId -> !existingSkillIds.contains(skillId))
+                    .collect(Collectors.toList());
+            
+            // Delete mappings that are no longer needed
+            if (!skillIdsToDelete.isEmpty()) {
+                for (String skillId : skillIdsToDelete) {
+                    skillEquipmentMappingRepository.deleteBySkillIdAndEquipment_EquipmentId(skillId, equipmentId);
                 }
-                skillEquipmentMappingRepository.saveAll(mappings);
-                log.info("Updated skill mappings for equipment: {} ({} mappings)", equipmentId, mappings.size());
-            } else {
+                log.debug("Deleted {} skill mappings for equipment: {}", skillIdsToDelete.size(), equipmentId);
+            }
+            
+            // Create new mappings (only for skills that don't already exist)
+            if (!skillIdsToCreate.isEmpty()) {
+                List<SkillEquipmentMapping> newMappings = new ArrayList<>();
+                for (String skillId : skillIdsToCreate) {
+                    // Double-check to avoid duplicate (race condition protection)
+                    if (!skillEquipmentMappingRepository.existsBySkillIdAndEquipment_EquipmentId(skillId, equipmentId)) {
+                        SkillEquipmentMapping mapping = SkillEquipmentMapping.builder()
+                                .skillId(skillId)
+                                .equipment(equipment)
+                                .build();
+                        newMappings.add(mapping);
+                    }
+                }
+                if (!newMappings.isEmpty()) {
+                    skillEquipmentMappingRepository.saveAll(newMappings);
+                    log.debug("Created {} new skill mappings for equipment: {}", newMappings.size(), equipmentId);
+                }
+            }
+            
+            int totalMappings = request.getSkillIds().size();
+            log.info("Updated skill mappings for equipment: {} ({} mappings total, {} deleted, {} created)", 
+                    equipmentId, totalMappings, skillIdsToDelete.size(), skillIdsToCreate.size());
+            
+            if (request.getSkillIds().isEmpty()) {
                 log.info("Removed all skill mappings for equipment: {}", equipmentId);
             }
         }

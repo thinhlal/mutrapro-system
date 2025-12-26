@@ -899,6 +899,11 @@ const SpecialistProfile = () => {
                           Recording Artist Information
                         </Divider>
 
+                        {/* Hidden field to preserve avatarUrl when saving profile */}
+                        <Form.Item name="avatarUrl" hidden>
+                          <Input type="hidden" />
+                        </Form.Item>
+
                         <Form.Item name="gender" label="Gender">
                           <Radio.Group>
                             <Radio value="MALE">Male</Radio>

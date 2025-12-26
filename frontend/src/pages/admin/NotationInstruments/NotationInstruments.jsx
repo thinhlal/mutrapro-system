@@ -103,7 +103,36 @@ const NotationInstruments = () => {
       setModalVisible(false);
       fetchInstruments();
     } catch (error) {
-      message.error(error.message || 'An error occurred');
+      console.error('Error creating/updating instrument:', error);
+      
+      // Extract error message from different error formats
+      // Service throws error.response?.data which is an object with message, errorCode, etc.
+      let errorMessage = 'An error occurred';
+      
+      // Check if error is the response data object (from service)
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.message) {
+        // Fallback: if error still has axios structure
+        errorMessage = error.response.data.message;
+      } else {
+        errorMessage = 'Failed to create/update instrument';
+      }
+      
+      // Check for duplicate error by errorCode or message content
+      const errorCode = error?.errorCode || error?.response?.data?.errorCode;
+      if (
+        errorCode === 'REQUEST_6007' ||
+        errorMessage.toLowerCase().includes('already exists') ||
+        errorMessage.toLowerCase().includes('duplicate') ||
+        errorMessage.toLowerCase().includes('trùng')
+      ) {
+        errorMessage = `Instrument name "${values.instrumentName}" already exists! Please choose a different name.`;
+      }
+      
+      message.error(errorMessage);
     }
   };
 
@@ -173,11 +202,18 @@ const NotationInstruments = () => {
       dataIndex: 'basePrice',
       key: 'basePrice',
       width: 250,
-      render: price => (
-        <span style={{ fontWeight: 500, color: '#52c41a' }}>
-          ${price ? Number(price).toFixed(2) : '0.00'}
-        </span>
-      ),
+      render: price => {
+        const priceValue = price ?? 0;
+        const formattedPrice = new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(priceValue);
+        return (
+          <span style={{ fontWeight: 500, color: '#52c41a' }}>
+            {formattedPrice}
+          </span>
+        );
+      },
       sorter: (a, b) => (a.basePrice || 0) - (b.basePrice || 0),
     },
     {

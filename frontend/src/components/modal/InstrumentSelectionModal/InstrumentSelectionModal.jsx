@@ -2,6 +2,7 @@
 import { Modal, Row, Col, Card, Empty, Spin, Tag, Badge, Radio } from 'antd';
 import { CheckCircleFilled, StarFilled } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
+import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './InstrumentSelectionModal.module.css';
 
 const InstrumentSelectionModal = ({
@@ -93,7 +94,7 @@ const InstrumentSelectionModal = ({
                 <Badge.Ribbon
                   text={
                     <span style={{ fontSize: 18 }}>
-                      {Number(instrument.basePrice || 0).toFixed(2)} VND
+                      {formatPrice(instrument.basePrice || 0, 'VND')}
                     </span>
                   }
                   color="green"

@@ -1,6 +1,7 @@
 import { Modal, Button, Descriptions, Tag, Space } from 'antd';
 import { SendOutlined, StarFilled } from '@ant-design/icons';
 import PropTypes from 'prop-types';
+import { formatPrice } from '../../../services/pricingMatrixService';
 
 export default function ReviewRequestModal({
   visible,
@@ -69,10 +70,10 @@ export default function ReviewRequestModal({
             </Descriptions.Item>
             <Descriptions.Item label="Instrument Price">
               <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
-                $
-                {Number(
-                  getInstrumentData(selectedInstruments[0])?.basePrice || 0
-                ).toFixed(2)}
+                {formatPrice(
+                  getInstrumentData(selectedInstruments[0])?.basePrice || 0,
+                  'VND'
+                )}
               </Tag>
             </Descriptions.Item>
           </>
@@ -104,7 +105,7 @@ export default function ReviewRequestModal({
                       {isMain && ' (Main)'}
                     </span>
                     <Tag color="green">
-                      ${Number(inst.basePrice || 0).toFixed(2)}
+                      {formatPrice(inst.basePrice || 0, 'VND')}
                     </Tag>
                   </div>
                 ) : null;

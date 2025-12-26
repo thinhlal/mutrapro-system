@@ -201,6 +201,35 @@ public class AdminSpecialistService {
     }
     
     /**
+     * Lấy danh sách specialist theo filter (specialization và/hoặc status)
+     * Xử lý tất cả các trường hợp: chỉ specialization, chỉ status, cả hai, hoặc không có filter
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public List<SpecialistResponse> getSpecialistsByFilter(
+            SpecialistType specialization, 
+            SpecialistStatus status) {
+        log.info("Getting specialists with filter - specialization: {}, status: {}", specialization, status);
+        
+        List<Specialist> specialists;
+        
+        if (specialization != null && status != null) {
+            // Cả hai filter đều có
+            specialists = specialistRepository.findBySpecializationAndStatus(specialization, status);
+        } else if (specialization != null) {
+            // Chỉ có specialization
+            specialists = specialistRepository.findBySpecialization(specialization);
+        } else if (status != null) {
+            // Chỉ có status
+            specialists = specialistRepository.findByStatus(status);
+        } else {
+            // Không có filter nào, trả về tất cả
+            specialists = specialistRepository.findAll();
+        }
+        
+        return specialistMapper.toSpecialistResponseList(specialists);
+    }
+    
+    /**
      * Get specialist statistics for admin dashboard
      * @return SpecialistStatisticsResponse with active and inactive counts
      */
