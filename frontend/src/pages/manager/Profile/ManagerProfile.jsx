@@ -25,10 +25,10 @@ const ManagerProfile = () => {
     try {
       setLoggingOut(true);
       await logout();
-      message.success('Đăng xuất thành công');
+      message.success('Logged out successfully');
       navigate('/login');
     } catch (error) {
-      message.error('Lỗi khi đăng xuất');
+      message.error('Error when logging out');
       setLoggingOut(false);
     }
   };

@@ -46,14 +46,14 @@ const REVISION_STATUS_COLORS = {
 };
 
 const REVISION_STATUS_LABELS = {
-  pending_manager_review: 'Chờ Manager duyệt',
-  in_revision: 'Đang chỉnh sửa',
-  waiting_manager_review: 'Chờ Manager review',
-  approved_pending_delivery: 'Đã duyệt, chờ deliver',
-  waiting_customer_confirm: 'Chờ Customer xác nhận',
-  completed: 'Hoàn thành',
-  rejected: 'Từ chối',
-  canceled: 'Đã hủy',
+  pending_manager_review: 'Waiting Manager approval',
+  in_revision: 'In revision',
+  waiting_manager_review: 'Waiting Manager review',
+  approved_pending_delivery: 'Approved, waiting delivery',
+  waiting_customer_confirm: 'Waiting Customer confirmation',
+  completed: 'Completed',
+  rejected: 'Rejected',
+  canceled: 'Cancelled',
 };
 
 const RevisionRequestsManagement = () => {
@@ -84,7 +84,7 @@ const RevisionRequestsManagement = () => {
       console.error('Error loading revision requests:', error);
       message.error(
         error?.response?.data?.message ||
-          'Lỗi khi tải danh sách revision requests'
+          'Error when loading revision requests'
       );
       setRevisionRequests([]);
     } finally {
@@ -113,20 +113,20 @@ const RevisionRequestsManagement = () => {
       if (response?.status === 'success') {
         message.success(
           reviewAction === 'approve'
-            ? 'Đã duyệt revision request'
-            : 'Đã từ chối revision request'
+            ? 'Approved revision request'
+            : 'Rejected revision request'
         );
         setReviewModalVisible(false);
         setSelectedRevisionRequest(null);
         setManagerNote('');
         await loadRevisionRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi review revision request');
+        message.error(response?.message || 'Error when reviewing revision request');
       }
     } catch (error) {
       console.error('Error reviewing revision request:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi review revision request'
+        error?.response?.data?.message || 'Error when reviewing revision request'
       );
     } finally {
       setActionLoading(false);
@@ -310,7 +310,7 @@ const RevisionRequestsManagement = () => {
                 onClick={loadRevisionRequests}
                 loading={loading}
               >
-                Làm mới
+                Refresh
               </Button>
             </Space>
           </div>
@@ -323,7 +323,7 @@ const RevisionRequestsManagement = () => {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: total => `Tổng: ${total} revision requests`,
+              showTotal: total => `Total: ${total} revision requests`,
             }}
             expandable={{
               expandedRowRender: record => (
@@ -336,8 +336,8 @@ const RevisionRequestsManagement = () => {
                           style={{ fontSize: 13 }}
                         >
                           {record.isFreeRevision
-                            ? 'Free Revision (Miễn phí)'
-                            : 'Paid Revision (Có phí)'}
+                            ? 'Free Revision (Free)'
+                            : 'Paid Revision (Paid)'}
                         </Tag>
                         {!record.isFreeRevision && record.paidWalletTxId && (
                           <Text type="secondary" style={{ fontSize: 12 }}>
@@ -363,7 +363,7 @@ const RevisionRequestsManagement = () => {
                             marginTop: 4,
                           }}
                         >
-                          (Submission bị request revision)
+                          (Submission requested revision)
                         </Text>
                       </Descriptions.Item>
                     )}
@@ -381,7 +381,7 @@ const RevisionRequestsManagement = () => {
                             marginTop: 4,
                           }}
                         >
-                          (Submission sau khi chỉnh sửa)
+                          (Submission after revision)
                         </Text>
                       </Descriptions.Item>
                     )}
@@ -391,7 +391,7 @@ const RevisionRequestsManagement = () => {
                     {record.managerNote && (
                       <Descriptions.Item label="Manager Note">
                         <Alert
-                          message="Ghi chú từ Manager"
+                          message="Manager note"
                           description={record.managerNote}
                           type="info"
                           showIcon
@@ -418,18 +418,18 @@ const RevisionRequestsManagement = () => {
                                 type="secondary"
                                 style={{ fontSize: 11, marginLeft: 4 }}
                               >
-                                (+{record.revisionDeadlineDays} ngày SLA)
+                                (+{record.revisionDeadlineDays} days SLA)
                               </Text>
                             )}
                           </Text>
                           {dayjs(record.revisionDueAt).isBefore(dayjs()) && (
-                            <Tag color="red">Quá hạn</Tag>
+                            <Tag color="red">Overdue</Tag>
                           )}
                           {!dayjs(record.revisionDueAt).isBefore(dayjs()) && (
                             <Tag color="blue">
-                              Còn{' '}
+                              Remaining{' '}
                               {dayjs(record.revisionDueAt).diff(dayjs(), 'day')}{' '}
-                              ngày
+                              days
                             </Tag>
                           )}
                         </Space>
@@ -457,8 +457,8 @@ const RevisionRequestsManagement = () => {
       <Modal
         title={
           reviewAction === 'approve'
-            ? 'Duyệt Revision Request'
-            : 'Từ chối Revision Request'
+            ? 'Approve Revision Request'
+            : 'Reject Revision Request'
         }
         open={reviewModalVisible}
         onOk={handleReviewRevisionRequest}
@@ -468,7 +468,7 @@ const RevisionRequestsManagement = () => {
           setManagerNote('');
         }}
         confirmLoading={actionLoading}
-        okText={reviewAction === 'approve' ? 'Duyệt' : 'Từ chối'}
+        okText={reviewAction === 'approve' ? 'Approve' : 'Reject'}
         okButtonProps={{
           danger: reviewAction === 'reject',
         }}
@@ -484,24 +484,24 @@ const RevisionRequestsManagement = () => {
             <Paragraph>{selectedRevisionRequest.description}</Paragraph>
             {reviewAction === 'reject' && (
               <div>
-                <Text strong>Lý do từ chối (tùy chọn):</Text>
+                <Text strong>Reject reason (optional):</Text>
                 <TextArea
                   rows={4}
                   value={managerNote}
                   onChange={e => setManagerNote(e.target.value)}
-                  placeholder="Nhập lý do từ chối revision request này..."
+                  placeholder="Enter reject reason for this revision request..."
                   style={{ marginTop: 8 }}
                 />
               </div>
             )}
             {reviewAction === 'approve' && (
               <div>
-                <Text strong>Ghi chú (tùy chọn):</Text>
+                <Text strong>Manager note (optional):</Text>
                 <TextArea
                   rows={4}
                   value={managerNote}
                   onChange={e => setManagerNote(e.target.value)}
-                  placeholder="Nhập ghi chú cho specialist..."
+                  placeholder="Enter manager note for specialist..."
                   style={{ marginTop: 8 }}
                 />
               </div>

@@ -60,12 +60,12 @@ const WITHDRAWAL_STATUS_COLORS = {
 };
 
 const WITHDRAWAL_STATUS_LABELS = {
-  PENDING_REVIEW: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn thành',
-  REJECTED: 'Từ chối',
-  FAILED: 'Thất bại',
+  PENDING_REVIEW: 'Pending review',
+  APPROVED: 'Approved',
+  PROCESSING: 'Processing',
+  COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
+  FAILED: 'Failed',
 };
 
 const WithdrawalRequestsManagement = () => {
@@ -118,7 +118,7 @@ const WithdrawalRequestsManagement = () => {
     } catch (error) {
       console.error('Error loading bank list:', error);
       message.warning(
-        'Không thể tải danh sách ngân hàng. Vui lòng nhập thủ công.'
+        'Cannot load bank list. Please enter manually.'
       );
     } finally {
       setLoadingBanks(false);
@@ -153,7 +153,7 @@ const WithdrawalRequestsManagement = () => {
       console.error('Error loading withdrawal requests:', error);
       message.error(
         error?.response?.data?.message ||
-          'Lỗi khi tải danh sách withdrawal requests'
+          'Error loading withdrawal requests'
       );
       setWithdrawalRequests([]);
     } finally {
@@ -172,7 +172,7 @@ const WithdrawalRequestsManagement = () => {
       );
 
       if (response?.status === 'success') {
-        message.success('Đã duyệt withdrawal request');
+        message.success('Approved withdrawal request');
         setApproveModalVisible(false);
         setSelectedRequest(null);
         setAdminNote('');
@@ -692,7 +692,7 @@ const WithdrawalRequestsManagement = () => {
                 size="small"
                 style={{ width: '100%' }}
               >
-                <Text strong>Thông tin nhận tiền:</Text>
+                <Text strong>Payment information:</Text>
                 <Descriptions column={1} size="small" bordered>
                   <Descriptions.Item label="Bank">
                     <Text strong>{selectedRequest.bankName}</Text>
@@ -718,7 +718,7 @@ const WithdrawalRequestsManagement = () => {
                           setShowFullAccountNumber(!showFullAccountNumber)
                         }
                       >
-                        {showFullAccountNumber ? 'Ẩn' : 'Xem đầy đủ'}
+                        {showFullAccountNumber ? 'Hide' : 'View full'}
                       </Button>
                       <Button
                         type="link"
@@ -729,9 +729,9 @@ const WithdrawalRequestsManagement = () => {
                             await navigator.clipboard.writeText(
                               selectedRequest.bankAccountNumber
                             );
-                            message.success('Đã copy số tài khoản!');
+                            message.success('Account number copied!');
                           } catch (error) {
-                            message.error('Lỗi khi copy số tài khoản');
+                            message.error('Error copying account number');
                           }
                         }}
                       >
@@ -739,10 +739,10 @@ const WithdrawalRequestsManagement = () => {
                       </Button>
                     </Space>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Chủ TK">
+                  <Descriptions.Item label="Account Holder Name">
                     {selectedRequest.accountHolderName}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Số tiền yêu cầu">
+                  <Descriptions.Item label="Requested amount">
                     <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
                       {formatPriceDisplay(selectedRequest.amount)}
                     </Text>
@@ -752,10 +752,10 @@ const WithdrawalRequestsManagement = () => {
             </Card>
 
             <Form.Item
-              label="Số tiền thực tế đã chuyển"
+              label="Actual amount transferred"
               name="paidAmount"
               rules={[
-                { required: true, message: 'Vui lòng nhập số tiền đã chuyển' },
+                { required: true, message: 'Please enter the amount transferred' },
               ]}
             >
               <InputNumber
@@ -765,7 +765,7 @@ const WithdrawalRequestsManagement = () => {
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
                 }
                 parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                placeholder="Nhập số tiền đã chuyển"
+                placeholder="Enter the amount transferred"
                 onChange={value => {
                   const diff = Math.abs(
                     parseFloat(value || 0) - parseFloat(selectedRequest.amount)
@@ -786,10 +786,10 @@ const WithdrawalRequestsManagement = () => {
             <Form.Item
               label="Ngân hàng chuyển (From bank)"
               name="provider"
-              tooltip="Ngân hàng/Provider mà bạn dùng để chuyển tiền"
+              tooltip="Bank/Provider used to transfer money"
             >
               <Select
-                placeholder="Chọn ngân hàng chuyển"
+                placeholder="Select bank to transfer"
                 allowClear
                 showSearch
                 loading={loadingBanks}
@@ -812,7 +812,7 @@ const WithdrawalRequestsManagement = () => {
             <Form.Item
               label="Transaction Code (Reference / Trace No.)"
               name="bankRef"
-              tooltip="Mã hiển thị trong lịch sử chuyển khoản/bank statement"
+              tooltip="Transaction code displayed in bank statement"
             >
               <Input placeholder="Enter transaction code from bank" />
             </Form.Item>
@@ -820,7 +820,7 @@ const WithdrawalRequestsManagement = () => {
             <Form.Item
               label="Transaction Code (optional)"
               name="txnCode"
-              tooltip="Mã từ hệ thống trung gian (MoMo/Payment provider) - chỉ dùng nếu có"
+              tooltip="Transaction code from intermediary system (MoMo/Payment provider) - only if available"
             >
               <Input placeholder="Enter transaction code from payment provider (if any)" />
             </Form.Item>
@@ -1012,7 +1012,7 @@ const WithdrawalRequestsManagement = () => {
                       selectedRequest.status}
                   </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Ngày tạo">
+                <Descriptions.Item label="Created At">
                   {formatDateTime(selectedRequest.createdAt)}
                 </Descriptions.Item>
                 <Descriptions.Item label="Bank" span={2}>
@@ -1056,7 +1056,7 @@ const WithdrawalRequestsManagement = () => {
                         {parseFloat(selectedRequest.paidAmount) !==
                           parseFloat(selectedRequest.amount) && (
                           <Text type="secondary" style={{ marginLeft: 8 }}>
-                            (Requested:{' '}
+                            (Requested amount:{' '}
                             {formatPriceDisplay(selectedRequest.amount)})
                           </Text>
                         )}

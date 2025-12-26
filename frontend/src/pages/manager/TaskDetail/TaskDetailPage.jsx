@@ -614,10 +614,10 @@ const TaskDetailPage = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
 
-      message.success('Đã tải file thành công');
+      message.success('File downloaded successfully');
     } catch (error) {
       console.error('Error downloading file:', error);
-      message.error('Lỗi khi tải file');
+      message.error('Error when downloading file');
     }
   };
 
@@ -644,7 +644,7 @@ const TaskDetailPage = () => {
       }));
     } catch (error) {
       console.error('Error previewing file:', error);
-      message.error('Lỗi khi xem file');
+      message.error('Error when previewing file');
       setPreviewModalVisible(false);
       setPreviewFile(null);
     } finally {
@@ -1084,7 +1084,7 @@ const TaskDetailPage = () => {
                     ? dayjs(task.milestone.finalCompletedAt).format(
                         'HH:mm DD/MM/YYYY'
                       )
-                    : 'Chưa hoàn thành'}
+                    : 'Not completed'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Payment Completed">
                   {task.milestone.actualEndAt
@@ -1260,7 +1260,7 @@ const TaskDetailPage = () => {
                             {actualDeadline.format('HH:mm DD/MM/YYYY')}
                             {task.milestone?.milestoneSlaDays && (
                               <Text type="secondary" style={{ marginLeft: 4 }}>
-                                (+{task.milestone.milestoneSlaDays} ngày SLA)
+                                (+{task.milestone.milestoneSlaDays} days SLA)
                               </Text>
                             )}
                           </Text>
@@ -1268,26 +1268,26 @@ const TaskDetailPage = () => {
                             <>
                               {actualDaysDiff < 0 && (
                                 <Tag color="red">
-                                  Trễ {Math.abs(actualDaysDiff)} ngày
+                                  Late {Math.abs(actualDaysDiff)} days
                                 </Tag>
                               )}
                               {actualDaysDiff >= 0 && actualDaysDiff <= 3 && (
                                 <Tag color="orange">
-                                  Còn {actualDaysDiff} ngày
+                                  Remaining {actualDaysDiff} days
                                 </Tag>
                               )}
                               {actualDaysDiff > 3 && (
                                 <Tag color="green">
-                                  Còn {actualDaysDiff} ngày
+                                  Remaining {actualDaysDiff} days
                                 </Tag>
                               )}
                             </>
                           )}
                           {isFirstSubmissionLate && (
-                            <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                            <Tag color="red">Late (first submission)</Tag>
                           )}
                           {isFirstSubmissionOnTime && (
-                            <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                            <Tag color="green">On time (first submission)</Tag>
                           )}
                         </Space>
                       </div>
@@ -1307,17 +1307,17 @@ const TaskDetailPage = () => {
                             <>
                               {plannedDaysDiff < 0 && (
                                 <Tag color="red">
-                                  Trễ {Math.abs(plannedDaysDiff)} ngày
+                                  Late {Math.abs(plannedDaysDiff)} days
                                 </Tag>
                               )}
                               {plannedDaysDiff >= 0 && plannedDaysDiff <= 3 && (
                                 <Tag color="orange">
-                                  Còn {plannedDaysDiff} ngày
+                                  Remaining {plannedDaysDiff} days
                                 </Tag>
                               )}
                               {plannedDaysDiff > 3 && (
                                 <Tag color="green">
-                                  Còn {plannedDaysDiff} ngày
+                                  Remaining {plannedDaysDiff} days
                                 </Tag>
                               )}
                             </>
@@ -1342,19 +1342,18 @@ const TaskDetailPage = () => {
                               <>
                                 {estimatedDaysDiff < 0 && (
                                   <Tag color="red">
-                                    Trễ {Math.abs(estimatedDaysDiff)} ngày (ước
-                                    tính)
+                                    Late {Math.abs(estimatedDaysDiff)} days (estimated)
                                   </Tag>
                                 )}
                                 {estimatedDaysDiff >= 0 &&
                                   estimatedDaysDiff <= 3 && (
                                     <Tag color="orange">
-                                      Còn {estimatedDaysDiff} ngày (ước tính)
+                                      Remaining {estimatedDaysDiff} days (estimated)
                                     </Tag>
                                   )}
                                 {estimatedDaysDiff > 3 && (
                                   <Tag color="blue">
-                                    Còn {estimatedDaysDiff} ngày (ước tính)
+                                    Remaining {estimatedDaysDiff} days (estimated)
                                   </Tag>
                                 )}
                               </>
@@ -1368,7 +1367,7 @@ const TaskDetailPage = () => {
                               display: 'block',
                             }}
                           >
-                            (Ước tính dựa trên milestone trước đó và SLA days)
+                            (Estimated based on previous milestone and SLA days)
                           </Text>
                         </div>
                       )}
@@ -1376,8 +1375,8 @@ const TaskDetailPage = () => {
                     {/* Alert nếu đang trễ */}
                     {isOverdue && task.status !== 'completed' && (
                       <Alert
-                        message="Task đang quá hạn SLA"
-                        description={`Milestone deadline đã qua ${Math.abs(daysDiff)} ngày. Cần ưu tiên review ngay.`}
+                        message="Task is overdue SLA"
+                        description={`Milestone deadline has passed ${Math.abs(daysDiff)} days. Need to prioritize review soon.`}
                         type="error"
                         showIcon
                         style={{ marginTop: 8 }}
@@ -1387,8 +1386,8 @@ const TaskDetailPage = () => {
                       task.status !== 'completed' &&
                       !isOverdue && (
                         <Alert
-                          message="Task sắp đến hạn SLA"
-                          description={`Còn ${daysDiff} ngày nữa đến deadline. Nên ưu tiên review sớm.`}
+                          message="Task is nearing deadline SLA"
+                          description={`Only ${daysDiff} days left to deadline. Need to prioritize review soon.`}
                           type="warning"
                           showIcon
                           style={{ marginTop: 8 }}
@@ -1680,13 +1679,13 @@ const TaskDetailPage = () => {
                   };
                   const statusLabels = {
                     pending_manager_review: 'Waiting for Manager approval',
-                    in_revision: 'Đang chỉnh sửa',
-                    waiting_manager_review: 'Chờ Manager review',
-                    approved_pending_delivery: 'Đã duyệt, chờ deliver',
-                    waiting_customer_confirm: 'Chờ Customer xác nhận',
-                    completed: 'Hoàn thành',
-                    rejected: 'Từ chối',
-                    canceled: 'Đã hủy',
+                    in_revision: 'In revision',
+                    waiting_manager_review: 'Waiting for Manager review',
+                    approved_pending_delivery: 'Approved, waiting for delivery',
+                    waiting_customer_confirm: 'Waiting for Customer confirmation',
+                    completed: 'Completed',
+                    rejected: 'Rejected',
+                    canceled: 'Cancelled',
                   };
 
                   return (
@@ -1723,7 +1722,7 @@ const TaskDetailPage = () => {
                                   type="secondary"
                                   style={{ fontSize: 11, marginLeft: 4 }}
                                 >
-                                  (+{revision.revisionDeadlineDays} ngày SLA)
+                                  (+{revision.revisionDeadlineDays} days SLA)
                                 </Text>
                               )}
                             </Tag>
@@ -2063,8 +2062,8 @@ const TaskDetailPage = () => {
                           description={
                             <Space direction="vertical" size={0}>
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                Loại: {getContentTypeLabel(file.contentType)} •
-                                Dung lượng: {formatFileSize(file.fileSize)}
+                                Type: {getContentTypeLabel(file.contentType)} •
+                                Size: {formatFileSize(file.fileSize)}
                               </Text>
                               {file.uploadDate && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
@@ -2244,11 +2243,11 @@ const TaskDetailPage = () => {
                                           type="secondary"
                                           style={{ fontSize: 12 }}
                                         >
-                                          Loại:{' '}
+                                          Type:{' '}
                                           {getContentTypeLabel(
                                             file.contentType
                                           )}{' '}
-                                          • Dung lượng:{' '}
+                                          • Size:{' '}
                                           {formatFileSize(file.fileSize)}
                                         </Text>
                                         {file.uploadDate && (

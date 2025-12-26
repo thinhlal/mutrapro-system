@@ -28,13 +28,13 @@ import styles from './MilestonesPage.module.css';
 const { Title, Text } = Typography;
 
 const STATUS_OPTIONS = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Chưa gán', value: 'unassigned' },
-  { label: 'Đã gán', value: 'assigned' },
-  { label: 'Đã nhận - Chờ', value: 'accepted_waiting' },
+  { label: 'All', value: 'all' },
+  { label: 'Unassigned', value: 'unassigned' },
+  { label: 'Assigned', value: 'assigned' },
+  { label: 'Accepted - Waiting', value: 'accepted_waiting' },
   { label: 'Ready to Start', value: 'ready_to_start' },
-  { label: 'Đang làm', value: 'in_progress' },
-  { label: 'Hoàn thành', value: 'completed' },
+  { label: 'In progress', value: 'in_progress' },
+  { label: 'Completed', value: 'completed' },
 ];
 
 const STATUS_COLORS = {
@@ -64,16 +64,16 @@ const MILESTONE_WORK_STATUS_COLORS = {
 };
 
 const MILESTONE_WORK_STATUS_LABELS = {
-  planned: 'Chưa bắt đầu',
-  waiting_assignment: 'Chờ assign task',
-  waiting_specialist_accept: 'Chờ specialist accept',
-  task_accepted_waiting_activation: 'Đã accept, chờ activate',
-  ready_to_start: 'Sẵn sàng bắt đầu',
-  in_progress: 'Đang thực hiện',
-  waiting_customer: 'Chờ khách hàng',
-  ready_for_payment: 'Sẵn sàng thanh toán',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  planned: 'Not started',
+  waiting_assignment: 'Waiting assign task',
+  waiting_specialist_accept: 'Waiting specialist accept',
+  task_accepted_waiting_activation: 'Accepted, waiting activation',
+  ready_to_start: 'Ready to start',
+  in_progress: 'In progress',
+  waiting_customer: 'Waiting customer',
+  ready_for_payment: 'Ready for payment',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 const CONTRACT_TYPE_LABELS = {
@@ -176,7 +176,7 @@ const MilestonesPage = () => {
       }
     } catch (error) {
       console.error('Error fetching milestone slots:', error);
-      message.error(error?.message || 'Không thể tải danh sách milestone');
+      message.error(error?.message || 'Failed to load milestones');
       setSlots([]);
       setSummary({
         total: 0,
@@ -336,7 +336,7 @@ const MilestonesPage = () => {
             </Text>
           </Space>
         ) : (
-          <Text type="secondary">Chưa gán</Text>
+          <Text type="secondary">Unassigned</Text>
         ),
     },
     {
@@ -385,8 +385,8 @@ const MilestonesPage = () => {
         // Tooltip cho recording milestone
         const assignButtonTooltip =
           isRecordingMilestone && isArrangementWithRecording
-            ? 'Assign task cho recording specialist (task type: recording_supervision)'
-            : 'Assign task cho specialist';
+            ? 'Assign task for recording specialist (task type: recording_supervision)'
+            : 'Assign task for specialist';
 
         // Logic hiển thị nút Book Studio (tương tự MilestoneDetailPage)
         // Check basic conditions, chi tiết sẽ check ở detail page hoặc booking page
@@ -431,7 +431,7 @@ const MilestonesPage = () => {
                 size="small"
                 icon={<CalendarOutlined />}
                 onClick={() => handleBookStudio(record)}
-                title="Book Studio cho recording milestone"
+                title="Book Studio for recording milestone"
                 style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
                 Book Studio
@@ -441,7 +441,7 @@ const MilestonesPage = () => {
               size="small"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetail(record)}
-              title="Xem chi tiết milestone"
+              title="View milestone detail"
             />
           </Space>
         );
@@ -457,7 +457,7 @@ const MilestonesPage = () => {
             Milestones Management
           </Title>
           <Text type="secondary">
-            List of milestones and tasks. Click "View Details" to manage the
+            List of milestones and tasks. Click "View Detail" to manage the
             tasks of a milestone.
           </Text>
         </div>
@@ -466,7 +466,7 @@ const MilestonesPage = () => {
           onClick={() => fetchSlots(filters, pagination)}
           loading={loading}
         >
-          Làm mới
+          Refresh
         </Button>
       </div>
 
@@ -474,7 +474,7 @@ const MilestonesPage = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} md={8}>
             <Input
-              placeholder="Tìm contract / customer / milestone"
+              placeholder="Search contract / customer / milestone"
               value={filters.search}
               onChange={handleSearchChange}
               allowClear
@@ -493,7 +493,7 @@ const MilestonesPage = () => {
               checked={filters.onlyUnassigned}
               onChange={handleOnlyUnassignedChange}
             >
-              Chỉ hiện chưa gán
+              Only show unassigned
             </Checkbox>
           </Col>
         </Row>
@@ -503,16 +503,16 @@ const MilestonesPage = () => {
         <div className={styles.summaryBar}>
           <Space wrap size="large">
             <Text>
-              Tổng milestone: <Text strong>{summary.total}</Text>
+              Total milestones: <Text strong>{summary.total}</Text>
             </Text>
             <Text>
-              Chưa gán: <Text strong>{summary.unassigned}</Text>
+              Unassigned: <Text strong>{summary.unassigned}</Text>
             </Text>
             <Text>
-              Đang làm: <Text strong>{summary.inProgress}</Text>
+              In progress: <Text strong>{summary.inProgress}</Text>
             </Text>
             <Text>
-              Hoàn thành: <Text strong>{summary.completed}</Text>
+              Completed: <Text strong>{summary.completed}</Text>
             </Text>
           </Space>
         </div>

@@ -28,7 +28,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const BOOKING_STATUS = [
-  { label: 'Tất cả', value: '' },
+  { label: 'All', value: '' },
   { label: 'Tentative', value: 'TENTATIVE' },
   { label: 'Pending', value: 'PENDING' },
   { label: 'Confirmed', value: 'CONFIRMED' },
@@ -80,7 +80,7 @@ const StudioBookingsManagement = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      message.error(error?.message || 'Lỗi khi tải danh sách bookings');
+      message.error(error?.message || 'Error when loading bookings list');
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ const StudioBookingsManagement = () => {
 
   const handleCopyBookingId = bookingId => {
     navigator.clipboard.writeText(bookingId);
-    message.success('Đã copy Booking ID');
+    message.success('Booking ID copied');
   };
 
   const handleViewBookingDetail = bookingId => {
@@ -153,14 +153,14 @@ const StudioBookingsManagement = () => {
       ),
     },
     {
-      title: 'Ngày',
+      title: 'Date',
       dataIndex: 'bookingDate',
       key: 'bookingDate',
       width: 120,
       render: date => (date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'),
     },
     {
-      title: 'Thời gian',
+      title: 'Time',
       key: 'time',
       width: 150,
       render: (_, record) => (
@@ -240,7 +240,7 @@ const StudioBookingsManagement = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewBookingDetail(record.bookingId)}
         >
-          Chi tiết
+          Detail
         </Button>
       ),
     },
@@ -257,7 +257,7 @@ const StudioBookingsManagement = () => {
           {/* Filters */}
           <Space wrap>
             <Input
-              placeholder="Tìm kiếm (Booking ID, Contract ID, Milestone ID)"
+              placeholder="Search (Booking ID, Contract ID, Milestone ID)"
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
@@ -308,7 +308,7 @@ const StudioBookingsManagement = () => {
             pagination={{
               pageSize: 20,
               showSizeChanger: true,
-              showTotal: total => `Tổng ${total} bookings`,
+              showTotal: total => `Total ${total} bookings`,
             }}
             scroll={{ x: 1400 }}
           />

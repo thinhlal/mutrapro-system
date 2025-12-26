@@ -209,14 +209,14 @@ export default function ServiceRequestManagement() {
 
     const requestId = record.requestId || record.id;
     if (!requestId) {
-      message.error('Không tìm thấy request ID');
+      message.error('Request ID not found');
       return;
     }
 
     try {
       setAssigning(true);
       await assignServiceRequest(requestId, user.id);
-      message.success('Đã assign request thành công');
+      message.success('Request assigned successfully');
       // Refresh cả 2 tab
       fetchAllRequests(
         allPagination.current - 1,
@@ -237,7 +237,7 @@ export default function ServiceRequestManagement() {
     } catch (error) {
       console.error('Error assigning request:', error);
       message.error(
-        error.response?.data?.message || 'Không thể assign request'
+        error.response?.data?.message || 'Cannot assign request'
       );
     } finally {
       setAssigning(false);
@@ -258,7 +258,7 @@ export default function ServiceRequestManagement() {
   const handleViewContracts = record => {
     const requestId = record.requestId || record.id;
     if (!requestId) {
-      message.error('Không tìm thấy requestId');
+      message.error('Request ID not found');
       return;
     }
     const basePath = location.pathname.startsWith('/admin')
@@ -396,7 +396,7 @@ export default function ServiceRequestManagement() {
       ),
     },
     {
-      title: 'Tổng giá',
+      title: 'Total Price',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       width: 150,
