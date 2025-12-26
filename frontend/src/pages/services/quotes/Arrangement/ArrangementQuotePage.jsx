@@ -109,7 +109,10 @@ export default function ArrangementQuotePage() {
         }
       } catch (error) {
         console.error('Error fetching pricing data:', error);
-        toast.error('Không thể tải thông tin giá. Vui lòng thử lại.');
+        toast.error('Cannot load pricing information. Please try again.', {
+          duration: 5000,
+          position: 'top-center',
+        });
       } finally {
         setLoading(false);
       }
@@ -158,7 +161,10 @@ export default function ArrangementQuotePage() {
 
     // 1. Validate trước
     if (!uploadedFile) {
-      toast.error('File notation là bắt buộc cho arrangement.');
+      toast.error('Notation file is required for arrangement.', {
+        duration: 5000,
+        position: 'top-center',
+      });
       return;
     }
 
@@ -224,7 +230,10 @@ export default function ArrangementQuotePage() {
       console.error('Error creating request:', error);
       const errorMessage =
         error?.message || error?.data?.message || 'Failed to create request';
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -578,11 +587,17 @@ export default function ArrangementQuotePage() {
                     'handleSubmit is not a function!',
                     handleSubmit
                   );
-                  toast.error('Lỗi: handleSubmit không phải là function');
+                  toast.error('Error: handleSubmit is not a function', {
+                    duration: 5000,
+                    position: 'top-center',
+                  });
                 }
               } catch (error) {
                 console.error('Error in onClick:', error);
-                toast.error('Lỗi: ' + error.message);
+                toast.error('Error: ' + error.message, {
+                  duration: 5000,
+                  position: 'top-center',
+                });
               }
             }}
             loading={submitting}

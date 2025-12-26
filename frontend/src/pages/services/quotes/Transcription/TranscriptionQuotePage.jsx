@@ -251,7 +251,10 @@ export default function TranscriptionQuotePage() {
       try {
         await fetchInstruments();
       } catch (error) {
-        toast.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.', { duration: 5000, position: 'top-center' });
+        toast.error('Cannot load instruments list. Please try again.', {
+          duration: 5000,
+          position: 'top-center',
+        });
         console.error('Error fetching instruments:', error);
       }
     };
