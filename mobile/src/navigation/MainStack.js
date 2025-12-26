@@ -162,7 +162,7 @@ const MainStack = () => {
         name="TopupPayment"
         component={TopupPaymentScreen}
         options={({ navigation }) => ({
-          title: 'Nạp tiền',
+          title: 'Top up',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
           ...defaultDrawerScreenOptions,
           headerLeft: () => getPaymentHeaderLeft(navigation),
@@ -172,7 +172,7 @@ const MainStack = () => {
         name="PaymentSuccess"
         component={PaymentSuccessScreen}
         options={({ navigation }) => ({
-          title: 'Thanh toán thành công',
+          title: 'Payment Success',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
           ...defaultDrawerScreenOptions,
           headerLeft: () => getPaymentHeaderLeft(navigation),
