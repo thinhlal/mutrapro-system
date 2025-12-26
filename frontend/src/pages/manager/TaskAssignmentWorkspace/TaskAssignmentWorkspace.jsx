@@ -710,9 +710,10 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error assigning task:', error);
-      toast.error(error?.message ||
-          (isEditMode ? 'Cannot update task' : 'Cannot assign task', { duration: 5000, position: 'top-center' });
-      );
+      toast.error(error?.message || (isEditMode ? 'Cannot update task' : 'Cannot assign task'), {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setAssigning(false);
     }
