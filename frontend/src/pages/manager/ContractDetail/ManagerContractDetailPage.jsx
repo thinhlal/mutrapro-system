@@ -297,10 +297,10 @@ const ManagerContractDetailPage = () => {
         err
       );
       Modal.error({
-        title: 'Không thể tải thông tin task',
+        title: 'Cannot load task information',
         content:
           err?.message ||
-          'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
+          'There is an error when calling API task-assignments. Please check again or try again later.',
       });
     } finally {
       // Reset loading state sau khi đã mở modal hoặc có lỗi
@@ -1472,7 +1472,7 @@ const ManagerContractDetailPage = () => {
           {isPendingAssignment && (
             <Alert
               message="Deposit received - Pending Manager Action"
-              description="Contract đã nhận cọc. Hãy hoàn tất việc giao task và bấm Start Work để bắt đầu tính SLA."
+              description="Contract has received deposit. Please complete the task assignment and click Start Work to start calculating SLA."
               type="warning"
               showIcon
               style={{ marginBottom: 12 }}
@@ -3161,7 +3161,7 @@ const ManagerContractDetailPage = () => {
         title={
           <Space>
             <InfoCircleOutlined style={{ color: '#1890ff' }} />
-            <span>Start Work cho contract này?</span>
+            <span>Start Work for this contract?</span>
           </Space>
         }
         open={startWorkModalVisible}
@@ -3174,14 +3174,14 @@ const ManagerContractDetailPage = () => {
         }}
         okText={
           startWorkContext.hasBlockingMissing
-            ? 'Không thể Start Work'
+            ? 'Cannot Start Work'
             : 'Start Work'
         }
         okButtonProps={{
           disabled: startWorkContext.hasBlockingMissing,
           loading: startingWork,
         }}
-        cancelText="Đóng"
+        cancelText="Close"
         onOk={async () => {
           if (startWorkContext.hasBlockingMissing) {
             return;
@@ -3189,7 +3189,7 @@ const ManagerContractDetailPage = () => {
           try {
             setStartingWork(true);
             await startContractWork(contractId);
-            message.success('Đã kích hoạt contract và bắt đầu tính SLA');
+            message.success('Successfully started work for contract');
             setStartWorkModalVisible(false);
             setStartWorkContext({
               milestoneSummaries: [],
@@ -3198,7 +3198,7 @@ const ManagerContractDetailPage = () => {
             loadContract();
           } catch (err) {
             console.error('Failed to start contract work:', err);
-            message.error(err?.message || 'Không thể bắt đầu contract');
+            message.error(err?.message || 'Cannot start contract');
           } finally {
             setStartingWork(false);
           }
@@ -3209,18 +3209,18 @@ const ManagerContractDetailPage = () => {
           {startWorkContext.milestoneSummaries.length === 0 ? (
             <>
               <p>
-                Contract này hiện chưa có dữ liệu milestones hoặc task
-                assignments, vì vậy chưa thể Start Work.
+                This contract currently has no milestone or task
+                assignments, therefore cannot Start Work.
               </p>
               <p style={{ marginTop: 8 }}>
-                Vui lòng kiểm tra lại trong Milestones / Task Progress và đảm
-                bảo đã khởi tạo milestones và gán task trước khi Start Work.
+                Please check in Milestones / Task Progress and ensure that milestones and tasks have been created and assigned
+                before Start Work.
               </p>
             </>
           ) : (
             <>
               <p>
-                Tình trạng task theo từng milestone (accepted = accepted_waiting
+                Status of task by each milestone (accepted = accepted_waiting
                 / ready_to_start / in_progress / completed):
               </p>
               <ul style={{ paddingLeft: 20 }}>
@@ -3228,47 +3228,43 @@ const ManagerContractDetailPage = () => {
                   <li key={m.id || m.name}>
                     <strong>{m.name}:</strong>{' '}
                     {!m.hasActiveTask
-                      ? 'Chưa có task assignment active'
+                      ? 'No active task assignment'
                       : m.isAccepted
-                        ? 'Task đã được accept ✓'
-                        : 'Task chưa được accept (đang ở trạng thái assigned)'}
+                        ? 'Task has been accepted ✓'
+                        : 'Task has not been accepted (in assigned state)'}
                   </li>
                 ))}
               </ul>
               {startWorkContext.hasBlockingMissing ? (
                 <p style={{ marginTop: 8, color: '#ff4d4f' }}>
                   <strong>
-                    Milestone 1 chưa có task assignment active hoặc task chưa
-                    được accept.
+                    Milestone 1 has no active task assignment or task that has not been
+                    accepted.
                   </strong>{' '}
-                  Milestone 1 phải có task đã được accept trước khi Start Work.
-                  Vui lòng vào Milestones / Task Progress để gán và đảm bảo task
-                  đã được accept.
+                  Milestone 1 must have a task that has been accepted before Start
+                  Work. Please check in Milestones / Task Progress to assign and ensure the task has been accepted.
                 </p>
               ) : (
                 <>
                   <p style={{ marginTop: 8 }}>
                     <strong>
-                      Milestone 1 đã có task assignment và đã được accept ✓
+                      Milestone 1 has a task assignment and has been accepted ✓
                     </strong>
                   </p>
                   {startWorkContext.otherMilestonesMissing?.length > 0 && (
                     <p style={{ marginTop: 8, color: '#faad14' }}>
-                      <strong>Lưu ý:</strong> Có{' '}
+                      <strong>Note:</strong> There are{' '}
                       {startWorkContext.otherMilestonesMissing.length} milestone
-                      khác chưa có task assignment hoặc task chưa được accept.{' '}
-                      Các milestone này có thể được assign sau, không ảnh hưởng
-                      đến việc Start Work.
+                      other milestones that have no task assignment or task that has not been accepted. These milestones can be assigned later, without affecting the Start Work.
                     </p>
                   )}
                   <p style={{ marginTop: 8 }}>
-                    Bạn có chắc chắn muốn Start Work cho contract này không?
+                    Are you sure you want to Start Work for this contract?
                   </p>
                 </>
               )}
               <p style={{ marginTop: 8 }}>
-                Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt đầu
-                work, không phải ngày ký hợp đồng.
+                After Start Work, SLA and timeline will be calculated from the start date of work, not the contract signing date.
               </p>
             </>
           )}

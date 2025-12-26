@@ -88,16 +88,16 @@ const MILESTONE_WORK_STATUS_COLORS = {
 
 // Milestone work status labels
 const MILESTONE_WORK_STATUS_LABELS = {
-  PLANNED: 'Đã lên kế hoạch',
-  WAITING_ASSIGNMENT: 'Chờ assign task',
-  WAITING_SPECIALIST_ACCEPT: 'Chờ specialist accept',
-  TASK_ACCEPTED_WAITING_ACTIVATION: 'Đã accept, chờ activate',
-  READY_TO_START: 'Sẵn sàng bắt đầu',
-  IN_PROGRESS: 'Đang thực hiện',
-  WAITING_CUSTOMER: 'Chờ khách hàng',
-  READY_FOR_PAYMENT: 'Sẵn sàng thanh toán',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
+  PLANNED: 'Planned',
+  WAITING_ASSIGNMENT: 'Waiting task assignment',
+  WAITING_SPECIALIST_ACCEPT: 'Waiting specialist accept',
+  TASK_ACCEPTED_WAITING_ACTIVATION: 'Accepted, waiting activate',
+  READY_TO_START: 'Ready to start',
+  IN_PROGRESS: 'In progress',
+  WAITING_CUSTOMER: 'Waiting customer',
+  READY_FOR_PAYMENT: 'Ready for payment',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 const INSTRUMENT_USAGE_LABELS = {
@@ -122,16 +122,16 @@ const CONTRACT_STATUS_COLORS = {
 
 const CONTRACT_STATUS_TEXT = {
   draft: 'Draft',
-  sent: 'Đã gửi',
-  approved: 'Đã duyệt',
-  signed: 'Đã ký - Chờ thanh toán deposit',
-  active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
-  active: 'Đang thực thi',
-  rejected_by_customer: 'Khách từ chối',
-  need_revision: 'Cần chỉnh sửa',
-  canceled_by_customer: 'Khách hủy',
-  canceled_by_manager: 'Manager thu hồi',
-  expired: 'Hết hạn',
+  sent: 'Sent',
+  approved: 'Approved',
+  signed: 'Signed - Waiting payment deposit',
+  active_pending_assignment: 'Received deposit - Waiting task assignment',
+  active: 'Active',
+  rejected_by_customer: 'Customer rejected',
+  need_revision: 'Need revision',
+  canceled_by_customer: 'Customer cancelled',
+  canceled_by_manager: 'Manager cancelled',
+  expired: 'Expired',
 };
 
 // Contract type labels
@@ -225,7 +225,7 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error fetching contract detail:', error);
-      message.error('Không thể tải thông tin contract');
+      message.error('Error when loading contract detail');
       setInstrumentFiltersReady(true);
     } finally {
       setLoading(false);
@@ -313,7 +313,7 @@ export default function TaskAssignmentWorkspace() {
         }
       } catch (error) {
         console.error('Error fetching specialists:', error);
-        message.error('Không thể tải danh sách specialists');
+        message.error('Error when loading specialists list');
       } finally {
         setLoadingSpecialists(false);
       }
@@ -367,7 +367,7 @@ export default function TaskAssignmentWorkspace() {
       }
     } catch (error) {
       console.error('Error fetching assignment detail:', error);
-      message.error('Không thể tải thông tin task assignment');
+      message.error('Error when loading task assignment detail');
     }
   }, [assignmentId, contractId]);
 

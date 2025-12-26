@@ -136,7 +136,7 @@ const ManagerChatPage = () => {
                     key={room.roomId}
                     className={`${styles.roomItem} ${roomId === room.roomId ? styles.active : ''} ${isInactive ? styles.inactive : ''}`}
                     onClick={() => handleRoomClick(room)}
-                    title={isInactive ? 'Phòng chat này đã được đóng' : ''}
+                    title={isInactive ? 'This chat room has been closed' : ''}
                   >
                     <div className={styles.roomInfo}>
                       <div className={styles.roomTop}>

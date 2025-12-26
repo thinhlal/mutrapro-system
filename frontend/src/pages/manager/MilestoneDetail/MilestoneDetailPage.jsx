@@ -230,7 +230,7 @@ const MilestoneDetailPage = () => {
           setMilestoneTasks([]);
         }
       } catch (error) {
-        console.warn('Không thể tải danh sách task của milestone:', error);
+        console.warn('Cannot load task list for milestone:', error);
         setMilestoneTasks([]);
       } finally {
         setMilestoneTasksLoading(false);
@@ -282,7 +282,7 @@ const MilestoneDetailPage = () => {
       await Promise.all(promises);
     } catch (error) {
       console.error('Error fetching milestone detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết milestone');
+      message.error(error?.message || 'Cannot load milestone detail');
       navigate(-1);
     } finally {
       setLoading(false);
@@ -451,7 +451,7 @@ const MilestoneDetailPage = () => {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <Empty description="Milestone not found" />
-        <Button onClick={() => navigate(-1)}>Quay lại</Button>
+        <Button onClick={() => navigate(-1)}>Go back</Button>
       </div>
     );
   }
@@ -461,7 +461,7 @@ const MilestoneDetailPage = () => {
       <div className={styles.header}>
         <div className={styles.backRow}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-            Quay lại
+            Go back
           </Button>
           <Space size="small" wrap className={styles.headerMeta}>
             {contract?.contractNumber && <Tag>{contract.contractNumber}</Tag>}
@@ -475,14 +475,14 @@ const MilestoneDetailPage = () => {
         </div>
         <div className={styles.headerInfo}>
           <Title level={3} style={{ margin: 0 }}>
-            Milestone Details
+            Milestone Detail
           </Title>
           <Space>
             <Button
               icon={<EyeOutlined />}
               onClick={() => navigate(`/manager/contracts/${contractId}`)}
             >
-              View contract
+              View Contract
             </Button>
             <Button
               onClick={() =>
