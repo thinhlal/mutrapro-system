@@ -8,7 +8,6 @@ import {
 import toast from 'react-hot-toast';
 import {
   WalletOutlined,
-  ExportOutlined,
   DollarOutlined,
   TransactionOutlined,
   FundOutlined,
@@ -555,9 +554,6 @@ const WalletDashboard = () => {
     };
   };
 
-  const handleExport = () => {
-    message.success('Wallet report exported successfully!');
-  };
 
   const kpiCards = [
     {
@@ -747,13 +743,6 @@ const WalletDashboard = () => {
             value={timeRange}
             onChange={setTimeRange}
           />
-          <Button
-            type="primary"
-            icon={<ExportOutlined />}
-            onClick={handleExport}
-          >
-            Export Report
-          </Button>
         </div>
       </div>
 

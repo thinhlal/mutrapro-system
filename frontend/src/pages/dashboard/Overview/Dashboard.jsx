@@ -18,7 +18,6 @@ import {
   FileTextOutlined,
   SolutionOutlined,
   ClockCircleOutlined,
-  ExportOutlined,
   RiseOutlined,
   FallOutlined,
   CustomerServiceOutlined,
@@ -503,10 +502,6 @@ const Dashboard = () => {
   const requestsByTypeChartOption = getRequestsByTypeChartOption();
   const topupsVolumeChartOption = getTopupsVolumeChartOption();
 
-  const handleExport = () => {
-    message.success('Report exported successfully!');
-  };
-
   const kpiCards = [
     {
       key: 'totalUsers',
@@ -690,13 +685,6 @@ const Dashboard = () => {
             value={timeRange}
             onChange={setTimeRange}
           />
-          <Button
-            type="primary"
-            icon={<ExportOutlined />}
-            onClick={handleExport}
-          >
-            Export Report
-          </Button>
         </div>
       </div>
 

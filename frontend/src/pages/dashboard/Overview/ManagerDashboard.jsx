@@ -12,7 +12,6 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  ExportOutlined,
   RiseOutlined,
   FallOutlined,
 } from '@ant-design/icons';
@@ -765,10 +764,6 @@ const ManagerDashboard = () => {
   const completionRateGaugeOption = getCompletionRateGaugeOption();
   const radarChartOption = getRadarChartOption();
 
-  const handleExport = () => {
-    message.success('Report exported successfully!');
-  };
-
   const kpiCards = [
     {
       key: 'newRequests',
@@ -833,13 +828,6 @@ const ManagerDashboard = () => {
             value={timeRange}
             onChange={setTimeRange}
           />
-          <Button
-            type="primary"
-            icon={<ExportOutlined />}
-            onClick={handleExport}
-          >
-            Export Report
-          </Button>
         </div>
       </div>
 
