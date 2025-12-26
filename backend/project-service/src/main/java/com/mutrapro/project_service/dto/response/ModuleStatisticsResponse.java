@@ -19,9 +19,9 @@ public class ModuleStatisticsResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class EquipmentStatistics {
-        private Long available;   // Số equipment available (totalQuantity > 0 && isActive)
+        private Long available;   // Số equipment available (availableQuantity > 0 && isActive)
         private Long booked;      // Số equipment đang được booking (active bookings)
-        private Long maintenance; // Số equipment không available (totalQuantity = 0 hoặc !isActive)
+        private Long maintenance; // Số equipment không available (availableQuantity = 0 hoặc !isActive)
     }
 
     @Data

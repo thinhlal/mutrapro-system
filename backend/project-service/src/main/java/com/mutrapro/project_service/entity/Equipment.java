@@ -56,6 +56,10 @@ public class Equipment extends BaseEntity<String> {
     @Builder.Default
     Integer totalQuantity = 1;
 
+    @Column(name = "available_quantity", nullable = false)
+    @Builder.Default
+    Integer availableQuantity = 1; // Số lượng equipment còn available (totalQuantity - bookedQuantity)
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     Boolean isActive = true;

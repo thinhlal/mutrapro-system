@@ -33,28 +33,33 @@ public class EquipmentController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách equipment", 
-               description = "Lấy tất cả equipment. Có thể filter theo active status và skill_id")
+               description = "Lấy tất cả equipment. Có thể filter theo active status, skill_id và out of stock")
     public ApiResponse<List<EquipmentResponse>> listEquipment(
             @Parameter(description = "Filter theo skill_id. Nếu có, chỉ trả về equipment available cho skill đó")
             @RequestParam(required = false) String skillId,
             @Parameter(description = "Nếu true, lấy cả inactive equipment. Mặc định là false (chỉ lấy active)")
             @RequestParam(required = false, defaultValue = "false") Boolean includeInactive,
             @Parameter(description = "Nếu true (khi có skillId), lấy cả equipment unavailable. Mặc định là false (chỉ lấy available)")
-            @RequestParam(required = false, defaultValue = "false") Boolean includeUnavailable) {
+            @RequestParam(required = false, defaultValue = "false") Boolean includeUnavailable,
+            @Parameter(description = "Nếu true, lấy cả equipment đã hết (availableQuantity = 0). Mặc định là false (chỉ lấy equipment còn hàng). Dùng cho admin.")
+            @RequestParam(required = false, defaultValue = "false") Boolean includeOutOfStock) {
         
         List<EquipmentResponse> items;
         
         if (skillId != null) {
+            // includeUnavailable parameter được dùng để quyết định có lấy equipment unavailable không
+            // Nhưng thực tế chúng ta dùng includeOutOfStock để filter ở DB level
             if (includeUnavailable) {
-                log.info("Fetching equipment for skill ID: {} (including unavailable)", skillId);
-                items = equipmentService.getEquipmentBySkillId(skillId);
+                log.info("Fetching equipment for skill ID: {} (includeOutOfStock: {})", skillId, includeOutOfStock);
+                items = equipmentService.getEquipmentBySkillId(skillId, includeOutOfStock);
             } else {
                 log.info("Fetching available equipment for skill ID: {}", skillId);
+                // Không bao giờ lấy equipment đã hết khi includeUnavailable = false
                 items = equipmentService.getAvailableEquipmentBySkillId(skillId);
             }
         } else {
-            log.info("Listing all equipment with includeInactive: {}", includeInactive);
-            items = equipmentService.getAllEquipment(includeInactive);
+            log.info("Listing all equipment with includeInactive: {}, includeOutOfStock: {}", includeInactive, includeOutOfStock);
+            items = equipmentService.getAllEquipment(includeInactive, includeOutOfStock);
         }
         
         return ApiResponse.<List<EquipmentResponse>>builder()

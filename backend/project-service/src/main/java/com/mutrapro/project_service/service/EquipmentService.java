@@ -49,17 +49,32 @@ public class EquipmentService {
     String allowedImageTypes;
 
     /**
-     * Lấy tất cả equipment (có thể filter theo active status)
+     * Lấy tất cả equipment (có thể filter theo active status và out of stock)
+     * Filter được thực hiện ở DB level để tối ưu performance
+     * @param includeInactive Nếu true, lấy cả inactive equipment
+     * @param includeOutOfStock Nếu true, lấy cả equipment đã hết (availableQuantity = 0). Mặc định false (chỉ lấy equipment còn hàng)
      */
-    public List<EquipmentResponse> getAllEquipment(boolean includeInactive) {
+    public List<EquipmentResponse> getAllEquipment(boolean includeInactive, boolean includeOutOfStock) {
         List<Equipment> equipments;
         
         if (includeInactive) {
-            log.debug("Fetching all equipment (including inactive)");
-            equipments = equipmentRepository.findAll();
+            // Filter ở DB level cho tất cả equipment (kể cả inactive)
+            if (includeOutOfStock) {
+                log.debug("Fetching all equipment (including inactive and out of stock)");
+                equipments = equipmentRepository.findAll();
+            } else {
+                log.debug("Fetching all equipment with stock only (including inactive)");
+                equipments = equipmentRepository.findAllEquipmentWithStock();
+            }
         } else {
-            log.debug("Fetching all active equipment");
-            equipments = equipmentRepository.findByIsActiveTrue();
+            // Filter ở DB level cho active equipment
+            if (includeOutOfStock) {
+                log.debug("Fetching all active equipment (including out of stock)");
+                equipments = equipmentRepository.findAllActiveEquipment();
+            } else {
+                log.debug("Fetching active equipment with stock only");
+                equipments = equipmentRepository.findActiveEquipmentWithStock();
+            }
         }
         
         return equipments.stream()
@@ -121,10 +136,12 @@ public class EquipmentService {
 
     /**
      * Lấy equipment theo skill_id (kể cả unavailable)
+     * @param skillId Skill ID
+     * @param includeOutOfStock Nếu true, lấy cả equipment đã hết (availableQuantity = 0)
      */
-    public List<EquipmentResponse> getEquipmentBySkillId(String skillId) {
-        log.debug("Fetching equipment for skill ID: {} (including unavailable)", skillId);
-        List<Equipment> equipments = equipmentRepository.findEquipmentBySkillId(skillId);
+    public List<EquipmentResponse> getEquipmentBySkillId(String skillId, boolean includeOutOfStock) {
+        log.debug("Fetching equipment for skill ID: {} (includeOutOfStock: {})", skillId, includeOutOfStock);
+        List<Equipment> equipments = equipmentRepository.findEquipmentBySkillIdWithStockFilter(skillId, includeOutOfStock);
         
         return equipments.stream()
                 .map(this::toEquipmentResponse)
@@ -148,6 +165,7 @@ public class EquipmentService {
         }
         
         // Create new equipment
+        Integer totalQuantity = request.getTotalQuantity() != null ? request.getTotalQuantity() : 1;
         Equipment equipment = Equipment.builder()
                 .equipmentName(request.getEquipmentName())
                 .brand(request.getBrand())
@@ -155,7 +173,8 @@ public class EquipmentService {
                 .description(request.getDescription())
                 .specifications(request.getSpecifications())
                 .rentalFee(request.getRentalFee() != null ? request.getRentalFee() : BigDecimal.ZERO)
-                .totalQuantity(request.getTotalQuantity() != null ? request.getTotalQuantity() : 1)
+                .totalQuantity(totalQuantity)
+                .availableQuantity(totalQuantity) // Khi tạo mới, available = total
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
         
@@ -252,7 +271,18 @@ public class EquipmentService {
         }
         
         if (request.getTotalQuantity() != null) {
-            equipment.setTotalQuantity(request.getTotalQuantity());
+            // Khi update totalQuantity, cần điều chỉnh availableQuantity
+            Integer newTotalQuantity = request.getTotalQuantity();
+            if (newTotalQuantity != null && !newTotalQuantity.equals(equipment.getTotalQuantity())) {
+                Integer currentAvailable = equipment.getAvailableQuantity() != null ? equipment.getAvailableQuantity() : 0;
+                Integer currentTotal = equipment.getTotalQuantity() != null ? equipment.getTotalQuantity() : 0;
+                Integer bookedQuantity = currentTotal - currentAvailable; // Số đã booking
+                
+                // Tính availableQuantity mới = newTotalQuantity - bookedQuantity
+                Integer newAvailableQuantity = Math.max(0, newTotalQuantity - bookedQuantity);
+                equipment.setTotalQuantity(newTotalQuantity);
+                equipment.setAvailableQuantity(newAvailableQuantity);
+            }
         }
         
         if (request.getIsActive() != null) {
@@ -355,7 +385,7 @@ public class EquipmentService {
                 .specifications(equipment.getSpecifications())
                 .rentalFee(equipment.getRentalFee())
                 .totalQuantity(equipment.getTotalQuantity())
-                .availableQuantity(equipment.getTotalQuantity())
+                .availableQuantity(equipment.getAvailableQuantity() != null ? equipment.getAvailableQuantity() : equipment.getTotalQuantity())
                 .isActive(equipment.getIsActive())
                 .image(equipment.getImage())
                 .build();
@@ -376,7 +406,7 @@ public class EquipmentService {
                 .specifications(equipment.getSpecifications())
                 .rentalFee(equipment.getRentalFee())
                 .totalQuantity(equipment.getTotalQuantity())
-                .availableQuantity(equipment.getTotalQuantity())
+                .availableQuantity(equipment.getAvailableQuantity() != null ? equipment.getAvailableQuantity() : equipment.getTotalQuantity())
                 .isActive(equipment.getIsActive())
                 .image(equipment.getImage())
                 .skillIds(skillIds)

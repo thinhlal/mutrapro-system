@@ -10,6 +10,7 @@ import {
   Image,
   Typography,
   Tooltip,
+  Switch,
 } from 'antd';
 import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
@@ -31,13 +32,14 @@ const EquipmentManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [includeOutOfStock, setIncludeOutOfStock] = useState(false);
   const [form] = Form.useForm();
 
   // Fetch all equipment
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      const response = await getAllEquipment(null, true);
+      const response = await getAllEquipment(null, true, false, includeOutOfStock);
       if (response.data) {
         setEquipments(response.data);
       }
@@ -50,7 +52,7 @@ const EquipmentManagement = () => {
 
   useEffect(() => {
     fetchEquipment();
-  }, []);
+  }, [includeOutOfStock]);
 
   // Handle create new equipment
   const handleCreate = () => {
@@ -308,6 +310,13 @@ const EquipmentManagement = () => {
         }
         extra={
           <Space>
+            <Space>
+              <span>Include Out of Stock:</span>
+              <Switch
+                checked={includeOutOfStock}
+                onChange={setIncludeOutOfStock}
+              />
+            </Space>
             <Button
               type="primary"
               icon={<PlusOutlined />}

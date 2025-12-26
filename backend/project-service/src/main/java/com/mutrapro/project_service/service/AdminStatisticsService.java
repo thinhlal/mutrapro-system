@@ -123,13 +123,13 @@ public class AdminStatisticsService {
     public ModuleStatisticsResponse.EquipmentStatistics getEquipmentStatistics() {
         log.info("Calculating equipment statistics for admin");
         
-        // Available: equipment có totalQuantity > 0 và isActive = true
-        long available = equipmentRepository.countByIsActiveTrueAndTotalQuantityGreaterThan(0);
+        // Available: equipment có availableQuantity > 0 và isActive = true
+        long available = equipmentRepository.countByIsActiveTrueAndAvailableQuantityGreaterThanZero();
         
         // Booked: số equipment đang được booking (active bookings)
         long booked = bookingRequiredEquipmentRepository.countDistinctBookedEquipment();
         
-        // Maintenance: equipment không available (totalQuantity = 0 hoặc isActive = false)
+        // Maintenance: equipment không available (availableQuantity = 0 hoặc isActive = false)
         long maintenance = equipmentRepository.countMaintenanceEquipment();
         
         return ModuleStatisticsResponse.EquipmentStatistics.builder()

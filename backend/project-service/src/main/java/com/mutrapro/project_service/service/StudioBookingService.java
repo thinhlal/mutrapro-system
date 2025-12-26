@@ -956,6 +956,21 @@ public class StudioBookingService {
         if (request.getRequiredEquipment() != null && !request.getRequiredEquipment().isEmpty()) {
             for (RequiredEquipmentRequest equipmentRequest : request.getRequiredEquipment()) {
                 Integer quantity = equipmentRequest.getQuantity() != null ? equipmentRequest.getQuantity() : 1;
+                
+                // Validate availableQuantity trước khi tạo booking
+                Equipment equipmentEntity = equipmentRepository.findById(equipmentRequest.getEquipmentId())
+                    .orElseThrow(() -> new RuntimeException("Equipment not found: " + equipmentRequest.getEquipmentId()));
+                
+                Integer currentAvailable = equipmentEntity.getAvailableQuantity() != null 
+                    ? equipmentEntity.getAvailableQuantity() 
+                    : equipmentEntity.getTotalQuantity();
+                
+                if (currentAvailable < quantity) {
+                    throw new IllegalStateException(
+                        String.format("Insufficient equipment available. Equipment: %s, Requested: %d, Available: %d",
+                            equipmentEntity.getEquipmentName(), quantity, currentAvailable));
+                }
+                
                 BigDecimal rentalFeePerUnit = equipmentRequest.getRentalFeePerUnit();
                 // Tính totalRentalFee nếu không có
                 BigDecimal totalRentalFee = equipmentRequest.getTotalRentalFee();
@@ -973,6 +988,14 @@ public class StudioBookingService {
                     .build();
                 
                 bookingRequiredEquipmentRepository.save(equipment);
+                
+                // Trừ availableQuantity của equipment
+                Integer newAvailable = currentAvailable - quantity;
+                equipmentEntity.setAvailableQuantity(newAvailable);
+                equipmentRepository.save(equipmentEntity);
+                log.info("Updated equipment availableQuantity: equipmentId={}, quantity={}, oldAvailable={}, newAvailable={}",
+                    equipmentRequest.getEquipmentId(), quantity, currentAvailable, newAvailable);
+                
                 log.info("Created booking required equipment: equipmentId={}, quantity={}, totalRentalFee={}",
                     equipment.getEquipmentId(), equipment.getQuantity(), equipment.getTotalRentalFee());
             }
@@ -2252,6 +2275,8 @@ public class StudioBookingService {
         booking.setStatus(BookingStatus.CONFIRMED);
         studioBookingRepository.save(booking);
         
+        // Lưu ý: TENTATIVE → CONFIRMED: cả 2 đều là active status, không cần xử lý equipment
+        
         log.info("Updated booking status to CONFIRMED: bookingId={}, contractId={}", 
             booking.getBookingId(), contractId);
         
@@ -2375,6 +2400,81 @@ public class StudioBookingService {
     }
     
     /**
+     * Helper method để xử lý equipment khi booking status thay đổi
+     * - Khi booking chuyển từ active → inactive (COMPLETED, CANCELLED, NO_SHOW): cộng lại availableQuantity
+     * - Khi booking chuyển từ inactive → active: trừ lại availableQuantity
+     * 
+     * @param booking Booking cần xử lý
+     * @param oldStatus Status cũ (null nếu là booking mới)
+     * @param newStatus Status mới
+     */
+    private void handleEquipmentQuantityOnStatusChange(StudioBooking booking, BookingStatus oldStatus, BookingStatus newStatus) {
+        // Xác định status cũ và mới có phải active không
+        boolean oldIsActive = oldStatus != null && oldStatus != BookingStatus.CANCELLED 
+            && oldStatus != BookingStatus.COMPLETED && oldStatus != BookingStatus.NO_SHOW;
+        boolean newIsActive = newStatus != BookingStatus.CANCELLED 
+            && newStatus != BookingStatus.COMPLETED && newStatus != BookingStatus.NO_SHOW;
+        
+        // Chỉ xử lý nếu có thay đổi từ active ↔ inactive
+        if (oldIsActive == newIsActive) {
+            return; // Không có thay đổi, không cần xử lý equipment
+        }
+        
+        // Lấy equipment của booking
+        List<BookingRequiredEquipment> requiredEquipments = bookingRequiredEquipmentRepository
+            .findByBooking_BookingId(booking.getBookingId());
+        
+        if (requiredEquipments.isEmpty()) {
+            return; // Không có equipment, không cần xử lý
+        }
+        
+        // Xử lý từng equipment
+        for (BookingRequiredEquipment requiredEquipment : requiredEquipments) {
+            Equipment equipmentEntity = equipmentRepository.findById(requiredEquipment.getEquipmentId())
+                .orElse(null);
+            
+            if (equipmentEntity == null) {
+                log.warn("Equipment not found when handling status change: equipmentId={}, bookingId={}",
+                    requiredEquipment.getEquipmentId(), booking.getBookingId());
+                continue;
+            }
+            
+            Integer quantity = requiredEquipment.getQuantity() != null ? requiredEquipment.getQuantity() : 0;
+            Integer currentAvailable = equipmentEntity.getAvailableQuantity() != null 
+                ? equipmentEntity.getAvailableQuantity() 
+                : equipmentEntity.getTotalQuantity();
+            
+            Integer newAvailable;
+            if (oldIsActive && !newIsActive) {
+                // Chuyển từ active → inactive: cộng lại availableQuantity
+                newAvailable = currentAvailable + quantity;
+                // Đảm bảo không vượt quá totalQuantity
+                Integer totalQuantity = equipmentEntity.getTotalQuantity() != null 
+                    ? equipmentEntity.getTotalQuantity() : 0;
+                newAvailable = Math.min(newAvailable, totalQuantity);
+                log.info("Released equipment quantity (status change to inactive): equipmentId={}, quantity={}, oldAvailable={}, newAvailable={}",
+                    requiredEquipment.getEquipmentId(), quantity, currentAvailable, newAvailable);
+            } else if (!oldIsActive && newIsActive) {
+                // Chuyển từ inactive → active: trừ lại availableQuantity
+                // Validate đủ quantity trước
+                if (currentAvailable < quantity) {
+                    log.warn("Insufficient equipment available when reactivating booking: equipmentId={}, requested={}, available={}, bookingId={}",
+                        requiredEquipment.getEquipmentId(), quantity, currentAvailable, booking.getBookingId());
+                    // Vẫn trừ nhưng log warning
+                }
+                newAvailable = Math.max(0, currentAvailable - quantity);
+                log.info("Reserved equipment quantity (status change to active): equipmentId={}, quantity={}, oldAvailable={}, newAvailable={}",
+                    requiredEquipment.getEquipmentId(), quantity, currentAvailable, newAvailable);
+            } else {
+                continue; // Không có thay đổi
+            }
+            
+            equipmentEntity.setAvailableQuantity(newAvailable);
+            equipmentRepository.save(equipmentEntity);
+        }
+    }
+    
+    /**
      * Release slots và cancel booking khi contract cancel/expired
      * Được gọi từ ContractService khi contract bị cancel/expired
      * 
@@ -2407,6 +2507,7 @@ public class StudioBookingService {
             
             // Update booking status thành CANCELLED (chỉ cho luồng 3 - PRE_CONTRACT_HOLD)
             // Luồng 2 (CONTRACT_RECORDING) đã CONFIRMED, chỉ release slots
+            BookingStatus oldStatus = booking.getStatus();
             if (booking.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD) {
                 booking.setStatus(BookingStatus.CANCELLED);
                 studioBookingRepository.save(booking);
@@ -2432,6 +2533,18 @@ public class StudioBookingService {
                     );
                     log.info("Published slot released event: specialistId={}, bookingId={}, reason={}", 
                         participant.getSpecialistId(), booking.getBookingId(), reason);
+                }
+            }
+            
+            // Xử lý equipment khi status thay đổi (nếu có thay đổi từ active → inactive)
+            if (booking.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD) {
+                handleEquipmentQuantityOnStatusChange(booking, oldStatus, BookingStatus.CANCELLED);
+            } else {
+                // Luồng 2: không đổi status nhưng vẫn cần release equipment nếu booking đang active
+                // (Trường hợp này hiếm, nhưng để an toàn)
+                if (oldStatus != BookingStatus.CANCELLED && oldStatus != BookingStatus.COMPLETED 
+                    && oldStatus != BookingStatus.NO_SHOW) {
+                    handleEquipmentQuantityOnStatusChange(booking, oldStatus, BookingStatus.CANCELLED);
                 }
             }
         }

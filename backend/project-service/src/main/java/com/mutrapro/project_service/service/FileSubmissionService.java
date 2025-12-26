@@ -46,6 +46,10 @@ import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.StudioBookingRepository;
+import com.mutrapro.project_service.repository.BookingRequiredEquipmentRepository;
+import com.mutrapro.project_service.repository.EquipmentRepository;
+import com.mutrapro.project_service.entity.BookingRequiredEquipment;
+import com.mutrapro.project_service.entity.Equipment;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.mutrapro.project_service.entity.ContractInstallment;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,6 +89,8 @@ public class FileSubmissionService {
     RevisionRequestService revisionRequestService;
     RevisionRequestRepository revisionRequestRepository;
     StudioBookingRepository studioBookingRepository;
+    BookingRequiredEquipmentRepository bookingRequiredEquipmentRepository;
+    EquipmentRepository equipmentRepository;
     ContractService contractService;
     TaskAssignmentService taskAssignmentService;
     ObjectMapper objectMapper;
@@ -333,6 +339,10 @@ public class FileSubmissionService {
                                     || booking.getStatus() == BookingStatus.CONFIRMED) {
                                 booking.setStatus(BookingStatus.COMPLETED);
                                 studioBookingRepository.save(booking);
+                                
+                                // Cộng lại availableQuantity của equipment khi booking chuyển sang COMPLETED
+                                releaseEquipmentQuantity(booking);
+                                
                                 log.info("Studio booking status updated to COMPLETED after file submission: bookingId={}, assignmentId={}",
                                         booking.getBookingId(), assignmentId);
                             }
@@ -348,6 +358,40 @@ public class FileSubmissionService {
                 submittedSubmission.getSubmissionId(), filesToSubmit.size(), assignmentId);
 
         return toResponse(submittedSubmission);
+    }
+
+    /**
+     * Cộng lại availableQuantity của equipment khi booking chuyển sang inactive status (COMPLETED, CANCELLED, NO_SHOW)
+     */
+    private void releaseEquipmentQuantity(StudioBooking booking) {
+        List<BookingRequiredEquipment> requiredEquipments = bookingRequiredEquipmentRepository
+            .findByBooking_BookingId(booking.getBookingId());
+        
+        for (BookingRequiredEquipment requiredEquipment : requiredEquipments) {
+            Equipment equipmentEntity = equipmentRepository.findById(requiredEquipment.getEquipmentId())
+                .orElse(null);
+            
+            if (equipmentEntity == null) {
+                log.warn("Equipment not found when releasing quantity: equipmentId={}, bookingId={}",
+                    requiredEquipment.getEquipmentId(), booking.getBookingId());
+                continue;
+            }
+            
+            Integer quantity = requiredEquipment.getQuantity() != null ? requiredEquipment.getQuantity() : 0;
+            Integer currentAvailable = equipmentEntity.getAvailableQuantity() != null 
+                ? equipmentEntity.getAvailableQuantity() 
+                : equipmentEntity.getTotalQuantity();
+            Integer totalQuantity = equipmentEntity.getTotalQuantity() != null 
+                ? equipmentEntity.getTotalQuantity() : 0;
+            
+            // Cộng lại availableQuantity (không vượt quá totalQuantity)
+            Integer newAvailable = Math.min(totalQuantity, currentAvailable + quantity);
+            equipmentEntity.setAvailableQuantity(newAvailable);
+            equipmentRepository.save(equipmentEntity);
+            
+            log.info("Released equipment quantity (booking completed): equipmentId={}, quantity={}, oldAvailable={}, newAvailable={}",
+                requiredEquipment.getEquipmentId(), quantity, currentAvailable, newAvailable);
+        }
     }
 
     /**

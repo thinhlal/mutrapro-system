@@ -352,6 +352,17 @@ const SpecialistProfile = () => {
 
   const handleEditSkill = skill => {
     setEditingSkill(skill);
+    // Set category for RECORDING_ARTIST
+    const isRecordingArtist =
+      profileDetail?.specialist?.specialization === 'RECORDING_ARTIST';
+    if (isRecordingArtist && skill.skill?.recordingCategory) {
+      const category =
+        typeof skill.skill.recordingCategory === 'string'
+          ? skill.skill.recordingCategory
+          : skill.skill.recordingCategory?.name ||
+            skill.skill.recordingCategory;
+      setSelectedSkillCategory(category);
+    }
     skillForm.setFieldsValue({
       skillId: skill.skill?.skillId || skill.skillId,
       proficiencyLevel: skill.proficiencyLevel,
@@ -1106,6 +1117,56 @@ const SpecialistProfile = () => {
                         </p>
                       </div>
                     </Card>
+                  ) : isRecordingArtist ? (
+                    // For RECORDING_ARTIST: Group by Vocal and Instrument
+                    (() => {
+                      const vocalSkills = skills.filter(
+                        skill =>
+                          skill.skill?.recordingCategory === 'VOCAL' ||
+                          (typeof skill.skill?.recordingCategory === 'object' &&
+                            skill.skill?.recordingCategory?.name === 'VOCAL')
+                      );
+                      const instrumentSkills = skills.filter(
+                        skill =>
+                          skill.skill?.recordingCategory === 'INSTRUMENT' ||
+                          (typeof skill.skill?.recordingCategory === 'object' &&
+                            skill.skill?.recordingCategory?.name ===
+                              'INSTRUMENT')
+                      );
+
+                      return (
+                        <div>
+                          {vocalSkills.length > 0 && (
+                            <div style={{ marginBottom: 24 }}>
+                              <Title level={4} style={{ marginBottom: 16 }}>
+                                Vocal Skills
+                              </Title>
+                              <Table
+                                columns={skillColumns}
+                                dataSource={vocalSkills}
+                                rowKey="specialistSkillId"
+                                pagination={false}
+                                loading={skillsLoading}
+                              />
+                            </div>
+                          )}
+                          {instrumentSkills.length > 0 && (
+                            <div>
+                              <Title level={4} style={{ marginBottom: 16 }}>
+                                Instrument Skills
+                              </Title>
+                              <Table
+                                columns={skillColumns}
+                                dataSource={instrumentSkills}
+                                rowKey="specialistSkillId"
+                                pagination={false}
+                                loading={skillsLoading}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <Table
                       columns={skillColumns}

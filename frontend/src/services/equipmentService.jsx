@@ -7,14 +7,16 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {string} skillId - Filter by skill_id
  * @param {boolean} includeInactive - Include inactive equipment (for admin)
  * @param {boolean} includeUnavailable - Include unavailable equipment (when skillId is provided)
+ * @param {boolean} includeOutOfStock - Include out of stock equipment (availableQuantity = 0). Default false (only available equipment)
  */
 export const getAllEquipment = async (
   skillId = null,
   includeInactive = true,
-  includeUnavailable = false
+  includeUnavailable = false,
+  includeOutOfStock = false
 ) => {
   try {
-    const params = { includeInactive, includeUnavailable };
+    const params = { includeInactive, includeUnavailable, includeOutOfStock };
     if (skillId) {
       params.skillId = skillId;
     }
