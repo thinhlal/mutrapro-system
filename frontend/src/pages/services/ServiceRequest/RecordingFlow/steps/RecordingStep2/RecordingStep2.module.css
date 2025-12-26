@@ -37,18 +37,24 @@
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   background: white;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
+  transform: scale(1);
+  cursor: pointer;
 }
 
 .radioOption:hover {
   border-color: #f97316;
   background: #fff7ed;
+  transform: scale(1.02);
 }
 
-.radioOption input[type='radio']:checked ~ * {
-  border-color: #f97316;
-  background: #fff7ed;
+/* Selected/Checked state - scale up effect */
+.radioOptionChecked {
+  border-color: #f97316 !important;
+  background: #fff7ed !important;
+  transform: scale(1.01) !important;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.2) !important;
 }
 
 .radioLabel {
