@@ -55,6 +55,18 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
 
     // Find task assignment by milestone ID and task type
     Optional<TaskAssignment> findByMilestoneIdAndTaskType(String milestoneId, TaskType taskType);
+    
+    // Find active task assignment by milestone ID and task type (not cancelled)
+    // Returns the first active task if multiple exist
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "WHERE ta.milestoneId = :milestoneId " +
+           "AND ta.taskType = :taskType " +
+           "AND ta.status != com.mutrapro.project_service.enums.AssignmentStatus.cancelled " +
+           "ORDER BY ta.createdAt DESC")
+    List<TaskAssignment> findByMilestoneIdAndTaskTypeActive(
+        @Param("milestoneId") String milestoneId,
+        @Param("taskType") TaskType taskType
+    );
 
     // Find all task assignments by contract ID and status
     List<TaskAssignment> findByContractIdAndStatus(String contractId, AssignmentStatus status);

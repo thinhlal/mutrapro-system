@@ -2043,9 +2043,10 @@ public class StudioBookingService {
                     
                     // Load recording supervision task (supervisor info) - chỉ lấy basic info từ task assignment
                     // Frontend sẽ fetch full specialist info nếu cần (để tránh làm chậm API response)
-                    taskAssignmentRepository.findByMilestoneIdAndTaskType(
+                    // Use active task query to avoid NonUniqueResultException when multiple tasks exist
+                    taskAssignmentRepository.findByMilestoneIdAndTaskTypeActive(
                         booking.getMilestoneId(), TaskType.recording_supervision
-                    ).ifPresent(supervisorTask -> {
+                    ).stream().findFirst().ifPresent(supervisorTask -> {
                         StudioBookingResponse.SupervisorInfo supervisorInfo = 
                             StudioBookingResponse.SupervisorInfo.builder()
                                 .assignmentId(supervisorTask.getAssignmentId())
@@ -2102,9 +2103,10 @@ public class StudioBookingService {
                 if (milestone != null && milestone.getMilestoneType() == MilestoneType.recording) {
                     // Load recording supervision task (supervisor info) - chỉ lấy basic info từ task assignment
                     // Frontend sẽ fetch full specialist info nếu cần (để tránh làm chậm API response)
-                    taskAssignmentRepository.findByMilestoneIdAndTaskType(
+                    // Use active task query to avoid NonUniqueResultException when multiple tasks exist
+                    taskAssignmentRepository.findByMilestoneIdAndTaskTypeActive(
                         booking.getMilestoneId(), TaskType.recording_supervision
-                    ).ifPresent(supervisorTask -> {
+                    ).stream().findFirst().ifPresent(supervisorTask -> {
                         StudioBookingResponse.SupervisorInfo supervisorInfo = 
                             StudioBookingResponse.SupervisorInfo.builder()
                                 .assignmentId(supervisorTask.getAssignmentId())

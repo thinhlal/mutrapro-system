@@ -260,26 +260,6 @@ function App() {
             }
           />
           <Route
-            path="/ai-transcription"
-            element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
-                <KlangTranscriptionPanel />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ai-transcription/process"
-            element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
-                <TranscriptionProcessPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/my-requests"
             element={
               <ProtectedRoute
@@ -657,6 +637,8 @@ function App() {
           >
             <Route index element={<Navigate to="edit-tool" replace />} />
             <Route path="edit-tool" element={<SmoosicEditorPage />} />
+            <Route path="ai-transcription" element={<KlangTranscriptionPanel />} />
+            <Route path="ai-transcription/process" element={<TranscriptionProcessPage />} />
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route
               path="my-tasks/:taskId"

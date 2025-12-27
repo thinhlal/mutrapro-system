@@ -4,10 +4,8 @@ import { Card, Upload, Button, Select, Typography } from 'antd';
 import { UploadOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { KLANG_MODELS } from '../../config/klangConfig.js';
 import { useKlangTranscriptionStore } from '../../stores/useKlangTranscriptionStore.js';
-import Header from '../../components/common/Header/Header.jsx';
 import IntroSection from './components/IntroSection.jsx';
 import styles from './KlangTranscriptionPanel.module.css';
-import BackToTop from '../../components/common/BackToTop/BackToTop.jsx';
 
 const { Text } = Typography;
 
@@ -46,7 +44,7 @@ const KlangTranscriptionPanel = () => {
       await createTranscription(file);
 
       // Navigate to process page
-      navigate('/ai-transcription/process', { state: { file } });
+      navigate('/transcription/ai-transcription/process', { state: { file } });
     } catch (error) {
       console.error('Transcription error:', error);
       setIsSubmitting(false);
@@ -54,10 +52,7 @@ const KlangTranscriptionPanel = () => {
   };
 
   return (
-    <>
-      <Header />
-      <BackToTop />
-      <div className={styles.container}>
+    <div className={styles.container}>
         {/* Intro Section */}
         <IntroSection />
 
@@ -172,7 +167,6 @@ const KlangTranscriptionPanel = () => {
           </div>
         </Card>
       </div>
-    </>
   );
 };
 

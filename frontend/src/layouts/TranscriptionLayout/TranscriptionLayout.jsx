@@ -8,6 +8,7 @@ import {
   LogoutOutlined,
   ProfileOutlined,
   UnorderedListOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import toast from 'react-hot-toast';
@@ -27,6 +28,11 @@ const menuItems = [
     key: '/transcription/edit-tool',
     icon: <EditOutlined />,
     label: <Link to="/transcription/edit-tool">Edit Tool</Link>,
+  },
+  {
+    key: '/transcription/ai-transcription',
+    icon: <RobotOutlined />,
+    label: <Link to="/transcription/ai-transcription">AI Transcription</Link>,
   },
   {
     key: '/transcription/profile',

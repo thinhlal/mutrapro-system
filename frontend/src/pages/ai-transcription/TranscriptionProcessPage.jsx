@@ -9,7 +9,6 @@ import {
 import Lottie from 'lottie-react';
 import Embed from 'flat-embed';
 import { useKlangTranscriptionStore } from '../../stores/useKlangTranscriptionStore.js';
-import Header from '../../components/common/Header/Header.jsx';
 import aiAnimation from '../../assets/animations/AI animation.json';
 import styles from './TranscriptionProcessPage.module.css';
 
@@ -106,7 +105,7 @@ const TranscriptionProcessPage = () => {
   };
 
   const handleBackToUpload = () => {
-    navigate('/ai-transcription');
+    navigate('/transcription/ai-transcription');
   };
 
   const isProcessing =
@@ -117,9 +116,7 @@ const TranscriptionProcessPage = () => {
   const progressPercent = (currentStep / steps.length) * 100;
 
   return (
-    <>
-      <Header />
-      <div className={styles.container}>
+    <div className={styles.container}>
         <Card className={styles.mainCard} bordered={false}>
           {/* Back Button */}
           <Button
@@ -292,7 +289,6 @@ const TranscriptionProcessPage = () => {
           )}
         </Card>
       </div>
-    </>
   );
 };
 
