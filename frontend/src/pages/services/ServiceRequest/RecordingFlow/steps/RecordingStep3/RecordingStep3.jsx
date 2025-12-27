@@ -469,7 +469,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                       onChange={e =>
                         handleInstrumentToggle(skill, e.target.checked)
                       }
-                      className={styles.skillCheckbox}
+                      className={`${styles.skillCheckbox} ${
+                        isSelected ? styles.skillCheckboxSelected : ''
+                      }`}
                     >
                       {skill.skillName}
                     </Checkbox>
