@@ -330,30 +330,6 @@ const SpecialistTaskDetailPage = () => {
     }
   }, []);
 
-  const loadSubmissions = useCallback(async assignmentId => {
-    if (!assignmentId) return;
-    try {
-      setLoadingSubmissions(true);
-      const response = await getSubmissionsByAssignmentId(assignmentId);
-      if (response?.status === 'success' && Array.isArray(response?.data)) {
-        // Sort submissions by version (mới nhất trước)
-        const sortedSubmissions = [...response.data].sort((a, b) => {
-          const versionA = a.version || 0;
-          const versionB = b.version || 0;
-          return versionB - versionA; // Mới nhất trước
-        });
-        setSubmissions(sortedSubmissions);
-      } else {
-        setSubmissions([]);
-      }
-    } catch (error) {
-      console.error('Error loading submissions:', error);
-      setSubmissions([]);
-    } finally {
-      setLoadingSubmissions(false);
-    }
-  }, []);
-
   const loadRevisionRequests = useCallback(async assignmentId => {
     if (!assignmentId) return;
     try {
@@ -371,6 +347,42 @@ const SpecialistTaskDetailPage = () => {
       setLoadingRevisionRequests(false);
     }
   }, []);
+
+  const loadSubmissions = useCallback(async assignmentId => {
+    if (!assignmentId) return;
+    try {
+      setLoadingSubmissions(true);
+      const response = await getSubmissionsByAssignmentId(assignmentId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Sort submissions by version (mới nhất trước)
+        const sortedSubmissions = [...response.data].sort((a, b) => {
+          const versionA = a.version || 0;
+          const versionB = b.version || 0;
+          return versionB - versionA; // Mới nhất trước
+        });
+        setSubmissions(sortedSubmissions);
+        
+        // Nếu có submission với status customer_rejected, tự động load revision requests
+        // để lấy rejection reason
+        const hasCustomerRejected = sortedSubmissions.some(
+          sub => sub.status?.toLowerCase() === 'customer_rejected'
+        );
+        if (hasCustomerRejected) {
+          // Load revision requests để lấy rejection reason
+          loadRevisionRequests(assignmentId).catch(err => {
+            console.error('Error loading revision requests for rejection reason:', err);
+          });
+        }
+      } else {
+        setSubmissions([]);
+      }
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      setSubmissions([]);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  }, [loadRevisionRequests]);
 
   const loadArtistsInfo = useCallback(async participants => {
     try {
@@ -913,6 +925,26 @@ const SpecialistTaskDetailPage = () => {
     return submissions[0]; // Đã sort theo version desc
   }, [submissions]);
 
+  // Tính toán rejection reason cho current submission
+  const currentSubmissionRejectionReason = useMemo(() => {
+    if (!currentSubmission) return null;
+    
+    const status = currentSubmission.status?.toLowerCase();
+    
+    if (status === 'rejected') {
+      // Manager rejection - lý do nằm trong submission.rejectionReason
+      return currentSubmission.rejectionReason;
+    } else if (status === 'customer_rejected') {
+      // Customer rejection - lý do nằm trong revision request description
+      // Tìm revision request có originalSubmissionId trùng với submissionId
+      const matchingRevision = revisionRequests.find(
+        rev => rev.originalSubmissionId === currentSubmission.submissionId
+      );
+      return matchingRevision?.description || null;
+    }
+    return null;
+  }, [currentSubmission, revisionRequests]);
+
   const previousSubmissions = useMemo(() => {
     // Previous submissions: các submission cũ hơn (bỏ submission đầu tiên)
     if (submissions.length <= 1) return [];
@@ -939,6 +971,19 @@ const SpecialistTaskDetailPage = () => {
       return (
         revisionRequests.find(
           revision => revision.revisedSubmissionId === submissionId
+        ) || null
+      );
+    },
+    [revisionRequests]
+  );
+
+  // Helper function để lấy revision request khi customer reject submission này
+  const getRevisionRequestForRejectedSubmission = useCallback(
+    submissionId => {
+      if (!submissionId || !revisionRequests.length) return null;
+      return (
+        revisionRequests.find(
+          revision => revision.originalSubmissionId === submissionId
         ) || null
       );
     },
@@ -2478,9 +2523,12 @@ const SpecialistTaskDetailPage = () => {
                   <Text strong>
                     {currentSubmission.status?.toLowerCase() === 'rejected'
                       ? `Submission #${currentSubmission.version} – Revision Requested (Manager requested revision)`
-                      : revisedRevision
-                        ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
-                        : `Current review – Submission #${currentSubmission.version}`}
+                      : currentSubmission.status?.toLowerCase() ===
+                          'customer_rejected'
+                        ? `Submission #${currentSubmission.version} – Rejected by Customer`
+                        : revisedRevision
+                          ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
+                          : `Current review – Submission #${currentSubmission.version}`}
                   </Text>
                   {revisedRevision && (
                     <Tag color="purple">
@@ -2501,21 +2549,18 @@ const SpecialistTaskDetailPage = () => {
                 </Space>
               }
               extra={
-                currentSubmission.status?.toLowerCase() === 'rejected' &&
-                currentSubmission.rejectionReason && (
+                currentSubmissionRejectionReason ? (
                   <Button
                     size="small"
                     icon={<ExclamationCircleOutlined />}
                     onClick={() => {
-                      setRejectionReasonToView(
-                        currentSubmission.rejectionReason
-                      );
+                      setRejectionReasonToView(currentSubmissionRejectionReason);
                       setRejectionModalVisible(true);
                     }}
                   >
                     View reason
                   </Button>
-                )
+                ) : null
               }
             >
               {currentSubmission.files && currentSubmission.files.length > 0 ? (
@@ -2790,23 +2835,35 @@ const SpecialistTaskDetailPage = () => {
                           Submitted: {formatDateTime(submission.submittedAt)}
                         </Text>
                       )}
-                      {submissionStatus === 'rejected' &&
-                        submission.rejectionReason && (
+                      {(() => {
+                        let rejectionReason = null;
+                        
+                        if (submissionStatus === 'rejected') {
+                          // Manager rejection - lý do nằm trong submission.rejectionReason
+                          rejectionReason = submission.rejectionReason;
+                        } else if (submissionStatus === 'customer_rejected') {
+                          // Customer rejection - lý do nằm trong revision request description
+                          const revisionRequest = getRevisionRequestForRejectedSubmission(
+                            submission.submissionId
+                          );
+                          rejectionReason = revisionRequest?.description || null;
+                        }
+                        
+                        return rejectionReason ? (
                           <Button
                             size="small"
                             type="link"
                             icon={<ExclamationCircleOutlined />}
                             onClick={e => {
                               e.stopPropagation(); // để không làm toggle panel khi bấm nút
-                              setRejectionReasonToView(
-                                submission.rejectionReason
-                              );
+                              setRejectionReasonToView(rejectionReason);
                               setRejectionModalVisible(true);
                             }}
                           >
                             View reason
                           </Button>
-                        )}
+                        ) : null;
+                      })()}
                     </Space>
                   }
                 >
@@ -3151,7 +3208,7 @@ const SpecialistTaskDetailPage = () => {
         title={
           <Space>
             <ExclamationCircleOutlined style={{ color: '#faad14' }} />
-            <span>Manager&apos;s rejection reason</span>
+            <span>Rejection Reason</span>
           </Space>
         }
         open={rejectionModalVisible}
