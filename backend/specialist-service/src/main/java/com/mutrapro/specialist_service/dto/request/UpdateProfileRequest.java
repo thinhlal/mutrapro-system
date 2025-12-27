@@ -1,11 +1,13 @@
 package com.mutrapro.specialist_service.dto.request;
 
 import com.mutrapro.specialist_service.enums.Gender;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -33,5 +35,11 @@ public class UpdateProfileRequest {
     private List<String> genres; // Array of music genres: ['Pop', 'Rock', 'Jazz', 'Classical', 'R&B', 'Hip-Hop', 'Electronic', etc.]
     
     private List<String> credits; // Array of credits: ['One Seven Music', 'Future House Cloud']
+    
+    /**
+     * Giá theo giờ cho recording artists (VND/hour)
+     */
+    @DecimalMin(value = "0", message = "Hourly rate must be non-negative")
+    private BigDecimal hourlyRate;
 }
 

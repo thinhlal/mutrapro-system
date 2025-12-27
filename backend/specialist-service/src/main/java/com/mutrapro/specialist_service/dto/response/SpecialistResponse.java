@@ -69,6 +69,11 @@ public class SpecialistResponse {
     private Integer reviews;
     
     /**
+     * Giá theo giờ cho recording artists (VND/hour)
+     */
+    private BigDecimal hourlyRate;
+    
+    /**
      * URL của main demo (demo được đánh dấu là demo chính)
      * Được hiển thị ở avatar trong trang list specialists
      */

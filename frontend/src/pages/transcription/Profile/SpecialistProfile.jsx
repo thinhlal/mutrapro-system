@@ -143,6 +143,7 @@ const SpecialistProfile = () => {
           gender: specialist?.gender,
           genres: specialist?.genres || [],
           credits: specialist?.credits || [],
+          hourlyRate: specialist?.hourlyRate,
         });
 
         // Load rating và reviews nếu có specialistId
@@ -939,6 +940,28 @@ const SpecialistProfile = () => {
                             tokenSeparators={[',']}
                           />
                         </Form.Item>
+
+                        <Form.Item
+                          name="hourlyRate"
+                          label="Hourly Rate (VND/hour)"
+                          tooltip="Your hourly rate for recording services. This will be used to calculate participant fees when customers book your services."
+                          rules={[
+                            {
+                              type: 'number',
+                              min: 0,
+                              message: 'Hourly rate must be non-negative',
+                            },
+                          ]}
+                        >
+                          <InputNumber
+                            min={0}
+                            style={{ width: '100%' }}
+                            placeholder="Enter hourly rate (e.g., 500000)"
+                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                            addonAfter="VND/hour"
+                          />
+                        </Form.Item>
                       </>
                     )}
 
@@ -1082,6 +1105,16 @@ const SpecialistProfile = () => {
                                   )
                                 )}
                               </Space>
+                            ) : (
+                              'N/A'
+                            )}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Hourly Rate">
+                            {profileDetail?.specialist?.hourlyRate ? (
+                              new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND',
+                              }).format(profileDetail.specialist.hourlyRate) + '/hour'
                             ) : (
                               'N/A'
                             )}
