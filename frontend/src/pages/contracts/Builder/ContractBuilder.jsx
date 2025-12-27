@@ -377,7 +377,7 @@ const mapServiceTypeToContractType = serviceType => {
 const getDefaultSlaDays = contractType => {
   if (contractType === 'transcription') return 7;
   if (contractType === 'arrangement') return 14;
-  if (contractType === 'arrangement_with_recording') return 21;
+  if (contractType === 'arrangement_with_recording') return 20;
   if (contractType === 'recording') return 7;
   if (contractType === 'bundle') return 21;
   return 7;
