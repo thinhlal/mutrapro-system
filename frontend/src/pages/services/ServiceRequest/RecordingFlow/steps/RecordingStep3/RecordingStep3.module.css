@@ -54,9 +54,15 @@
   background: #fff7ed;
 }
 
-.skillCheckbox input[type='checkbox']:checked ~ * {
+/* Selected state - chỉ viền cam và dấu tích */
+.skillCheckboxSelected {
+  border-color: #f97316 !important;
+  border-width: 2px !important;
+}
+
+.skillCheckboxSelected :global(.ant-checkbox-checked .ant-checkbox-inner) {
+  background-color: #f97316;
   border-color: #f97316;
-  background: #fff7ed;
 }
 
 /* Instrument Config Section */
