@@ -726,11 +726,20 @@ const WalletScreen = ({ navigation }) => {
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
             <Ionicons name="wallet-outline" size={32} color={COLORS.primary} />
-            <Text style={styles.balanceLabel}>Current Balance</Text>
+            <Text style={styles.balanceLabel}>Available Balance</Text>
           </View>
           <Text style={styles.balanceAmount}>
-            {formatCurrency(wallet?.balance, wallet?.currency)}
+            {formatCurrency(
+              wallet?.availableBalance ?? 
+                (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+              wallet?.currency
+            )}
           </Text>
+          {wallet?.holdBalance > 0 && (
+            <Text style={styles.balanceSubtext}>
+              Total: {formatCurrency(wallet.balance, wallet.currency)} | On Hold: {formatCurrency(wallet.holdBalance, wallet.currency)}
+            </Text>
+          )}
           <View style={styles.balanceActions}>
             <TouchableOpacity
               style={styles.depositButton}
@@ -2368,6 +2377,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.white,
     marginVertical: SPACING.md,
+  },
+  balanceSubtext: {
+    fontSize: FONT_SIZES.xs,
+    textAlign: "center",
+    color: COLORS.white,
+    opacity: 0.8,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   balanceActions: {
     marginTop: SPACING.md,

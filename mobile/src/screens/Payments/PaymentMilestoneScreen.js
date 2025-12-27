@@ -220,7 +220,9 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
 
     const installment = targetMilestone.installment;
     const milestoneAmount = parseFloat(installment.amount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance = wallet?.availableBalance ?? 
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < milestoneAmount) {
       const suggestedAmount = milestoneAmount - walletBalance + 10000;
@@ -329,7 +331,9 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
 
   const installment = targetMilestone.installment;
   const milestoneAmount = parseFloat(installment.amount);
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance = wallet?.availableBalance ?? 
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasSufficientBalance = walletBalance >= milestoneAmount;
   const workStatusConfig = getWorkStatusConfig(targetMilestone.workStatus || "PLANNED");
 

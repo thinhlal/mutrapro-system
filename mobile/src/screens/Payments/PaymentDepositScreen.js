@@ -143,7 +143,9 @@ const PaymentDepositScreen = ({ navigation, route }) => {
     }
 
     const depositAmount = parseFloat(depositInstallment.amount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance = wallet?.availableBalance ?? 
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < depositAmount) {
       const suggestedAmount = depositAmount - walletBalance + 10000;
@@ -257,7 +259,9 @@ const PaymentDepositScreen = ({ navigation, route }) => {
   }
 
   const depositAmount = parseFloat(depositInstallment.amount);
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance = wallet?.availableBalance ?? 
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasSufficientBalance = walletBalance >= depositAmount;
 
   return (

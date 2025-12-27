@@ -109,7 +109,9 @@ const PaymentRevisionFeeScreen = ({ navigation, route }) => {
     }
 
     const amount = parseFloat(feeAmount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance = wallet?.availableBalance ?? 
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < amount) {
       Alert.alert(
@@ -246,7 +248,9 @@ const PaymentRevisionFeeScreen = ({ navigation, route }) => {
   }
 
   const amount = parseFloat(feeAmount);
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance = wallet?.availableBalance ?? 
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasSufficientBalance = walletBalance >= amount;
 
   return (

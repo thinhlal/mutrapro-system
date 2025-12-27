@@ -151,7 +151,11 @@ const PaymentSuccessScreen = ({ navigation, route }) => {
             <InfoRow
               icon="wallet-outline"
               label="Available balance"
-              value={formatCurrency(wallet.balance, wallet.currency)}
+              value={formatCurrency(
+                wallet?.availableBalance ?? 
+                  (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                wallet.currency
+              )}
               valueStyle={styles.walletValue}
             />
           )}
