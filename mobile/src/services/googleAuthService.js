@@ -56,7 +56,7 @@ export const authenticateWithGoogle = async (code) => {
     return { accessToken, user };
   } catch (error) {
     console.error('Google authentication error:', error);
-    throw error.response?.data || { message: 'Lỗi đăng nhập với Google' };
+    throw error.response?.data || { message: 'Error logging in with Google' };
   }
 };
 

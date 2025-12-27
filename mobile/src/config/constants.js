@@ -25,23 +25,23 @@ export const VALIDATION = {
 
 // Error Messages
 export const ERROR_MESSAGES = {
-  NETWORK_ERROR: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
-  INVALID_EMAIL: 'Email không hợp lệ',
-  INVALID_PASSWORD: 'Mật khẩu phải có ít nhất 8 ký tự',
-  PASSWORD_MISMATCH: 'Mật khẩu không khớp',
-  REQUIRED_FIELD: 'Trường này là bắt buộc',
-  LOGIN_FAILED: 'Email hoặc mật khẩu không đúng',
-  REGISTER_FAILED: 'Đăng ký thất bại. Vui lòng thử lại.',
-  GENERIC_ERROR: 'Đã có lỗi xảy ra. Vui lòng thử lại.',
+  NETWORK_ERROR: 'Cannot connect to server. Please check your network connection.',
+  INVALID_EMAIL: 'Invalid email address',
+  INVALID_PASSWORD: 'Password must be at least 8 characters',
+  PASSWORD_MISMATCH: 'Passwords do not match',
+  REQUIRED_FIELD: 'This field is required',
+  LOGIN_FAILED: 'Email or password is incorrect',
+  REGISTER_FAILED: 'Registration failed. Please try again.',
+  GENERIC_ERROR: 'An error occurred. Please try again.',
 };
 
 // Success Messages
 export const SUCCESS_MESSAGES = {
-  LOGIN_SUCCESS: 'Đăng nhập thành công!',
-  REGISTER_SUCCESS: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực.',
-  VERIFY_EMAIL_SUCCESS: 'Xác thực email thành công!',
-  UPDATE_PROFILE_SUCCESS: 'Cập nhật thông tin thành công!',
-  PASSWORD_RESET_SUCCESS: 'Đặt lại mật khẩu thành công!',
+  LOGIN_SUCCESS: 'Login successful!',
+  REGISTER_SUCCESS: 'Registration successful! Please check your email to verify.',
+  VERIFY_EMAIL_SUCCESS: 'Email verification successful!',
+  UPDATE_PROFILE_SUCCESS: 'Profile updated successfully!',
+  PASSWORD_RESET_SUCCESS: 'Password reset successful!',
 };
 
 // Colors

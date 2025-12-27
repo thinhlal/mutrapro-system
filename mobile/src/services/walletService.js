@@ -15,7 +15,7 @@ export const getOrCreateMyWallet = async () => {
   } catch (error) {
     console.error('❌ [Get Wallet Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi lấy thông tin wallet',
+      message: error.message || 'Error getting wallet information',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -44,7 +44,7 @@ export const topupWallet = async (walletId, data) => {
   } catch (error) {
     console.error('❌ [Topup Wallet Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi nạp tiền',
+      message: error.message || 'Error topping up wallet',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -75,7 +75,7 @@ export const payDeposit = async (walletId, depositData) => {
   } catch (error) {
     console.error('❌ [Pay Deposit Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi thanh toán DEPOSIT',
+      message: error.message || 'Error processing DEPOSIT payment',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -108,7 +108,7 @@ export const payMilestone = async (walletId, milestoneData) => {
   } catch (error) {
     console.error('❌ [Pay Milestone Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi thanh toán Milestone',
+      message: error.message || 'Error processing Milestone payment',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -144,7 +144,7 @@ export const payRevisionFee = async (walletId, revisionFeeData) => {
   } catch (error) {
     console.error('❌ [Pay Revision Fee Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi thanh toán Revision Fee',
+      message: error.message || 'Error processing Revision Fee payment',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -177,7 +177,7 @@ export const withdrawWallet = async (walletId, withdrawData) => {
   } catch (error) {
     console.error('❌ [Withdraw Wallet Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi rút tiền từ ví',
+      message: error.message || 'Error withdrawing from wallet',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -214,7 +214,7 @@ export const getMyWalletTransactions = async (filters = {}) => {
   } catch (error) {
     console.error('❌ [Get Transactions Error]', error.response?.data || error.message);
     throw error.response?.data || { 
-      message: error.message || 'Lỗi khi lấy danh sách giao dịch',
+      message: error.message || 'Error getting transaction list',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -245,7 +245,7 @@ export const getMyWithdrawalRequests = async (filters = {}) => {
   } catch (error) {
     console.error('❌ [Get Withdrawal Requests Error]', error.response?.data || error.message);
     throw error.response?.data || {
-      message: error.message || 'Lỗi khi lấy danh sách withdrawal requests',
+      message: error.message || 'Error getting withdrawal requests list',
       error: error.response?.statusText || 'Unknown error'
     };
   }

@@ -58,7 +58,7 @@ export const validateConfirmPassword = (password, confirmPassword) => {
  * @param {string} fieldName 
  * @returns {object} { isValid: boolean, error: string }
  */
-export const validateRequired = (value, fieldName = 'Trường này') => {
+export const validateRequired = (value, fieldName = 'This field') => {
   if (!value || (typeof value === 'string' && value.trim().length === 0)) {
     return { isValid: false, error: ERROR_MESSAGES.REQUIRED_FIELD };
   }
@@ -77,7 +77,7 @@ export const validatePhone = (phone) => {
   }
   
   if (!VALIDATION.PHONE_REGEX.test(phone)) {
-    return { isValid: false, error: 'Số điện thoại không hợp lệ' };
+    return { isValid: false, error: 'Invalid phone number' };
   }
   
   return { isValid: true, error: null };
@@ -94,11 +94,11 @@ export const validateOTP = (code) => {
   }
   
   if (code.length !== VALIDATION.OTP_LENGTH) {
-    return { isValid: false, error: `Mã OTP phải có ${VALIDATION.OTP_LENGTH} chữ số` };
+    return { isValid: false, error: `OTP code must be ${VALIDATION.OTP_LENGTH} digits` };
   }
   
   if (!/^\d+$/.test(code)) {
-    return { isValid: false, error: 'Mã OTP chỉ bao gồm số' };
+    return { isValid: false, error: 'OTP code must contain only numbers' };
   }
   
   return { isValid: true, error: null };
@@ -115,7 +115,7 @@ export const validateName = (name) => {
   }
   
   if (name.trim().length > VALIDATION.NAME_MAX_LENGTH) {
-    return { isValid: false, error: `Tên không được vượt quá ${VALIDATION.NAME_MAX_LENGTH} ký tự` };
+    return { isValid: false, error: `Name must not exceed ${VALIDATION.NAME_MAX_LENGTH} characters` };
   }
   
   return { isValid: true, error: null };

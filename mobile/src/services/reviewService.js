@@ -22,7 +22,7 @@ export const createTaskReview = async (assignmentId, reviewData) => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi tạo review cho task assignment',
+        message: 'Error creating review for task assignment',
       }
     );
   }
@@ -44,7 +44,7 @@ export const getTaskReview = async assignmentId => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy review của task assignment',
+        message: 'Error getting review for task assignment',
       }
     );
   }
@@ -70,7 +70,7 @@ export const createRequestReview = async (requestId, reviewData) => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi tạo review cho request',
+        message: 'Error creating review for request',
       }
     );
   }
@@ -96,7 +96,7 @@ export const createParticipantReview = async (participantId, reviewData) => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi tạo review cho participant',
+        message: 'Error creating review for participant',
       }
     );
   }
@@ -120,7 +120,7 @@ export const getSpecialistReviews = async (specialistId, params = {}) => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy reviews của specialist',
+        message: 'Error getting reviews for specialist',
       }
     );
   }
@@ -142,7 +142,7 @@ export const getRequestReviews = async requestId => {
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy reviews của request',
+        message: 'Error getting reviews for request',
       }
     );
   }
@@ -190,7 +190,7 @@ export const getSpecialistAverageRating = async specialistId => {
     }
     throw (
       error.response?.data || {
-        message: 'Lỗi khi lấy average rating của specialist',
+        message: 'Error getting average rating for specialist',
       }
     );
   }

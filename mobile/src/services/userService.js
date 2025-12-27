@@ -11,7 +11,7 @@ export const getAllUsers = async () => {
     const response = await axiosInstance.get(API_ENDPOINTS.USER.GET_ALL);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách users' };
+    throw error.response?.data || { message: 'Error getting users list' };
   }
 };
 
@@ -25,7 +25,7 @@ export const getUserProfile = async (userId) => {
     const response = await axiosInstance.get(API_ENDPOINTS.USER.FULL(userId));
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' };
+    throw error.response?.data || { message: 'Error getting user information' };
   }
 };
 
@@ -43,7 +43,7 @@ export const updateFullUser = async (userId, payload) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật thông tin' };
+    throw error.response?.data || { message: 'Error updating information' };
   }
 };
 
@@ -61,7 +61,7 @@ export const verifyEmail = async (email, code) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi xác thực email' };
+    throw error.response?.data || { message: 'Error verifying email' };
   }
 };
 
@@ -78,7 +78,7 @@ export const resendVerification = async (email) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi gửi lại email xác thực' };
+    throw error.response?.data || { message: 'Error resending verification email' };
   }
 };
 
@@ -94,7 +94,7 @@ export const checkVerificationStatus = async (email) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi kiểm tra trạng thái xác thực' };
+    throw error.response?.data || { message: 'Error checking verification status' };
   }
 };
 
@@ -110,7 +110,7 @@ export const deleteUser = async (userId) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi xóa user' };
+    throw error.response?.data || { message: 'Error deleting user' };
   }
 };
 
@@ -127,7 +127,7 @@ export const createUser = async (userData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi tạo user' };
+    throw error.response?.data || { message: 'Error creating user' };
   }
 };
 

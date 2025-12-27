@@ -26,7 +26,7 @@ export const createPaymentOrder = async (orderData) => {
   } catch (error) {
     console.error('❌ [Create Payment Order Error]', error.response?.data || error.message);
     throw (
-      error.response?.data || { message: 'Lỗi khi tạo đơn hàng thanh toán' }
+      error.response?.data || { message: 'Error creating payment order' }
     );
   }
 };
@@ -46,7 +46,7 @@ export const getPaymentOrder = async (orderId) => {
     return response.data;
   } catch (error) {
     console.error('❌ [Get Payment Order Error]', error.response?.data || error.message);
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin đơn hàng' };
+    throw error.response?.data || { message: 'Error getting order information' };
   }
 };
 
@@ -65,6 +65,6 @@ export const getPaymentOrderQR = async (orderId) => {
     return response.data;
   } catch (error) {
     console.error('❌ [Get Payment Order QR Error]', error.response?.data || error.message);
-    throw error.response?.data || { message: 'Lỗi khi lấy QR code' };
+    throw error.response?.data || { message: 'Error getting QR code' };
   }
 };

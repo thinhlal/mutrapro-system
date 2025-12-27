@@ -11,6 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 import { getVocalists, getSpecialistDetail } from "../services/specialistService";
 import { getAvailableArtistsForRequest } from "../services/studioBookingService";
@@ -29,6 +30,7 @@ const VocalistSelectionModal = ({
   bookingStartTime,
   bookingEndTime,
 }) => {
+  const insets = useSafeAreaInsets();
   const [vocalists, setVocalists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [genderFilter, setGenderFilter] = useState("ALL");
@@ -167,7 +169,7 @@ const VocalistSelectionModal = ({
       >
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingTop: insets.top }]}>
             <TouchableOpacity style={styles.backButton} onPress={onClose}>
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
@@ -449,6 +451,7 @@ const ExpandableTagsSection = ({ title, items, tagStyle, textStyle }) => {
 
 // VocalistDetailModal Component
 const VocalistDetailModal = ({ visible, vocalist, onClose }) => {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [detailData, setDetailData] = useState(null);
   const [averageRating, setAverageRating] = useState(null);
@@ -600,7 +603,7 @@ const VocalistDetailModal = ({ visible, vocalist, onClose }) => {
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity style={styles.backButton} onPress={onClose}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -1136,6 +1139,7 @@ const styles = StyleSheet.create({
   actionContainer: {
     flexDirection: "row",
     padding: SPACING.md,
+    paddingBottom: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
