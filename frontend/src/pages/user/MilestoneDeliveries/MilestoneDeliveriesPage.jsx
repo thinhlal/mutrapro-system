@@ -164,6 +164,8 @@ const MilestoneDeliveriesPage = () => {
   const [selectedAssignmentForReview, setSelectedAssignmentForReview] =
     useState(null);
   const [existingReviews, setExistingReviews] = useState({}); // Map assignmentId -> review
+  const [previewLoading, setPreviewLoading] = useState({}); // Map fileId -> loading state
+  const [downloadLoading, setDownloadLoading] = useState({}); // Map fileId -> loading state
 
   const milestoneName =
     milestoneInfo?.name || location.state?.milestoneName || 'Milestone';
@@ -300,6 +302,7 @@ const MilestoneDeliveriesPage = () => {
 
   const handleDownloadFile = async (fileId, fileName) => {
     try {
+      setDownloadLoading(prev => ({ ...prev, [fileId]: true }));
       const url = `/api/v1/projects/files/download/${fileId}`;
       const response = await axiosInstance.get(url, {
         responseType: 'blob',
@@ -317,13 +320,17 @@ const MilestoneDeliveriesPage = () => {
     } catch (error) {
       console.error('Error downloading file:', error);
       toast.error('Error downloading file', { duration: 5000, position: 'top-center' });
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [fileId]: false }));
     }
   };
 
   const handlePreviewFile = async file => {
+    const fileId = file.fileId || file;
     try {
+      setPreviewLoading(prev => ({ ...prev, [fileId]: true }));
       // Fetch file với authentication header
-      const url = `/api/v1/projects/files/preview/${file.fileId}`;
+      const url = `/api/v1/projects/files/preview/${fileId}`;
       const response = await axiosInstance.get(url, {
         responseType: 'blob',
       });
@@ -349,6 +356,8 @@ const MilestoneDeliveriesPage = () => {
     } catch (error) {
       console.error('Error previewing file:', error);
       toast.error(error?.response?.data?.message || 'Lỗi khi xem file', { duration: 5000, position: 'top-center' });
+    } finally {
+      setPreviewLoading(prev => ({ ...prev, [fileId]: false }));
     }
   };
 
@@ -911,12 +920,14 @@ const MilestoneDeliveriesPage = () => {
                                     type="link"
                                     icon={<EyeOutlined />}
                                     size="small"
+                                    loading={previewLoading[fileId]}
                                     onClick={async () => {
                                       try {
                                         if (
                                           fileId &&
                                           typeof fileId === 'string'
                                         ) {
+                                          setPreviewLoading(prev => ({ ...prev, [fileId]: true }));
                                           // Fetch file với authentication header
                                           const url = `/api/v1/projects/files/preview/${fileId}`;
                                           const response =
@@ -972,6 +983,10 @@ const MilestoneDeliveriesPage = () => {
                                         );
                                         toast.error(error?.response?.data?.message ||
                                             'Error previewing file', { duration: 5000, position: 'top-center' });
+                                      } finally {
+                                        if (fileId && typeof fileId === 'string') {
+                                          setPreviewLoading(prev => ({ ...prev, [fileId]: false }));
+                                        }
                                       }
                                     }}
                                   >
@@ -982,6 +997,7 @@ const MilestoneDeliveriesPage = () => {
                                     type="link"
                                     icon={<DownloadOutlined />}
                                     size="small"
+                                    loading={downloadLoading[fileId]}
                                     onClick={() => {
                                       if (
                                         fileId &&
@@ -1383,6 +1399,7 @@ const MilestoneDeliveriesPage = () => {
                                 key="preview"
                                 size="small"
                                 icon={<EyeOutlined />}
+                                loading={previewLoading[file.fileId]}
                                 onClick={() => handlePreviewFile(file)}
                               >
                                 Preview
@@ -1391,6 +1408,7 @@ const MilestoneDeliveriesPage = () => {
                                 key="download"
                                 size="small"
                                 icon={<DownloadOutlined />}
+                                loading={downloadLoading[file.fileId]}
                                 onClick={() =>
                                   handleDownloadFile(file.fileId, file.fileName)
                                 }
