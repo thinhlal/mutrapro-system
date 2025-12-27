@@ -209,7 +209,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     // Check if room is active
     if (room?.isActive === false) {
-      Alert.alert("Warning", "Không thể gửi tin nhắn. Phòng chat này đã được đóng.");
+      Alert.alert("Warning", "Cannot send message. This chat room has been closed.");
       return;
     }
 
@@ -223,7 +223,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const handleFileUpload = async (fileKey, fileName, fileType, metadata) => {
     // Check if room is active
     if (room?.isActive === false) {
-      Alert.alert("Warning", "Không thể gửi file. Phòng chat này đã được đóng.");
+      Alert.alert("Warning", "Cannot send file. This chat room has been closed.");
       return;
     }
 
@@ -248,7 +248,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       );
     } catch (error) {
       console.error('[Mobile] Failed to send file message:', error);
-      Alert.alert("Error", "Không thể gửi file");
+      Alert.alert("Error", "Unable to send file");
     }
   };
 

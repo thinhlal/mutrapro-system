@@ -165,7 +165,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
                       await loadBookingData(contractData.requestId);
                     }
                   }
-                  Alert.alert("Thành công", "Thanh toán đã được xác nhận!");
+                  Alert.alert("Success", "Payment has been confirmed!");
                   return; // Stop polling once payment is detected
                 }
 

@@ -433,7 +433,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   // Handle submit request review
   const handleSubmitRequestReview = async (reviewData) => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID không tồn tại');
+      Alert.alert('Error', 'Request ID does not exist');
       return;
     }
 

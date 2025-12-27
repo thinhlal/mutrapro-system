@@ -109,7 +109,7 @@ export const createServiceRequest = async (requestData) => {
 
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi tạo service request' };
+    throw error.response?.data || { message: 'Error creating service request' };
   }
 };
 
@@ -140,7 +140,7 @@ export const getMyRequests = async (filters = {}) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || {
-      message: 'Lỗi khi lấy danh sách requests của bạn',
+      message: 'Error getting your requests list',
     };
   }
 };
@@ -159,7 +159,7 @@ export const getServiceRequestById = async (requestId) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy chi tiết request' };
+    throw error.response?.data || { message: 'Error getting request details' };
   }
 };
 

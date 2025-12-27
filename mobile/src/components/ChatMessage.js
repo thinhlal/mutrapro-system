@@ -52,7 +52,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
       } catch (error) {
         console.error("[Mobile] Failed to load file:", error);
         if (isMounted) {
-          Alert.alert("Error", "Không thể tải file");
+          Alert.alert("Error", "Unable to download file");
         }
       } finally {
         if (isMounted) {
@@ -104,7 +104,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
           }
         } catch (error) {
           console.error("[Mobile] Failed to save file:", error);
-          Alert.alert("Error", "Không thể lưu file");
+          Alert.alert("Error", "Unable to save file");
         } finally {
           setLoadingFile(false);
         }
@@ -155,7 +155,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
                   ]}
                   numberOfLines={1}
                 >
-                  {message.metadata.fileName || "File đính kèm"}
+                  {message.metadata.fileName || "Attached file"}
                 </Text>
                 {message.metadata.fileSize && (
                   <Text
@@ -193,7 +193,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Ionicons name="image-outline" size={24} color={COLORS.textSecondary} />
-                <Text style={styles.imagePlaceholderText}>Không thể tải hình ảnh</Text>
+                <Text style={styles.imagePlaceholderText}>Unable to load image</Text>
               </View>
             )}
           </View>
@@ -216,7 +216,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
                 ]}
                 numberOfLines={1}
               >
-                {message.metadata?.fileName || "File đính kèm"}
+                {message.metadata?.fileName || "Attached file"}
               </Text>
               {message.metadata?.fileSize && (
                 <Text
@@ -250,7 +250,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
                 ]}
                 numberOfLines={1}
               >
-                {message.metadata?.fileName || "File audio đính kèm"}
+                {message.metadata?.fileName || "Attached audio file"}
               </Text>
               {message.metadata?.fileSize && (
                 <Text
@@ -284,7 +284,7 @@ const ChatMessage = ({ message, isFromMe, showAvatar, userAvatar, roomId }) => {
                 ]}
                 numberOfLines={1}
               >
-                {message.metadata?.fileName || "File video đính kèm"}
+                {message.metadata?.fileName || "Attached video file"}
               </Text>
               {message.metadata?.fileSize && (
                 <Text

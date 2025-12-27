@@ -30,7 +30,7 @@ export const login = async (email, password) => {
 
     return { accessToken, user };
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi đăng nhập' };
+    throw error.response?.data || { message: 'Login error' };
   }
 };
 
@@ -47,7 +47,7 @@ export const register = async (registerData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi đăng ký' };
+    throw error.response?.data || { message: 'Registration error' };
   }
 };
 
@@ -65,7 +65,7 @@ export const logout = async (token) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi đăng xuất' };
+    throw error.response?.data || { message: 'Logout error' };
   }
 };
 
@@ -82,7 +82,7 @@ export const refreshToken = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi làm mới token' };
+    throw error.response?.data || { message: 'Error refreshing token' };
   }
 };
 
@@ -100,7 +100,7 @@ export const introspect = async (token) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi xác thực token' };
+    throw error.response?.data || { message: 'Token verification error' };
   }
 };
 
@@ -117,7 +117,7 @@ export const forgotPassword = async (email) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi yêu cầu đặt lại mật khẩu' };
+    throw error.response?.data || { message: 'Error requesting password reset' };
   }
 };
 
@@ -134,7 +134,7 @@ export const resetPassword = async (data) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi đặt lại mật khẩu' };
+    throw error.response?.data || { message: 'Error resetting password' };
   }
 };
 
@@ -152,7 +152,7 @@ export const createPassword = async (data) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi tạo mật khẩu' };
+    throw error.response?.data || { message: 'Error creating password' };
   }
 };
 

@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { Audio } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 import { getAvailableArtistsForRequest } from "../services/studioBookingService";
 import { getSpecialistDetail } from "../services/specialistService";
@@ -29,6 +30,7 @@ const InstrumentalistSelectionModal = ({
   bookingEndTime,
   selectedInstrumentalistId = null,
 }) => {
+  const insets = useSafeAreaInsets();
   const [instrumentalists, setInstrumentalists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState(selectedInstrumentalistId);
@@ -123,7 +125,7 @@ const InstrumentalistSelectionModal = ({
     >
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity style={styles.backButton} onPress={onClose}>
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -344,6 +346,7 @@ const ExpandableTagsSection = ({ title, items, tagStyle, textStyle }) => {
 
 // InstrumentalistDetailModal Component
 const InstrumentalistDetailModal = ({ visible, instrumentalist, onClose }) => {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [detailData, setDetailData] = useState(null);
   const [averageRating, setAverageRating] = useState(null);
@@ -495,7 +498,7 @@ const InstrumentalistDetailModal = ({ visible, instrumentalist, onClose }) => {
       onRequestClose={onClose}
     >
       <View style={detailStyles.container}>
-        <View style={detailStyles.header}>
+        <View style={[detailStyles.header, { paddingTop: insets.top }]}>
           <TouchableOpacity style={detailStyles.backButton} onPress={onClose}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -911,6 +914,7 @@ const styles = StyleSheet.create({
   actionContainer: {
     flexDirection: "row",
     padding: SPACING.md,
+    paddingBottom: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

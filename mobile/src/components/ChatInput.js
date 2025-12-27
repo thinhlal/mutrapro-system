@@ -53,11 +53,11 @@ const ChatInput = ({ onSendMessage, onFileUpload, roomId, sending = false, disab
     if (disabled || sending || uploading) return;
     
     Alert.alert(
-      "Chọn loại file",
-      "Bạn muốn đính kèm gì?",
+      "Select file type",
+      "What would you like to attach?",
       [
         {
-          text: "Hình ảnh",
+          text: "Image",
           onPress: handlePickImage,
         },
         {
@@ -65,7 +65,7 @@ const ChatInput = ({ onSendMessage, onFileUpload, roomId, sending = false, disab
           onPress: handlePickDocument,
         },
         {
-          text: "Hủy",
+          text: "Cancel",
           style: "cancel",
         },
       ]

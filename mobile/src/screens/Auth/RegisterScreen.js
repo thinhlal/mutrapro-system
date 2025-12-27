@@ -112,8 +112,8 @@ const RegisterScreen = ({ navigation }) => {
       setSuccessMessage(SUCCESS_MESSAGES.REGISTER_SUCCESS);
       Toast.show({
         type: 'success',
-        text1: 'Đăng ký thành công',
-        text2: 'Vui lòng kiểm tra email để xác thực',
+        text1: 'Registration successful',
+        text2: 'Please check your email to verify',
       });
 
       // Navigate to verify email screen after 2 seconds
@@ -122,11 +122,11 @@ const RegisterScreen = ({ navigation }) => {
       }, 2000);
     } catch (error) {
       console.error('Register error:', error);
-      const errorMessage = error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      const errorMessage = error.message || 'Registration failed. Please try again.';
       setErrors({ general: errorMessage });
       Toast.show({
         type: 'error',
-        text1: 'Đăng ký thất bại',
+        text1: 'Registration failed',
         text2: errorMessage,
       });
     }
@@ -253,8 +253,8 @@ const RegisterScreen = ({ navigation }) => {
             onPress={() => {
               Toast.show({
                 type: 'info',
-                text1: 'Tính năng đang phát triển',
-                text2: 'Google registration sẽ sớm được hỗ trợ',
+                text1: 'Feature in development',
+                text2: 'Google registration will be supported soon',
               });
             }}
             variant="outline"

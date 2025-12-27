@@ -33,7 +33,7 @@ export const getPricingMatrix = async () => {
     const response = await axiosInstance.get(API_ENDPOINTS.PRICING.GET_ALL);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách giá' };
+    throw error.response?.data || { message: 'Error getting pricing list' };
   }
 };
 
@@ -97,7 +97,7 @@ export const getPricingDetail = async (serviceType) => {
   } catch (error) {
     console.error('Error getting pricing detail:', error);
     throw error.response?.data || {
-      message: `Lỗi khi lấy thông tin giá của ${serviceType}`,
+      message: `Error getting pricing information for ${serviceType}`,
     };
   }
 };
@@ -132,7 +132,7 @@ export const calculatePrice = async (serviceType, durationMinutes) => {
   } catch (error) {
     console.error('Error calculating price:', error);
     throw error.response?.data || {
-      message: `Lỗi khi tính toán giá ${serviceType}`,
+      message: `Error calculating price for ${serviceType}`,
     };
   }
 };

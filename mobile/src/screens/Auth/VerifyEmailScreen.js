@@ -60,7 +60,7 @@ const VerifyEmailScreen = ({ navigation, route }) => {
         );
 
         if (remaining <= 0) {
-          setError('Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.');
+          setError('Verification code has expired. Please request a new code.');
           setCodeExpiry(0);
         } else {
           setCodeExpiry(remaining);
@@ -95,7 +95,7 @@ const VerifyEmailScreen = ({ navigation, route }) => {
       const result = response?.data;
 
       if (result?.emailVerified) {
-        setError('Email đã được xác thực. Bạn có thể đăng nhập ngay.');
+        setError('Email has been verified. You can log in now.');
         setTimeout(() => navigation.replace(SCREEN_NAMES.LOGIN), 1000);
         return;
       }
@@ -126,10 +126,10 @@ const VerifyEmailScreen = ({ navigation, route }) => {
       setError('');
     } catch (err) {
       if (err.message === 'Email already verified') {
-        setError('Email đã được xác thực. Bạn có thể đăng nhập ngay.');
+        setError('Email has been verified. You can log in now.');
         setTimeout(() => navigation.replace(SCREEN_NAMES.LOGIN), 2000);
       } else {
-        setError('Không thể lấy mã xác thực. Vui lòng thử gửi lại.');
+        setError('Unable to get verification code. Please try resending.');
       }
     }
   };
@@ -137,7 +137,7 @@ const VerifyEmailScreen = ({ navigation, route }) => {
   const handleVerify = async () => {
     if (isVerified || isVerifying.current) return;
     if (otpCode.length !== 6) {
-      setError('Vui lòng nhập đầy đủ 6 chữ số');
+      setError('Please enter all 6 digits');
       return;
     }
 
@@ -153,8 +153,8 @@ const VerifyEmailScreen = ({ navigation, route }) => {
         setIsVerified(true);
         Toast.show({
           type: 'success',
-          text1: 'Xác thực thành công',
-          text2: 'Chuyển đến trang đăng nhập...',
+          text1: 'Verification successful',
+          text2: 'Redirecting to login page...',
         });
         
         setTimeout(() => {
@@ -166,14 +166,14 @@ const VerifyEmailScreen = ({ navigation, route }) => {
       console.error('Verification error:', err);
       
       if (err.message === 'Invalid verification code') {
-        setError('Mã xác thực không đúng. Vui lòng kiểm tra lại.');
+        setError('Incorrect verification code. Please check again.');
       } else if (err.message === 'Token expired') {
         setError('Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.');
       } else if (err.message === 'Email already verified') {
-        setError('Email đã được xác thực. Bạn có thể đăng nhập ngay.');
+        setError('Email has been verified. You can log in now.');
         setTimeout(() => navigation.replace(SCREEN_NAMES.LOGIN), 1000);
       } else {
-        setError(err.message || 'Mã xác thực không hợp lệ. Vui lòng thử lại.');
+        setError(err.message || 'Invalid verification code. Please try again.');
       }
       
       setOtpCode('');
@@ -195,8 +195,8 @@ const VerifyEmailScreen = ({ navigation, route }) => {
 
       Toast.show({
         type: 'success',
-        text1: 'Đã gửi mã mới',
-        text2: 'Vui lòng kiểm tra email của bạn',
+        text1: 'New code sent',
+        text2: 'Please check your email',
       });
 
       const remainingSeconds = result?.remainingSeconds || 15 * 60;
@@ -208,10 +208,10 @@ const VerifyEmailScreen = ({ navigation, route }) => {
       setOtpCode('');
     } catch (err) {
       if (err.message === 'Email already verified') {
-        setError('Email đã được xác thực. Bạn có thể đăng nhập ngay.');
+        setError('Email has been verified. You can log in now.');
         setTimeout(() => navigation.replace(SCREEN_NAMES.LOGIN), 2000);
       } else {
-        setError('Không thể gửi lại mã. Vui lòng thử lại sau.');
+        setError('Unable to resend code. Please try again later.');
       }
     } finally {
       setResendLoading(false);
@@ -225,7 +225,7 @@ const VerifyEmailScreen = ({ navigation, route }) => {
   };
 
   if (loading && isVerified) {
-    return <LoadingScreen message="Đang xác thực..." subMessage="Vui lòng đợi" />;
+    return <LoadingScreen message="Verifying..." subMessage="Please wait" />;
   }
 
   return (

@@ -19,7 +19,7 @@ export const getDeliveredSubmissionsByMilestone = async (milestoneId, contractId
   } catch (error) {
     console.error('❌ [Get Deliveries Error]', error.response?.data || error.message);
     throw error.response?.data || {
-      message: error.message || 'Lỗi khi lấy danh sách delivered submissions',
+      message: error.message || 'Error getting delivered submissions list',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -57,7 +57,7 @@ export const customerReviewSubmission = async (
   } catch (error) {
     console.error('❌ [Customer Review Error]', error.response?.data || error.message);
     throw error.response?.data || {
-      message: error.message || 'Lỗi khi review submission',
+      message: error.message || 'Error reviewing submission',
       error: error.response?.statusText || 'Unknown error'
     };
   }
@@ -79,7 +79,7 @@ export const getSubmission = async (submissionId) => {
   } catch (error) {
     console.error('❌ [Get Submission Error]', error.response?.data || error.message);
     throw error.response?.data || {
-      message: error.message || 'Lỗi khi lấy thông tin submission',
+      message: error.message || 'Error getting submission information',
       error: error.response?.statusText || 'Unknown error'
     };
   }

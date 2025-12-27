@@ -29,7 +29,7 @@ export const getAllRecordingInstrumentSkills = async () => {
     }
     return { status: 'success', data: [] };
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách skills' };
+    throw error.response?.data || { message: 'Error getting skills list' };
   }
 };
 
@@ -56,7 +56,7 @@ export const getNotationInstruments = async (filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách instruments' };
+    throw error.response?.data || { message: 'Error getting instruments list' };
   }
 };
 
@@ -85,7 +85,7 @@ export const getNotationInstrumentsByIds = async (instrumentIds) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || {
-      message: 'Lỗi khi lấy danh sách instruments theo IDs',
+      message: 'Error getting instruments list by IDs',
     };
   }
 };

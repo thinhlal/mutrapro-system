@@ -32,7 +32,7 @@ export const getVocalists = async (gender = null, genres = null) => {
   } catch (error) {
     console.error('❌ [Get Vocalists Error]', error.response?.data || error.message);
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách vocalists' }
+      error.response?.data || { message: 'Error getting vocalists list' }
     );
   }
 };
@@ -55,7 +55,7 @@ export const getSpecialistDetail = async (specialistId) => {
   } catch (error) {
     console.error('❌ [Get Specialist Detail Error]', error.response?.data || error.message);
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
+      error.response?.data || { message: 'Error getting specialist information' }
     );
   }
 };
