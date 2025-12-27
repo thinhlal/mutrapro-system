@@ -73,6 +73,10 @@ import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './ContractDetailPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { useDocumentTitle } from '../../../hooks';
+import {
+  getContractTypeLabel,
+  getContractTypeColor,
+} from '../../../constants/contractAndRequestTypes';
 
 const { Title, Text } = Typography;
 
@@ -1905,8 +1909,8 @@ const ContractDetailPage = () => {
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Contract Type">
-              <Tag color="blue">
-                {contract.contractType?.toUpperCase() || 'N/A'}
+              <Tag color={getContractTypeColor(contract.contractType)}>
+                {getContractTypeLabel(contract.contractType)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Total Price">
@@ -2216,25 +2220,25 @@ const ContractDetailPage = () => {
                     const getWorkStatusText = () => {
                       switch (workStatus) {
                         case 'PLANNED':
-                          return 'Đã lên kế hoạch';
+                          return 'Planned';
                         case 'WAITING_ASSIGNMENT':
-                          return 'Chờ assign task';
+                          return 'Waiting assignment';
                         case 'WAITING_SPECIALIST_ACCEPT':
-                          return 'Chờ specialist accept';
+                          return 'Waiting specialist accept';
                         case 'TASK_ACCEPTED_WAITING_ACTIVATION':
-                          return 'Đã accept, chờ activate';
+                          return 'Accepted, waiting activation';
                         case 'READY_TO_START':
-                          return 'Sẵn sàng bắt đầu';
+                          return 'Ready to start';
                         case 'IN_PROGRESS':
-                          return 'Đang thực hiện';
+                          return 'In progress';
                         case 'WAITING_CUSTOMER':
-                          return 'Chờ khách hàng phản hồi';
+                          return 'Waiting customer';
                         case 'READY_FOR_PAYMENT':
-                          return 'Sẵn sàng thanh toán';
+                          return 'Ready for payment';
                         case 'COMPLETED':
-                          return 'Hoàn thành';
+                          return 'Completed';
                         case 'CANCELLED':
-                          return 'Đã hủy';
+                          return 'Cancelled';
                         default:
                           return workStatus;
                       }

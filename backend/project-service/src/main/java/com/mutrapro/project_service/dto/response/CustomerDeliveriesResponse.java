@@ -74,7 +74,8 @@ public class CustomerDeliveriesResponse {
         LocalDateTime actualStartAt;
         LocalDateTime finalCompletedAt;  // Thời điểm customer chấp nhận bản cuối cùng (sau mọi revision)
         LocalDateTime actualEndAt;  // Thời điểm milestone được thanh toán (nếu có payment)
-        String installmentStatus;  // PENDING, DUE, PAID - để frontend check xem đã thanh toán chưa
+        Boolean hasPayment;  // Milestone này có installment tương ứng không
+        String installmentStatus;  // PENDING, DUE, PAID - để frontend check xem đã thanh toán chưa (null nếu không có payment)
     }
     
     @Data

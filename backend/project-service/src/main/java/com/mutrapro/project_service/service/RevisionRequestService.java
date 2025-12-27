@@ -912,6 +912,17 @@ public class RevisionRequestService {
                     if (milestone.getOrderIndex() != null) {
                         contractService.unlockNextMilestone(revisionRequest.getContractId(), milestone.getOrderIndex());
                     }
+                    
+                    // Kiểm tra và cập nhật contract completion khi milestone không có payment được hoàn thành
+                    try {
+                        contractService.checkAndUpdateContractCompletion(revisionRequest.getContractId());
+                        log.info("Checked contract completion after milestone completed (no payment): milestoneId={}, contractId={}", 
+                                milestone.getMilestoneId(), revisionRequest.getContractId());
+                    } catch (Exception e) {
+                        // Log error nhưng không fail transaction
+                        log.error("Failed to check contract completion: milestoneId={}, contractId={}, error={}", 
+                                milestone.getMilestoneId(), revisionRequest.getContractId(), e.getMessage(), e);
+                    }
                 }
                 
                 // Link arrangement submission với recording milestone (nếu milestone này là arrangement)

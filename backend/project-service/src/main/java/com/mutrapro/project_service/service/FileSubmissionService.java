@@ -511,9 +511,11 @@ public class FileSubmissionService {
 
         // Load installment để lấy status (để check xem đã thanh toán chưa)
         String installmentStatus = null;
+        Boolean hasPayment = false;
         Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
                 .findByContractIdAndMilestoneId(contractId, milestoneId);
         if (installmentOpt.isPresent()) {
+            hasPayment = true;
             installmentStatus = installmentOpt.get().getStatus() != null 
                     ? installmentOpt.get().getStatus().toString() 
                     : null;
@@ -553,7 +555,8 @@ public class FileSubmissionService {
                 .actualStartAt(milestone.getActualStartAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())  // Thời điểm customer chấp nhận bản cuối cùng
                 .actualEndAt(milestone.getActualEndAt())  // Thời điểm milestone được thanh toán
-                .installmentStatus(installmentStatus)
+                .hasPayment(hasPayment)  // Milestone này có installment tương ứng không
+                .installmentStatus(installmentStatus)  // null nếu không có payment
                 .build();
 
         // Step 3: Batch load files cho tất cả submissions trước (tránh N+1 problem)
@@ -1049,6 +1052,17 @@ public class FileSubmissionService {
                             // Unlock milestone tiếp theo khi milestone này được hoàn thành (không có payment)
                             if (milestone.getOrderIndex() != null) {
                                 contractService.unlockNextMilestone(assignment.getContractId(), milestone.getOrderIndex());
+                            }
+                            
+                            // Kiểm tra và cập nhật contract completion khi milestone không có payment được hoàn thành
+                            try {
+                                contractService.checkAndUpdateContractCompletion(assignment.getContractId());
+                                log.info("Checked contract completion after milestone completed (no payment): milestoneId={}, contractId={}", 
+                                        milestone.getMilestoneId(), assignment.getContractId());
+                            } catch (Exception e) {
+                                // Log error nhưng không fail transaction
+                                log.error("Failed to check contract completion: milestoneId={}, contractId={}, error={}", 
+                                        milestone.getMilestoneId(), assignment.getContractId(), e.getMessage(), e);
                             }
                         }
                         

@@ -2036,100 +2036,105 @@ public class ContractService {
         // Tự động unlock milestone tiếp theo: Khi milestone N được thanh toán → milestone N+1 READY_TO_START
         unlockNextMilestone(contractId, orderIndex);
         
-        // Kiểm tra xem tất cả installments đã được thanh toán chưa
-        List<ContractInstallment> allInstallments = contractInstallmentRepository
-            .findByContractIdOrderByCreatedAtAsc(contractId);
-        
-        boolean allInstallmentsPaid = allInstallments.stream()
-            .allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
+        // Kiểm tra và cập nhật contract completion (bao gồm cả trường hợp có payment và không có payment)
+        checkAndUpdateContractCompletion(contractId);
+    }
+    
+    /**
+     * Kiểm tra xem tất cả milestones đã hoàn thành chưa và cập nhật contract/request status nếu cần
+     * Được gọi sau khi:
+     * 1. Milestone được thanh toán (handleMilestonePaid)
+     * 2. Milestone không có payment được set COMPLETED (RevisionRequestService, FileSubmissionService)
+     */
+    @Transactional
+    public void checkAndUpdateContractCompletion(String contractId) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
         // Kiểm tra xem tất cả milestones đã hoàn thành công việc chưa
         List<ContractMilestone> allMilestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(contractId);
-        boolean allMilestonesCompleted = allMilestones.stream()
+        boolean allMilestonesCompleted = !allMilestones.isEmpty() && allMilestones.stream()
             .allMatch(m -> m.getWorkStatus() == MilestoneWorkStatus.COMPLETED);
         
-        if (allInstallmentsPaid && (contract.getStatus() == ContractStatus.active 
-                || contract.getStatus() == ContractStatus.active_pending_assignment)) {
-            // Tất cả installments đã được thanh toán
-            // Nhưng chỉ set contract COMPLETED nếu tất cả milestones cũng đã hoàn thành công việc
-            if (allMilestonesCompleted) {
-            contract.setStatus(ContractStatus.completed);
-            contractRepository.save(contract);
-                log.info("Contract status updated to COMPLETED: contractId={}, allInstallmentsCount={}, allMilestonesCount={}", 
-                    contractId, allInstallments.size(), allMilestones.size());
-            } else {
-                log.info("All installments paid but not all milestones completed yet: contractId={}, allInstallmentsCount={}, allMilestonesCount={}", 
-                    contractId, allInstallments.size(), allMilestones.size());
-            }
+        // Nếu chưa tất cả milestones completed, không cần kiểm tra tiếp
+        if (!allMilestonesCompleted) {
+            return;
+        }
+        
+        // Kiểm tra xem tất cả installments đã được thanh toán chưa (nếu có installments)
+        List<ContractInstallment> allInstallments = contractInstallmentRepository
+            .findByContractIdOrderByCreatedAtAsc(contractId);
+        
+        // Nếu không có installments nào, coi như đã "paid" (vì không cần thanh toán)
+        // Nếu có installments, phải đợi tất cả đã paid
+        boolean allInstallmentsPaid = allInstallments.isEmpty() || allInstallments.stream()
+            .allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
+        
+        // Contract chỉ có thể completed khi:
+        // 1. Tất cả milestones đã hoàn thành công việc (COMPLETED) ✓
+        // 2. Contract đang ở trạng thái active hoặc active_pending_assignment
+        // 3. Tất cả installments đã được thanh toán (nếu có installments)
+        if (contract.getStatus() == ContractStatus.active 
+                || contract.getStatus() == ContractStatus.active_pending_assignment) {
             
-            // Chỉ update work status của milestone cuối cùng thành COMPLETED nếu milestone đó đã thực sự hoàn thành công việc
-            // (workStatus = READY_FOR_PAYMENT hoặc đã có task completed)
-            if (!allMilestones.isEmpty()) {
-                ContractMilestone lastMilestone = allMilestones.get(allMilestones.size() - 1);
-                // Chỉ set COMPLETED nếu milestone đã hoàn thành công việc (READY_FOR_PAYMENT hoặc đã có task completed)
-                // Không set COMPLETED nếu milestone chưa được assign (PLANNED, WAITING_ASSIGNMENT, etc.)
-                if (lastMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT) {
-                    // Milestone có payment và đã sẵn sàng thanh toán → set COMPLETED khi tất cả installments paid
-                    lastMilestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
-                    contractMilestoneRepository.save(lastMilestone);
-                    log.info("Updated last milestone work status to COMPLETED (was READY_FOR_PAYMENT): contractId={}, milestoneId={}", 
-                        contractId, lastMilestone.getMilestoneId());
-                } else if (lastMilestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
-                    // Milestone chưa hoàn thành công việc → không set COMPLETED
-                    log.debug("Last milestone not ready for completion: contractId={}, milestoneId={}, workStatus={}", 
-                        contractId, lastMilestone.getMilestoneId(), lastMilestone.getWorkStatus());
+            // Nếu có installments, phải đợi tất cả đã paid
+            // Nếu không có installments (tất cả milestones không có payment), chỉ cần milestones completed
+            if (allInstallmentsPaid) {
+                contract.setStatus(ContractStatus.completed);
+                contractRepository.save(contract);
+                log.info("Contract status updated to COMPLETED: contractId={}, allInstallmentsCount={}, allMilestonesCount={}, allInstallmentsPaid={}", 
+                    contractId, allInstallments.size(), allMilestones.size(), allInstallmentsPaid);
+                
+                // Update request status to COMPLETED khi tất cả milestones đã hoàn thành
+                try {
+                    requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "completed");
+                    log.info("Updated request status to completed: requestId={}, contractId={}", 
+                        contract.getRequestId(), contractId);
+                } catch (Exception e) {
+                    // Log error nhưng không fail transaction
+                    log.error("Failed to update request status to completed: requestId={}, contractId={}, error={}", 
+                        contract.getRequestId(), contractId, e.getMessage(), e);
                 }
-            }
-            
-            // Chỉ update request status và gửi notification khi contract thực sự completed
-            if (allMilestonesCompleted) {
-                // Update request status to COMPLETED khi tất cả milestones đã được thanh toán và hoàn thành
-            try {
-                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "completed");
-                log.info("Updated request status to completed: requestId={}, contractId={}", 
-                    contract.getRequestId(), contractId);
-            } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to update request status to completed: requestId={}, contractId={}, error={}", 
-                    contract.getRequestId(), contractId, e.getMessage(), e);
-            }
-            
-                // Gửi notification cho manager khi tất cả milestones đã được thanh toán và hoàn thành
-            try {
-                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
-                    ? contract.getContractNumber()
-                    : contractId;
                 
-                ContractNotificationEvent contractNotificationEvent = ContractNotificationEvent.builder()
-                        .eventId(UUID.randomUUID())
-                        .contractId(contractId)
-                        .contractNumber(contractLabel)
-                        .userId(contract.getManagerUserId())
-                        .notificationType("ALL_MILESTONES_PAID")
-                        .title("Tất cả milestones đã được thanh toán")
-                        .content(String.format("Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.", 
-                                contractLabel))
-                        .referenceType("CONTRACT")
-                        .actionUrl("/manager/contracts/" + contractId)
-                        .timestamp(LocalDateTime.now())
-                        .build();
+                // Gửi notification cho manager khi tất cả milestones đã hoàn thành
+                try {
+                    String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contractId;
+                    
+                    ContractNotificationEvent contractNotificationEvent = ContractNotificationEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .contractId(contractId)
+                            .contractNumber(contractLabel)
+                            .userId(contract.getManagerUserId())
+                            .notificationType("ALL_MILESTONES_COMPLETED")
+                            .title("Tất cả milestones đã hoàn thành")
+                            .content(String.format("Tất cả milestones cho contract #%s đã hoàn thành. Contract đã hoàn thành.", 
+                                    contractLabel))
+                            .referenceType("CONTRACT")
+                            .actionUrl("/manager/contracts/" + contractId)
+                            .timestamp(LocalDateTime.now())
+                            .build();
+                    
+                    publishToOutbox(contractNotificationEvent, contractId, "Contract", "contract.notification");
+                    log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                            contractNotificationEvent.getEventId(), contractId, contract.getManagerUserId());
+                } catch (Exception e) {
+                    // Log error nhưng không fail transaction
+                    log.error("Failed to enqueue all milestones completed notification: userId={}, contractId={}, error={}", 
+                            contract.getManagerUserId(), contractId, e.getMessage(), e);
+                }
                 
-                publishToOutbox(contractNotificationEvent, contractId, "Contract", "contract.notification");
-                log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
-                        contractNotificationEvent.getEventId(), contractId, contract.getManagerUserId());
-            } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to enqueue all milestones paid notification: userId={}, contractId={}, error={}", 
-                        contract.getManagerUserId(), contractId, e.getMessage(), e);
-            }
-            
-            // Gửi system message vào chat room khi tất cả milestones đã được thanh toán (SAU contract signed → CONTRACT_CHAT)
-            String allPaidMessage = String.format(
-                "✅ Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.",
-                contract.getContractNumber()
-            );
-            publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), allPaidMessage);
+                // Gửi system message vào chat room khi tất cả milestones đã hoàn thành
+                String completionMessage = String.format(
+                    "✅ Tất cả milestones cho contract #%s đã hoàn thành. Contract đã hoàn thành.",
+                    contract.getContractNumber()
+                );
+                publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), completionMessage);
+            } else {
+                log.info("All milestones completed but not all installments paid yet: contractId={}, allInstallmentsCount={}, allMilestonesCount={}", 
+                    contractId, allInstallments.size(), allMilestones.size());
             }
         }
     }

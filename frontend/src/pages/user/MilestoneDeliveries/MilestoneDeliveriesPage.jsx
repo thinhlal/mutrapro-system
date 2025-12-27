@@ -48,6 +48,11 @@ import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import ReviewModal from '../../../components/modal/ReviewModal/ReviewModal';
 import styles from './MilestoneDeliveriesPage.module.css';
 import { useDocumentTitle } from '../../../hooks';
+import {
+  getContractTypeLabel,
+  getContractTypeColor,
+  getRequestTypeLabel,
+} from '../../../constants/contractAndRequestTypes';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -505,8 +510,8 @@ const MilestoneDeliveriesPage = () => {
                 <Text strong>{contractInfo.contractNumber || contractId}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Contract Type">
-                <Tag color="blue">
-                  {contractInfo.contractType?.toUpperCase() || 'N/A'}
+                <Tag color={getContractTypeColor(contractInfo.contractType)}>
+                  {getContractTypeLabel(contractInfo.contractType)}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Name">
@@ -571,9 +576,10 @@ const MilestoneDeliveriesPage = () => {
                                     ? 'Ready to start'
                                     : milestoneInfo.workStatus || 'N/A'}
                   </Tag>
-                  {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
-                  {(milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||
-                    milestoneInfo.workStatus === 'COMPLETED') &&
+                  {/* Chỉ hiển thị nút "Thanh toán" khi milestone có payment VÀ READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
+                  {milestoneInfo.hasPayment &&
+                    (milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||
+                      milestoneInfo.workStatus === 'COMPLETED') &&
                     milestoneInfo.installmentStatus !== 'PAID' && (
                       <Button
                         type="primary"
@@ -804,9 +810,9 @@ const MilestoneDeliveriesPage = () => {
                   </Descriptions.Item>
                   <Descriptions.Item label="Service Type">
                     <Tag color="purple">
-                      {(
+                      {getRequestTypeLabel(
                         requestInfo.requestType || requestInfo.serviceType
-                      )?.toUpperCase() || 'N/A'}
+                      )}
                     </Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label="Title" span={2}>

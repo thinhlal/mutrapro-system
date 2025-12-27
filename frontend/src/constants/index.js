@@ -11,3 +11,13 @@ export {
   getGenreLabel,
   getPurposeLabel,
 } from './musicOptionsConstants';
+export {
+  CONTRACT_TYPE_LABELS,
+  CONTRACT_TYPE_COLORS,
+  REQUEST_TYPE_LABELS,
+  REQUEST_TYPE_COLORS,
+  getContractTypeLabel,
+  getContractTypeColor,
+  getRequestTypeLabel,
+  getRequestTypeColor,
+} from './contractAndRequestTypes';
