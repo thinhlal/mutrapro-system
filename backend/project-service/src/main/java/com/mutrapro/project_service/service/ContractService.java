@@ -426,7 +426,13 @@ public class ContractService {
         Contract saved = contractRepository.save(contract);
         
         // Update milestones nếu có trong request
-        if (updateRequest.getMilestones() != null && !updateRequest.getMilestones().isEmpty()) {
+        // Lưu ý: Frontend luôn gửi milestones trong request (kể cả khi chỉ edit depositPercent)
+        // Vì frontend tự động update paymentPercent của milestone khi depositPercent thay đổi
+        // Nếu update cả depositPercent và milestones, depositPercent đã được update vào saved ở trên
+        // Validate sẽ dùng depositPercent mới từ saved.getDepositPercent()
+        boolean milestonesUpdated = updateRequest.getMilestones() != null && !updateRequest.getMilestones().isEmpty();
+        
+        if (milestonesUpdated) {
             // Validate: recording contract phải có đúng 1 milestone
             if (saved.getContractType() == ContractType.recording && updateRequest.getMilestones().size() != 1) {
                 throw new IllegalArgumentException(
@@ -445,10 +451,13 @@ public class ContractService {
             }
             
             // Validate: depositPercent + sum(paymentPercent của milestones có hasPayment=true) = 100%
+            // Lưu ý: Nếu có update depositPercent, saved.getDepositPercent() đã chứa giá trị mới
             BigDecimal depositPercent = saved.getDepositPercent() != null 
                 ? saved.getDepositPercent() 
                 : BigDecimal.valueOf(40.0);
             validatePaymentPercentages(depositPercent, updateRequest.getMilestones());
+            log.info("Validated payment percentages: contractId={}, depositPercent={}, milestonesCount={}", 
+                contractId, depositPercent, updateRequest.getMilestones().size());
             
             // Validate: sum(milestoneSlaDays) = contract slaDays
             Integer slaDays = saved.getSlaDays() != null 
@@ -481,7 +490,21 @@ public class ContractService {
             List<ContractMilestone> createdMilestones = createMilestonesFromRequest(saved, updateRequest.getMilestones());
             
             // Tạo installments mới cho milestones
+            // Lưu ý: Nếu có update depositPercent, depositPercent ở đây đã là giá trị mới
+            // Xóa DEPOSIT installment cũ trước (nếu có) vì createInstallmentsForContract sẽ tạo DEPOSIT mới
+            // Điều này đảm bảo không có duplicate DEPOSIT installments
+            contractInstallmentRepository
+                .findByContractIdAndType(contractId, InstallmentType.DEPOSIT)
+                .ifPresent(depositInstallment -> {
+                    contractInstallmentRepository.delete(depositInstallment);
+                    log.info("Deleted old DEPOSIT installment before recreating: contractId={}, oldPercent={}, newPercent={}", 
+                        contractId, depositInstallment.getPercent(), depositPercent);
+                });
+            
+            // createInstallmentsForContract sẽ tạo DEPOSIT installment mới với % mới
             createInstallmentsForContract(saved, depositPercent, updateRequest.getMilestones(), createdMilestones);
+            log.info("Created new installments (including DEPOSIT) with depositPercent={}: contractId={}", 
+                depositPercent, contractId);
             
             log.info("Updated milestones for contract: contractId={}, milestonesCount={}", 
                 contractId, createdMilestones.size());

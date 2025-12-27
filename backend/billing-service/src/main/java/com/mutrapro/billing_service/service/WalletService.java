@@ -40,7 +40,6 @@ import com.mutrapro.billing_service.exception.InvalidTransactionTypeException;
 import com.mutrapro.billing_service.exception.InvalidWithdrawalStatusException;
 import com.mutrapro.billing_service.exception.ProofFileDownloadException;
 import com.mutrapro.billing_service.exception.ProofFileUploadException;
-import com.mutrapro.billing_service.exception.TransactionAlreadyRefundedException;
 import com.mutrapro.billing_service.exception.UnauthorizedWalletAccessException;
 import com.mutrapro.billing_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.billing_service.exception.WalletNotFoundException;
@@ -69,6 +68,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -1626,6 +1626,7 @@ public class WalletService {
     /**
      * Refund revision fee (gọi từ Kafka consumer khi manager reject paid revision)
      * Internal method - không cần authentication vì gọi từ consumer
+     * Idempotent: nếu đã refund rồi thì return existing refund transaction
      */
     @Transactional
     public WalletTransactionResponse refundRevisionFee(String paidWalletTxId, String refundReason) {
@@ -1641,9 +1642,12 @@ public class WalletService {
                 paidWalletTxId, originalTx.getTxType(), WalletTxType.revision_fee);
         }
         
-        // Verify chưa được refund
-        if (walletTransactionRepository.findByRefundOfWalletTx_WalletTxId(paidWalletTxId).isPresent()) {
-            throw TransactionAlreadyRefundedException.create(paidWalletTxId);
+        // Check if already refunded - if yes, return existing refund (idempotent behavior)
+        Optional<WalletTransaction> existingRefund = walletTransactionRepository.findByRefundOfWalletTx_WalletTxId(paidWalletTxId);
+        if (existingRefund.isPresent()) {
+            log.info("Transaction already refunded, returning existing refund: paidWalletTxId={}, refundTxId={}", 
+                    paidWalletTxId, existingRefund.get().getWalletTxId());
+            return walletMapper.toResponse(existingRefund.get());
         }
         
         // Lấy wallet và lock để tránh race condition
