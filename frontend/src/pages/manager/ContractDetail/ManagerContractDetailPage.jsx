@@ -1792,7 +1792,7 @@ const ManagerContractDetailPage = () => {
           {/* Milestones Section - Show when milestones exist */}
           {contract?.milestones && contract.milestones.length > 0 && (
             <>
-              <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+              <Title level={5} style={{ marginTop: 24, marginBottom: 16 }}>
                 Payment Milestones
               </Title>
               <Space
@@ -1980,9 +1980,6 @@ const ManagerContractDetailPage = () => {
                                   Payment: {getPaymentStatusText()}
                                 </Tag>
                               )}
-                              <Tag color={getWorkStatusColor()}>
-                                Work: {workStatus}
-                              </Tag>
                               {targetInstallment?.paidAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   Paid:{' '}
